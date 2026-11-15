@@ -109,9 +109,37 @@
 - **运维台**：宝塔式控制台、站点列表、Docker 容器启停、数据库状态、文件浏览器、日志与安全扫描。
 - **计算器**：完整四则运算、百分比、正负切换、历史与实体键盘输入。
 - **系统设置**：外观、墙纸、桌面与程序坞、通知、专注模式、网络、用户与账户、显示器、声音、日期与时间、隐私与安全、软件更新、系统健康度与关于本机。
-- **终端**：虚拟命令行，支持文件浏览、主题、网络、遥测、应用启动、运维脚本与容器命令。
+- **Linux 终端**：bash 5.2 风格提示符，覆盖文件、文本、权限、进程、systemd、网络、软件包、编程工具与 shell 内建命令；支持 `sudo`、别名、Tab 补全、命令历史、长格式 `ls`、`tree`、`grep`、`sed`、`awk`、`tar` 与虚拟归档操作。终端文件系统与系统目录均为本地模拟，不会读写真实主机文件。
 - **Steam**：本地商店、游戏库、DLC 档案、VR 中心、社区、个人资料、下载与愿望单；CS2、VRChat、命运 2 与全境封锁可直接游玩，商店中的六款未安装主流游戏可下载安装并启动，SteamVR / OVR Toolkit / SlimeVR 可交互。
 - **深空信号**：本地 Three.js 驱动的完整 3D 太空射击游戏。
+
+## Linux 终端
+
+提示符为 `sniper@aisniper:~$`，完整的命令索引可以在终端输入 `help` 查看，单条命令使用 `man <命令>` 查看模拟手册页。
+
+```text
+ls -la                 长格式文件列表
+cd 项目 && pwd          切换目录
+cat 说明.md             查看文件
+tree ~/项目             树状目录
+grep -n 专注 说明.md     搜索文本
+ps aux                 进程列表
+systemctl status nginx systemd 服务状态
+ip a / ss -tulpn       网络接口与监听端口
+ping -c 4 1.1.1.1      ICMP 测试
+apt install htop       包管理模拟
+python3 --version      运行时信息
+git status             Git 模拟仓库
+sudo systemctl restart nginx
+```
+
+支持的命令类别包括 `ls/cd/pwd/cp/mv/rm/mkdir/touch/find/tree/stat/du/df`、`cat/head/tail/grep/sed/awk/sort/uniq/cut/wc/diff`、`ps/top/free/lscpu/lsblk/systemctl/journalctl/dmesg`、`ping/traceroute/dig/curl/wget/ssh/ss/ip/nmap`、`apt/dpkg/pip/npm/git/gcc/make`，以及 `alias/export/which/type/history/sudo` 等 shell 功能。所有命令都只作用于 AISniperOS 的模拟文件系统和模拟服务。
+
+### 删除彩蛋
+
+输入类似 `rm -rf /`、`sudo rm -rf /`、`rm -fr /*`、`mkfs.ext4 /dev/sda1`、`dd of=/dev/sda` 或 fork 炸弹的命令，会进入不可逆删除演出：系统目录逐项消失、日志报错、终端黑屏并进入内核恐慌（kernel panic）救援控制台。
+
+这个彩蛋会真实清除 AISniperOS 在 `localStorage` 中保存的全部本地数据（设置、浏览器收藏、Steam 下载状态、命运 2 进度等），但**不会删除宿主电脑上的真实文件**；清除范围也只限 `aisniper` 前缀的键，不会影响同一域名下其它项目的数据。恐慌界面提供“重建系统镜像并重启”按钮，重启后恢复默认系统。
 
 ## 终端里的“部署”
 
@@ -260,6 +288,7 @@ css/browser.css        浏览器样式
 css/apps.css           登录、网络、设置、Finder 扩展、PDF / 压缩包与对话框
 css/app-ui.css         SENTRY、信息、通话与运维台应用样式
 js/os.js               窗口管理、登录、Finder、设置、终端与 OS 逻辑
+js/linuxterm.js        Linux 命令目录、帮助页、模拟系统文件与危险命令检测
 js/browser.js          浏览器多标签、内网 RouterOS / NAS / 门户、历史与收藏
 js/agent.js            SENTRY 本地智能体
 js/messages.js         信息应用、上下文对话与语音/视频通话

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#070a10">
   <meta name="description" content="AISniperOS — 可登录的浏览器桌面伪系统，内置带 DLC 与下载队列的 Steam 商店、可玩 CS2 / VRChat / 命运 2 / 全境封锁、八款 Canvas 游戏、伪 Unity 编辑器、语音视频通话、VR 工具、Finder、SENTRY 智能体、信息、宝塔式运维台、可进入路由器与 NAS 后台的内网浏览器，以及 3D 太空射击游戏。">
   <title>AISniperOS · 专注的操作系统</title>
-  <link rel="stylesheet" href="css/os.css?v=26.5">
+  <link rel="stylesheet" href="css/os.css?v=26.6">
   <link rel="stylesheet" href="css/browser.css?v=26.5">
   <link rel="stylesheet" href="css/apps.css?v=26.4">
   <link rel="stylesheet" href="css/app-ui.css?v=26.4">
@@ -475,6 +475,25 @@
       <p class="boot-status" id="bootStatus">正在校准光学系统</p>
     </div>
     <div class="boot-build">AISNIPER 系统 · 版本 26.1.4</div>
+  </div>
+
+  <!-- KERNEL PANIC / RECOVERY -->
+  <div class="kernel-panic" id="kernelPanic" hidden aria-live="assertive" aria-label="AISniperOS 内核崩溃">
+    <div class="kernel-panic-noise" aria-hidden="true"></div>
+    <div class="kernel-panic-scan" aria-hidden="true"></div>
+    <div class="kernel-panic-inner">
+      <div class="kernel-panic-head">
+        <span class="kernel-panic-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-info"></use></svg></span>
+        <div><b>AISNIPEROS KERNEL</b><span>EMERGENCY CONSOLE · tty1</span></div>
+        <em>aarch64 · 6.8.0-aisniper</em>
+      </div>
+      <pre class="kernel-panic-log" id="kernelPanicLog"></pre>
+      <div class="kernel-panic-cursor" aria-hidden="true"><i></i></div>
+      <div class="kernel-panic-actions" id="kernelPanicActions" hidden>
+        <p>系统卷 <code>/dev/aisniper0</code> 已丢失。当前页面仅保留只读救援控制台，静态系统镜像仍可从浏览器缓存重建。</p>
+        <button type="button" id="kernelRecoverBtn"><svg viewBox="0 0 24 24"><use href="#i-reload"></use></svg>重建系统镜像并重启</button>
+      </div>
+    </div>
   </div>
 
   <!-- LOGIN / LOCK SCREEN -->
@@ -1741,19 +1760,19 @@
             <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化终端"></button>
             <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放终端"></button>
           </div>
-          <div class="window-title">Sniper — zsh — 96×28</div>
-          <div class="window-bar-tools"><span class="terminal-badge">zsh</span></div>
+          <div class="window-title">Sniper — bash — 96×28</div>
+          <div class="window-bar-tools"><span class="terminal-badge">bash 5.2</span></div>
         </div>
         <div class="terminal-body" id="terminalBody">
           <div class="terminal-output" id="terminalOutput" aria-live="polite"></div>
           <div class="terminal-input-line" id="terminalInputLine">
-            <span class="terminal-prompt" id="terminalPrompt">visitor@aisniper ~</span>
-            <span class="terminal-percent">%</span>
+            <span class="terminal-prompt" id="terminalPrompt">sniper@aisniper:~</span>
+            <span class="terminal-percent">$</span>
             <input class="terminal-input" id="terminalInput" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="终端命令">
             <span class="terminal-caret" aria-hidden="true"></span>
           </div>
         </div>
-        <div class="terminal-footer"><span>⏎ 执行</span><span>↑ 历史</span><span>⌘K 清屏</span><span class="terminal-footer-right">AISniper zsh 1.0</span></div>
+        <div class="terminal-footer"><span>⏎ 执行</span><span>↑ 历史</span><span>Tab 补全</span><span>⌘K 清屏</span><span class="terminal-footer-right">AISniper bash 5.2</span></div>
       </section>
 
       <!-- GAME -->
@@ -2020,6 +2039,7 @@
   <script src="js/steammini.js?v=26.5.38"></script>
   <script src="js/unity.js?v=26.4"></script>
   <script src="js/steam.js?v=26.4.29"></script>
-  <script src="js/os.js?v=26.5"></script>
+  <script src="js/linuxterm.js?v=26.6"></script>
+  <script src="js/os.js?v=26.6.1"></script>
 </body>
 </html>

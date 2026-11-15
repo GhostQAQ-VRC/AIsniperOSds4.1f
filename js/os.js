@@ -13,6 +13,8 @@
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const STORAGE_KEY = 'aisniperos.settings.v1';
+  const SYSTEM_WIPED_KEY = 'aisniperos.system.wiped.v1';
+  const LINUX = window.AISniperLinux || {};
   const DEMO_PASSWORD = 'aisniper';
   const root = document.documentElement;
   const APPS = {
@@ -3819,22 +3821,75 @@
     }
   };
 
-  const TERM_COMMANDS = [
+  const TERM_COMMANDS = LINUX.COMMANDS || [
     'help', 'ls', 'cd', 'pwd', 'cat', 'open', 'game', 'theme', 'wifi', 'network', 'status',
     'health', 'neofetch', 'whoami', 'date', 'uptime', 'uname', 'echo', 'history',
     'clear', 'about', 'sudo', 'coffee', 'exit', 'reset', 'deploy', 'docker', 'bt', 'panel', 'scripts',
     'steam', 'cs2', 'vrchat', 'steamvr', 'ovrtk', 'slimevr'
   ];
-  const TERM_ALIASES = { '?': 'help', ll: 'ls', dir: 'ls', cls: 'clear', containers: 'docker' };
+  const TERM_ALIASES = { ...(LINUX.ALIASES || { '?': 'help', ll: 'ls -la', dir: 'ls', cls: 'clear', containers: 'docker ps' }) };
+  const TERM_SYSTEM_FS = LINUX.SYSTEM_FS || {};
+  const TERM_SYSTEM_FILES = LINUX.SYSTEM_FILES || {};
+  const TERM_FILE_TEXT = {
+    '~/子午线笔记.txt': '太阳离开后，山脊仍会保留十一分钟的颜色。\n将光圈保持在 f/2.8。信号藏在安静里，而不是光线里。',
+    '~/.zshrc': '# AISniperOS 终端\nexport AISNIPER_MODE=precision\nalias focus="open game"',
+    '~/说明.md': '# AISniperOS\n\n专注，凝练。\n为精确思考而生的浏览器原生环境。',
+    '~/项目/笔记.md': '# 项目\n\nAperture — 界面研究。\n子午线观测站 — 视觉识别。\n深空信号 — 三维飞行测试。',
+    '~/项目/子午线观测站/现场笔记.txt': '下一趟：06:42。带上长焦镜头和保温杯。',
+    '~/项目/深空信号/飞控笔记.md': '让准星保持轻盈。深空已经足够黑暗。',
+    '~/文稿/共享/子午线团队.txt': '09:30 开会。带上联系印样和山脊地平线画面。',
+    '~/运维脚本/部署宝塔面板.sh': '#!/bin/zsh\n# 创建宝塔面板演示容器\ndeploy baota --port 8888 --operator sniper\nopen ops',
+    '~/运维脚本/启动Nginx容器.sh': '#!/bin/zsh\ndocker run nginx --port 8080:80\necho "容器已启动"',
+    '~/运维脚本/系统巡检.sh': '#!/bin/zsh\necho "AISniper 节点巡检"\nstatus\ndocker ps',
+    '~/运维脚本/运维说明.txt': '双击任意 .sh 脚本即可在终端中执行。\n终端命令：deploy baota、docker ps、bt、panel。',
+    '~/截图/.keep': '',
+    '~/项目/Aperture/界面设计.fig': 'AISniper Aperture 设计稿（模拟二进制文件）',
+    '~/项目/Aperture/设计原则.pdf': 'AISniper 设计原则：精确、克制、清晰。',
+    '~/项目/子午线观测站/地平线.heic': 'HEIC 图像数据 · 4032 × 3024 · AISniper Ridge',
+    '~/项目/深空信号/深空引擎.scene': 'VOID SIGNAL scene descriptor\nengine: AISniper Orbit 2.4',
+    '~/文稿/设计原则.pdf': 'AISniper 设计原则：让界面退后，让内容靠前。',
+    '~/文稿/品牌交接.pdf': '品牌交接清单 · Aperture / 子午线观测站',
+    '~/截图/山脊站.png': 'PNG 图像数据 · 3840 × 2160',
+    '~/截图/子午线黄昏.heic': 'HEIC 图像数据 · 4032 × 3024',
+    '~/截图/轨道海报.png': 'PNG 图像数据 · 2560 × 1440'
+  };
+  const TERM_ENV = {
+    USER: 'sniper',
+    HOME: '/home/sniper',
+    SHELL: '/bin/bash',
+    PATH: '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin',
+    LANG: 'zh_CN.UTF-8',
+    TERM: 'xterm-256color',
+    HOSTNAME: 'aisniper',
+    PWD: '/home/sniper',
+    OLDPWD: '/home/sniper',
+    EDITOR: 'vim',
+    XDG_SESSION_TYPE: 'tty',
+    UMASK: '0022'
+  };
+  const TERM_INSTALLED = new Set(['bash', 'coreutils', 'curl', 'git', 'nginx', 'openssh-server', 'python3', 'vim', 'htop']);
+  const TERM_SERVICES = new Map([
+    ['nginx', { active: true, description: 'AISniper edge proxy' }],
+    ['ssh', { active: true, description: 'OpenBSD Secure Shell server' }],
+    ['docker', { active: true, description: 'Docker Application Container Engine' }],
+    ['aisniper-agent', { active: true, description: 'AISniper local agent' }],
+    ['baota', { active: false, description: 'Baota panel demo container' }]
+  ]);
   const defaultTerminalCwd = '~';
   let terminalCwd = '~';
+  let terminalPreviousCwd = '~';
   let terminalCommandHistory = [];
   let terminalHistoryIndex = 0;
   let terminalReady = false;
   let lastOutputText = '';
+  let terminalCaptureBuffer = null;
+  let terminalAliases = { ...TERM_ALIASES };
+  let terminalCatastropheRunning = false;
+  let terminalSudoDepth = 0;
+  let terminalJobs = [];
 
   function termPromptPath() {
-    return `sniper@aisniper ${terminalCwd}`;
+    return `sniper@aisniper:${terminalCwd}`;
   }
 
   function updateTerminalPrompt() {
@@ -3848,6 +3903,11 @@
   }
 
   function terminalLine(element) {
+    if (terminalCaptureBuffer) {
+      const text = element.textContent || element.innerHTML.replace(/<[^>]*>/g, '');
+      terminalCaptureBuffer.push(String(text).replace(/\s+$/, ''));
+      return;
+    }
     const output = $('#terminalOutput');
     if (!output) return;
     output.appendChild(element);
@@ -3883,7 +3943,7 @@
     prompt.textContent = termPromptPath();
     const symbol = document.createElement('span');
     symbol.className = 'term-symbol';
-    symbol.textContent = '%';
+    symbol.textContent = '$';
     el.append(prompt, symbol, document.createTextNode(command));
     terminalLine(el);
   }
@@ -3896,13 +3956,13 @@
     if (force) output.replaceChildren();
     const now = new Date();
     const stamp = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    terminalHTML('<span class="term-signal">AISniperOS 26.1.4</span> <span class="term-muted">（天鹰座）· 安全终端</span>');
+    terminalHTML('<span class="term-signal">AISniperOS 26.1.4 LTS</span> <span class="term-muted">GNU/Linux 6.8.0-aisniper aarch64 · tty1</span>');
     terminalPrint(`上次登录：${stamp} · ttys001`, 'term-line term-muted');
-    terminalHTML('输入 <span class="term-key">help</span> 查看命令，输入 <span class="term-key">neofetch</span> 查看系统卡片，也可直接打开应用。');
+    terminalHTML('输入 <span class="term-key">help</span> 查看完整命令索引，<span class="term-key">man &lt;命令&gt;</span> 查看手册，<span class="term-key">neofetch</span> 查看系统卡片。');
     terminalHTML('<div class="term-rule">快速开始</div>');
     const hints = document.createElement('div');
     hints.className = 'term-hint-row';
-    [['帮助', 'help'], ['文件列表', 'ls'], ['部署宝塔', 'deploy baota'], ['容器列表', 'docker ps'], ['打开 Steam', 'steam'], ['系统巡检', 'status']].forEach(([label, command]) => {
+    [['帮助', 'help'], ['详细列表', 'ls -la'], ['手册', 'man rm'], ['部署宝塔', 'deploy baota'], ['容器列表', 'docker ps'], ['打开 Steam', 'steam'], ['系统巡检', 'status'], ['系统卡片', 'neofetch']].forEach(([label, command]) => {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'term-chip';
@@ -3924,57 +3984,287 @@
 
   function terminalResetSession() {
     terminalCwd = defaultTerminalCwd;
+    terminalPreviousCwd = defaultTerminalCwd;
     terminalCommandHistory = [];
     terminalHistoryIndex = 0;
     terminalReady = false;
+    terminalAliases = { ...TERM_ALIASES };
+    TERM_ENV.PWD = '/home/sniper';
+    TERM_ENV.OLDPWD = '/home/sniper';
     terminalIntro(true);
     updateTerminalPrompt();
     $('#terminalInput')?.focus();
   }
 
+  function termCollapsePath(path) {
+    const home = path === '~' || path.startsWith('~/');
+    const absolute = !home && path.startsWith('/');
+    const body = home ? path.slice(1) : path;
+    const stack = [];
+    body.split('/').forEach((part) => {
+      if (!part || part === '.') return;
+      if (part === '..') {
+        if (stack.length && stack[stack.length - 1] !== '..') stack.pop();
+        else if (!absolute && !home) stack.push('..');
+        return;
+      }
+      stack.push(part);
+    });
+    if (home) return stack.length ? `~/${stack.join('/')}` : '~';
+    return `/${stack.join('/')}`;
+  }
+
   function terminalResolvePath(input) {
     if (!input || input === '.') return terminalCwd;
     if (input === '~') return '~';
-    if (input === '..') {
-      if (terminalCwd === '~') return '~';
-      const parts = terminalCwd.split('/');
-      parts.pop();
-      return parts.length ? parts.join('/') : '~';
-    }
-    if (input.startsWith('~/')) return input.replace(/\/+$/, '');
-    if (input.startsWith('~')) return `~/${input.slice(1).replace(/^\/+/, '')}`;
-    const base = terminalCwd === '~' ? '~' : terminalCwd;
-    return `${base}/${input}`.replace(/\/+/g, '/').replace(/\/$/, '');
+    let path;
+    if (input.startsWith('~/') || input.startsWith('/')) path = input;
+    else path = `${terminalCwd === '/' ? '' : terminalCwd}/${input}`;
+    if (path === '/home/sniper') return '~';
+    if (path.startsWith('/home/sniper/')) path = `~/${path.slice('/home/sniper/'.length)}`;
+    if (input === '..' && terminalCwd === '~') return '/home';
+    return termCollapsePath(path);
   }
 
-  function terminalCommandHelp() {
-    terminalHTML('<div class="term-rule">系统与导航</div>');
-    const rows = [
-      ['help', '显示命令索引'],
-      ['ls [路径]', '列出当前目录中的文件'],
-      ['cd <路径>', '浏览 AISniper 文件树'],
-      ['pwd', '显示当前工作目录'],
-      ['cat <文件>', '在终端中显示文件内容'],
-      ['open <应用>', '打开访达、浏览器、信息、智能体、设置、终端、运维台或游戏'],
-      ['game', '启动《深空信号》'],
-      ['deploy baota', '部署宝塔面板演示环境'],
-      ['docker <ps|run|stop|rm>', '管理模拟 Docker 容器'],
-      ['bt', '显示宝塔面板地址与凭证'],
-      ['panel', '打开运维台'],
-      ['scripts', '列出本地运维脚本'],
-      ['./脚本.sh', '执行“运维脚本”文件夹中的脚本'],
-      ['theme <模式>', '设置浅色、深色或自动外观'],
-      ['network', '显示有线网络与 Wi-Fi 状态'],
-      ['wifi <on|off>', '控制可选的无线网络连接'],
-      ['status', '显示实时系统遥测'],
-      ['neofetch', '显示系统身份卡片'],
-      ['clear', '清空终端缓冲区'],
-      ['reset', '重新开始一个终端会话'],
-      ['exit', '关闭此终端']
-    ];
-    rows.forEach(([command, description]) => {
-      terminalHTML(`<span class="term-help-command">${escapeHTML(command)}</span><span class="term-help-desc">${escapeHTML(description)}</span>`, 'term-help-row');
+  function termAbsolutePath(path) {
+    if (path === '~') return '/home/sniper';
+    if (path.startsWith('~/')) return `/home/sniper/${path.slice(2)}`;
+    return path;
+  }
+
+  function termJoin(base, name) {
+    return base === '/' ? `/${name}` : `${base}/${name}`;
+  }
+
+  function termBaseName(path) {
+    if (path === '/' || path === '~') return path;
+    return path.split('/').pop() || '/';
+  }
+
+  function termParentPath(path) {
+    if (path === '~') return '/home';
+    if (path === '/') return '/';
+    const index = path.lastIndexOf('/');
+    if (index <= 0) return '/';
+    return path.slice(0, index) || '/';
+  }
+
+  function termEntry(path) {
+    if (path === '~' || path.startsWith('~/')) return TERM_FS[path] || null;
+    return TERM_SYSTEM_FS[path] || null;
+  }
+
+  function termFileExists(path) {
+    if (path === '~' || path === '/') return false;
+    const parent = termEntry(termParentPath(path));
+    return Boolean(parent && parent.files.includes(termBaseName(path)));
+  }
+
+  function termCanWrite(path) {
+    return path === '~' || path.startsWith('~/');
+  }
+
+  function termReadFile(path) {
+    if (path === '/etc/shadow') return { error: '权限不够' };
+    if (!termFileExists(path)) {
+      if (termEntry(path)) return { error: '是一个目录' };
+      return { error: '没有那个文件或目录' };
+    }
+    if (Object.prototype.hasOwnProperty.call(TERM_SYSTEM_FILES, path)) return { text: TERM_SYSTEM_FILES[path] };
+    if (Object.prototype.hasOwnProperty.call(TERM_FILE_TEXT, path)) return { text: TERM_FILE_TEXT[path] };
+    return { text: `AISniper 档案条目：${termBaseName(path)}` };
+  }
+
+  function termWriteFile(path, text = '') {
+    if (!termCanWrite(path)) return false;
+    const parentPath = termParentPath(path);
+    const parent = termEntry(parentPath);
+    if (!parent) return false;
+    const name = termBaseName(path);
+    if (!parent.files.includes(name)) parent.files.push(name);
+    TERM_FILE_TEXT[path] = String(text);
+    return true;
+  }
+
+  function termRemovePath(path, recursive = false) {
+    if (!termCanWrite(path) || path === '~') return false;
+    const parent = termEntry(termParentPath(path));
+    const name = termBaseName(path);
+    const entry = termEntry(path);
+    if (!parent) return false;
+    if (parent.dirs.includes(name)) {
+      if (entry && (entry.dirs.length || entry.files.length) && !recursive) return false;
+      parent.dirs = parent.dirs.filter((dir) => dir !== name);
+      Object.keys(TERM_FS).forEach((key) => {
+        if (key === path || key.startsWith(`${path}/`)) delete TERM_FS[key];
+      });
+      Object.keys(TERM_FILE_TEXT).forEach((key) => {
+        if (key.startsWith(`${path}/`)) delete TERM_FILE_TEXT[key];
+      });
+      return true;
+    }
+    if (parent.files.includes(name)) {
+      parent.files = parent.files.filter((file) => file !== name);
+      delete TERM_FILE_TEXT[path];
+      return true;
+    }
+    return false;
+  }
+
+  function termAllPaths() {
+    const paths = [];
+    Object.entries(TERM_SYSTEM_FS).forEach(([path, entry]) => {
+      entry.dirs.forEach((dir) => paths.push(`${path === '/' ? '' : path}/${dir}`));
+      entry.files.forEach((file) => paths.push(`${path === '/' ? '' : path}/${file}`));
     });
+    Object.entries(TERM_FS).forEach(([path, entry]) => {
+      entry.dirs.forEach((dir) => paths.push(`${path}/${dir}`));
+      entry.files.forEach((file) => paths.push(`${path}/${file}`));
+    });
+    return [...new Set(paths)];
+  }
+
+  function termFindDir(path) {
+    return Boolean(termEntry(path));
+  }
+
+  function termRelativePath(path) {
+    if (path.startsWith('~/')) return path.slice(2);
+    if (path.startsWith('/')) return path;
+    return path;
+  }
+
+  function termSplit(argument) {
+    if (typeof LINUX.splitCommand === 'function') return LINUX.splitCommand(argument);
+    return String(argument || '').match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map((token) => token.replace(/^["']|["']$/g, '')) || [];
+  }
+
+  function termHumanSize(bytes) {
+    const value = Number(bytes) || 0;
+    if (value < 1024) return `${value} B`;
+    if (value < 1024 * 1024) return `${(value / 1024).toFixed(value < 10240 ? 1 : 0)}K`;
+    if (value < 1024 * 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)}M`;
+    return `${(value / 1024 / 1024 / 1024).toFixed(1)}G`;
+  }
+
+  function termFileSize(path) {
+    const read = termReadFile(path);
+    if (!read.error) return new TextEncoder().encode(read.text).length;
+    const name = termBaseName(path);
+    if (/\.(heic|png|jpg|jpeg)$/i.test(name)) return 1_840_000;
+    if (/\.(pdf|fig)$/i.test(name)) return 426_000;
+    if (/\.(scene|zip|tar|gz)$/i.test(name)) return 2_400_000;
+    return 1024;
+  }
+
+  function termPermission(path, isDir) {
+    if (isDir) return 'drwxr-xr-x';
+    const name = termBaseName(path);
+    if (/\.(sh|command)$/i.test(name)) return '-rwxr-xr-x';
+    if (name.startsWith('.')) return '-rw-------';
+    return '-rw-r--r--';
+  }
+
+  function termLsLongLine(path, isDir) {
+    const name = termBaseName(path);
+    const command = `cd "${path}"`;
+    const label = isDir
+      ? `<button class="term-dir" data-command="${escapeHTML(command)}">${escapeHTML(name)}/</button>`
+      : `<span class="term-file">${escapeHTML(name)}</span>`;
+    return `<div><span class="perm">${termPermission(path, isDir)}</span><span class="meta">${isDir ? '2' : '1'}</span><span class="meta">sniper sniper</span><span class="size">${isDir ? '4.0K' : termHumanSize(termFileSize(path))}</span>${label}</div>`;
+  }
+
+  function termGlobToRegExp(pattern) {
+    const escaped = String(pattern || '*').replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
+    return new RegExp(`^${escaped}$`, 'i');
+  }
+
+  function termEnsureDir(path, parents = false) {
+    if (path === '~' || path === '/') return { ok: true };
+    if (!termCanWrite(path)) return { error: '只读文件系统' };
+    if (termFileExists(path)) return { error: '文件已存在' };
+    if (termEntry(path)) return { error: '目录已存在' };
+    const parentPath = termParentPath(path);
+    if (!termEntry(parentPath)) {
+      if (!parents) return { error: '没有那个文件或目录' };
+      const parentResult = termEnsureDir(parentPath, true);
+      if (parentResult.error) return parentResult;
+    }
+    termEntry(parentPath).dirs.push(termBaseName(path));
+    TERM_FS[path] = { dirs: [], files: [] };
+    return { ok: true };
+  }
+
+  function termCopyTree(source, target, recursive = false) {
+    if (target === source || target.startsWith(`${source}/`)) return { error: '无法复制到其自身内部' };
+    const entry = termEntry(source);
+    if (!entry) {
+      const read = termReadFile(source);
+      if (read.error) return { error: read.error };
+      if (!termWriteFile(target, read.text)) return { error: '权限不够' };
+      return { ok: true };
+    }
+    if (!recursive) return { error: '是一个目录' };
+    const mkdir = termEnsureDir(target, true);
+    if (mkdir.error && mkdir.error !== '目录已存在') return mkdir;
+    let firstError = null;
+    entry.dirs.forEach((dir) => {
+      const result = termCopyTree(termJoin(source, dir), termJoin(target, dir), true);
+      if (result.error && !firstError) firstError = result;
+    });
+    entry.files.forEach((file) => {
+      const read = termReadFile(termJoin(source, file));
+      if (!read.error) termWriteFile(termJoin(target, file), read.text);
+    });
+    return firstError || { ok: true };
+  }
+
+  function termPathType(path) {
+    if (termEntry(path)) return 'directory';
+    if (termFileExists(path)) return 'file';
+    return 'missing';
+  }
+
+  function terminalCommandMan(command) {
+    const name = String(command || '').trim().toLowerCase();
+    if (!name) {
+      terminalHTML('<span class="term-warn">用法：man &lt;命令&gt;</span> <span class="term-muted">例如 man rm、man systemctl、man apt</span>');
+      return;
+    }
+    const page = (LINUX.MAN_PAGES || {})[name];
+    const info = (LINUX.HELP_INDEX || {})[name];
+    if (!page && !info) {
+      terminalHTML(`<span class="term-error">没有 ${escapeHTML(name)} 的手册页。</span> <span class="term-muted">试试 apropos ${escapeHTML(name)} 或 help。</span>`);
+      return;
+    }
+    const summary = page?.summary || info?.description || 'AISniperOS 内置命令';
+    const synopsis = page?.synopsis || `${name} [参数]`;
+    terminalHTML(`<div class="term-rule">${escapeHTML(name.toUpperCase())}(1) — ${escapeHTML(summary)}</div>`);
+    terminalHTML(`<span class="term-muted">NAME</span><br>&nbsp;&nbsp;${escapeHTML(name)} — ${escapeHTML(summary)}`);
+    terminalHTML(`<span class="term-muted">SYNOPSIS</span><pre class="term-pre">${escapeHTML(synopsis)}</pre>`);
+    terminalHTML(`<span class="term-muted">DESCRIPTION</span><br>&nbsp;&nbsp;${escapeHTML(page?.description || `${info?.description || summary}。该命令属于“${info?.group || 'AISniperOS'}”分类。`)}`);
+    if (page?.options?.length) {
+      terminalHTML('<span class="term-muted">OPTIONS</span>');
+      page.options.forEach(([flag, text]) => terminalHTML(`<span class="term-help-command">${escapeHTML(flag)}</span><span class="term-help-desc">${escapeHTML(text)}</span>`, 'term-help-row'));
+    }
+    terminalHTML(`<span class="term-muted">AISniperOS 26.1.4 LTS</span> <span class="term-muted">·</span> <span class="term-muted">${new Date().toLocaleDateString('zh-CN')}</span>`);
+  }
+
+  function terminalCommandHelp(argument) {
+    if (argument) {
+      terminalCommandMan(argument.split(/\s+/)[0]);
+      return;
+    }
+    const groups = LINUX.HELP_GROUPS || [];
+    terminalPrint('AISniperOS GNU/Linux 内置命令索引 · 输入 man <命令> 查看详细手册', 'term-line term-muted');
+    groups.forEach((group) => {
+      terminalHTML(`<div class="term-rule">${escapeHTML(group.title)}</div>`);
+      group.items.forEach(([command, description]) => {
+        terminalHTML(`<span class="term-help-command">${escapeHTML(command)}</span><span class="term-help-desc">${escapeHTML(description)}</span>`, 'term-help-row');
+      });
+    });
+    terminalHTML('<div class="term-rule">提示</div>');
+    terminalHTML('<span class="term-muted">支持别名、<span class="term-key">sudo</span>、<span class="term-key">Tab</span> 补全与命令历史。危险操作会真的删除这个模拟系统中的数据——包括全部存档。</span>');
   }
 
   function terminalCommandNeofetch() {
@@ -3987,7 +4277,7 @@
       '     .  ◉  .     ',
       '        .        '
     ].join('\n');
-    const html = `<div class="term-neofetch"><div class="term-ascii">${escapeHTML(ascii).replace('AISNIPER', '<span class="accent-text">AISNIPER</span>')}</div><div class="term-neofetch-info"><div><b>系统</b>AISniperOS 26.1.4 天鹰座</div><div><b>主机</b>AISniper M1 · 神经核心</div><div><b>用户</b>sniper · 管理员</div><div><b>终端</b>zsh 1.0</div><div><b>显示</b>液态视网膜 · 3024 × 1964</div><div><b>主题</b>${({ light: '浅色', dark: '深色' })[resolvedTheme()]} / ${({ solar: '暖阳', signal: '信号', iris: '鸢尾', ember: '余烬' })[state.accent]}</div><div><b>内存</b>${Math.round(health.memory)}% / 24 GB</div><div><b>运行时间</b>${$('#settingsUptime')?.textContent || '00:00:00'}</div><div><b>网络</b><span class="term-success">● 以太网 1 Gbps</span> <span class="term-muted">/ Wi-Fi ${state.wifi ? '开启' : '关闭'}</span></div><div><b>服务</b>${opsController?.getState?.().deployed ? '<span class="term-success">宝塔面板在线</span>' : '<span class="term-muted">本地运维未部署</span>'}</div></div></div>`;
+    const html = `<div class="term-neofetch"><div class="term-ascii">${escapeHTML(ascii).replace('AISNIPER', '<span class="accent-text">AISNIPER</span>')}</div><div class="term-neofetch-info"><div><b>系统</b>AISniperOS 26.1.4 天鹰座</div><div><b>主机</b>AISniper M1 · 神经核心</div><div><b>用户</b>sniper · 管理员</div><div><b>终端</b>bash 5.2.37</div><div><b>内核</b>6.8.0-aisniper aarch64</div><div><b>显示</b>液态视网膜 · 3024 × 1964</div><div><b>主题</b>${({ light: '浅色', dark: '深色' })[resolvedTheme()]} / ${({ solar: '暖阳', signal: '信号', iris: '鸢尾', ember: '余烬' })[state.accent]}</div><div><b>内存</b>${Math.round(health.memory)}% / 24 GB</div><div><b>运行时间</b>${$('#settingsUptime')?.textContent || '00:00:00'}</div><div><b>网络</b><span class="term-success">● 以太网 1 Gbps</span> <span class="term-muted">/ Wi-Fi ${state.wifi ? '开启' : '关闭'}</span></div><div><b>服务</b>${opsController?.getState?.().deployed ? '<span class="term-success">宝塔面板在线</span>' : '<span class="term-muted">本地运维未部署</span>'}</div></div></div>`;
     terminalHTML(html);
   }
 
@@ -3996,66 +4286,1735 @@
   }
 
   function terminalCommandLs(argument) {
-    const path = terminalResolvePath(argument);
-    const entry = TERM_FS[path];
+    const tokens = termSplit(argument);
+    const options = { all: false, long: false, human: false, recursive: false };
+    const paths = [];
+    tokens.forEach((token) => {
+      if (token === '--') return;
+      if (/^--/.test(token)) {
+        if (token === '--all') options.all = true;
+        if (token === '--long') options.long = true;
+        if (token === '--human-readable') options.human = true;
+        if (token === '--recursive') options.recursive = true;
+        return;
+      }
+      if (/^-[a-zA-Z]+$/.test(token)) {
+        if (token.includes('a')) options.all = true;
+        if (token.includes('l')) options.long = true;
+        if (token.includes('h')) options.human = true;
+        if (token.includes('R')) options.recursive = true;
+        return;
+      }
+      paths.push(token);
+    });
+    const requested = paths[0] || '.';
+    const target = terminalResolvePath(requested);
+    const entry = termEntry(target);
     if (!entry) {
-      terminalHTML(`<span class="term-error">ls：目录不存在：${escapeHTML(path)}</span>`);
+      terminalHTML(`<span class="term-error">ls: 无法访问 '${escapeHTML(requested)}': 没有那个文件或目录</span>`);
       return;
     }
-    const parts = [];
-    entry.dirs.forEach((dir) => parts.push(`<button class="term-dir" data-command="cd ${escapeHTML(dir)}">${escapeHTML(dir)}/</button>`));
-    entry.files.forEach((file) => parts.push(`<span class="term-file">${escapeHTML(file)}</span>`));
-    terminalHTML(`<div class="term-ls-grid">${parts.join('')}</div>`);
-    lastOutputText = [...entry.dirs.map((dir) => `${dir}/`), ...entry.files].join('  ');
+    if (termFileExists(target)) {
+      terminalHTML(`<div class="term-ls-grid"><span class="term-file">${escapeHTML(termBaseName(target))}</span></div>`);
+      lastOutputText = termBaseName(target);
+      return;
+    }
+    const plain = [];
+    const render = (dirPath, dirEntry, header = '') => {
+      if (header) terminalHTML(`<div class="term-rule">${escapeHTML(header)}</div>`);
+      let dirs = [...dirEntry.dirs];
+      let files = [...dirEntry.files];
+      if (!options.all) files = files.filter((file) => !file.startsWith('.'));
+      plain.push(...dirs.map((dir) => `${dir}/`), ...files);
+      if (options.long) {
+        const total = files.reduce((sum, file) => sum + termFileSize(termJoin(dirPath, file)), 0);
+        const rows = [`<div class="is-total">总用量 ${termHumanSize(Math.ceil(total / 1024) * 1024)}</div>`];
+        dirs.forEach((dir) => rows.push(termLsLongLine(termJoin(dirPath, dir), true)));
+        files.forEach((file) => rows.push(termLsLongLine(termJoin(dirPath, file), false)));
+        terminalHTML(`<div class="term-ls-long">${rows.join('')}</div>`);
+      } else {
+        const parts = [];
+        dirs.forEach((dir) => parts.push(`<button class="term-dir" data-command="cd &quot;${escapeHTML(termJoin(dirPath, dir))}&quot;">${escapeHTML(dir)}/</button>`));
+        files.forEach((file) => parts.push(`<span class="term-file">${escapeHTML(file)}</span>`));
+        terminalHTML(`<div class="term-ls-grid">${parts.join('')}</div>`);
+      }
+      if (options.recursive) {
+        dirs.forEach((dir) => {
+          const childPath = termJoin(dirPath, dir);
+          const child = termEntry(childPath);
+          if (child) render(childPath, child, childPath);
+        });
+      }
+    };
+    render(target, entry);
+    lastOutputText = plain.join('  ');
   }
 
   function terminalCommandCd(argument) {
-    const path = terminalResolvePath(argument || '~');
-    if (!TERM_FS[path]) {
-      terminalHTML(`<span class="term-error">cd：目录不存在：${escapeHTML(path)}</span>`);
+    const tokens = termSplit(argument);
+    const requested = tokens[0] || '~';
+    if (requested === '-') {
+      const target = terminalPreviousCwd;
+      terminalPreviousCwd = terminalCwd;
+      terminalCwd = target;
+      TERM_ENV.OLDPWD = TERM_ENV.PWD;
+      TERM_ENV.PWD = termAbsolutePath(target);
+      updateTerminalPrompt();
+      terminalPrint(termAbsolutePath(target));
       return;
     }
+    const path = terminalResolvePath(requested);
+    if (termFileExists(path)) {
+      terminalHTML(`<span class="term-error">cd: ${escapeHTML(requested)}: 不是目录</span>`);
+      return;
+    }
+    if (!termEntry(path)) {
+      terminalHTML(`<span class="term-error">cd: ${escapeHTML(requested)}: 没有那个文件或目录</span>`);
+      return;
+    }
+    terminalPreviousCwd = terminalCwd;
     terminalCwd = path;
+    TERM_ENV.OLDPWD = TERM_ENV.PWD;
+    TERM_ENV.PWD = termAbsolutePath(path);
     updateTerminalPrompt();
   }
 
   function terminalCommandCat(argument) {
-    if (!argument) {
-      terminalHTML('<span class="term-warn">用法：cat &lt;文件&gt;</span>');
+    const tokens = termSplit(argument);
+    const numbered = tokens.includes('-n');
+    const paths = tokens.filter((token) => token !== '-n' && !token.startsWith('-'));
+    if (!paths.length) {
+      terminalHTML('<span class="term-warn">cat: 缺少文件操作数</span> <span class="term-muted">用法：cat [-n] &lt;文件&gt;...</span>');
       return;
     }
-    const path = terminalResolvePath(argument);
-    const dir = path.slice(0, path.lastIndexOf('/')) || '~';
-    const file = path.split('/').pop();
-    const entry = TERM_FS[dir];
-    if (!entry || !entry.files.includes(file)) {
-      terminalHTML(`<span class="term-error">cat：文件不存在：${escapeHTML(argument)}</span>`);
+    let lineNumber = 1;
+    let combined = '';
+    paths.forEach((requested) => {
+      const path = terminalResolvePath(requested);
+      const read = termReadFile(path);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">cat: ${escapeHTML(requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const content = read.text;
+      const rendered = numbered
+        ? content.split('\n').map((line, index, lines) => (index === lines.length - 1 && line === '') ? '' : `${String(lineNumber++).padStart(6, ' ')}\t${line}`).join('\n')
+        : content;
+      combined += rendered;
+      terminalHTML(`<pre class="term-cat">${escapeHTML(rendered || ' ')}</pre>`);
+    });
+    lastOutputText = combined;
+  }
+
+  function terminalCommandTouch(argument) {
+    const paths = termSplit(argument).filter((token) => !token.startsWith('-'));
+    if (!paths.length) {
+      terminalHTML('<span class="term-warn">touch: 缺少文件操作数</span>');
       return;
     }
-    const text = {
-      '子午线笔记.txt': '太阳离开后，山脊仍会保留十一分钟的颜色。\n将光圈保持在 f/2.8。信号藏在安静里，而不是光线里。',
-      '.zshrc': '# AISniperOS 终端\nexport AISNIPER_MODE=precision\nalias focus="open game"',
-      '说明.md': '# AISniperOS\n\n专注，凝练。\n为精确思考而生的浏览器原生环境。',
-      '笔记.md': '# 项目\n\nAperture — 界面研究。\n子午线观测站 — 视觉识别。\n深空信号 — 三维飞行测试。',
-      '现场笔记.txt': '下一趟：06:42。带上长焦镜头和保温杯。',
-      '飞控笔记.md': '让准星保持轻盈。深空已经足够黑暗。',
-      '子午线团队.txt': '09:30 开会。带上联系印样和山脊地平线画面。',
-      '部署宝塔面板.sh': '#!/bin/zsh\n# 创建宝塔面板演示容器\ndeploy baota --port 8888 --operator sniper\nopen ops',
-      '启动Nginx容器.sh': '#!/bin/zsh\ndocker run nginx --port 8080:80\necho "容器已启动"',
-      '系统巡检.sh': '#!/bin/zsh\necho "AISniper 节点巡检"\nstatus\ndocker ps',
-      '运维说明.txt': '双击任意 .sh 脚本即可在终端中执行。\n终端命令：deploy baota、docker ps、bt、panel。'
-    }[file] || `AISniper 档案条目：${file}`;
-    terminalHTML(`<pre class="term-cat">${escapeHTML(text)}</pre>`);
+    paths.forEach((requested) => {
+      const path = terminalResolvePath(requested);
+      if (termEntry(path)) {
+        terminalHTML(`<span class="term-error">touch: 无法创建 '${escapeHTML(requested)}': 是一个目录</span>`);
+        return;
+      }
+      if (!termFileExists(path) && !termWriteFile(path, '')) {
+        terminalHTML(`<span class="term-error">touch: 无法创建 '${escapeHTML(requested)}': 权限不够</span>`);
+      }
+    });
+  }
+
+  function terminalCommandMkdir(argument) {
+    const tokens = termSplit(argument);
+    const parents = tokens.includes('-p') || tokens.includes('--parents');
+    const paths = tokens.filter((token) => !token.startsWith('-'));
+    if (!paths.length) {
+      terminalHTML('<span class="term-warn">mkdir: 缺少操作数</span>');
+      return;
+    }
+    paths.forEach((requested) => {
+      const result = termEnsureDir(terminalResolvePath(requested), parents);
+      if (result.error) terminalHTML(`<span class="term-error">mkdir: 无法创建目录 '${escapeHTML(requested)}': ${escapeHTML(result.error)}</span>`);
+    });
+  }
+
+  function terminalCommandRmdir(argument) {
+    const paths = termSplit(argument).filter((token) => !token.startsWith('-'));
+    if (!paths.length) {
+      terminalHTML('<span class="term-warn">rmdir: 缺少操作数</span>');
+      return;
+    }
+    paths.forEach((requested) => {
+      const path = terminalResolvePath(requested);
+      if (!termEntry(path)) {
+        terminalHTML(`<span class="term-error">rmdir: 无法删除 '${escapeHTML(requested)}': 没有那个文件或目录</span>`);
+      } else if (termRemovePath(path, false)) {
+        terminalHTML(`<span class="term-muted">已删除目录 '${escapeHTML(requested)}'</span>`);
+      } else {
+        terminalHTML(`<span class="term-error">rmdir: 无法删除 '${escapeHTML(requested)}': 目录非空</span>`);
+      }
+    });
+  }
+
+  function terminalCommandRm(argument) {
+    const tokens = termSplit(argument);
+    let recursive = false;
+    let force = false;
+    let verbose = false;
+    const paths = [];
+    tokens.forEach((token) => {
+      if (token === '--recursive') recursive = true;
+      else if (token === '--force') force = true;
+      else if (token === '--verbose') verbose = true;
+      else if (/^-[a-zA-Z]+$/.test(token)) {
+        if (token.includes('r') || token.includes('R') || token.includes('d')) recursive = true;
+        if (token.includes('f')) force = true;
+        if (token.includes('v')) verbose = true;
+      } else paths.push(token);
+    });
+    if (!paths.length) {
+      if (!force) terminalHTML('<span class="term-warn">rm: 缺少操作数</span>');
+      return;
+    }
+    paths.forEach((requested) => {
+      const path = terminalResolvePath(requested);
+      const type = termPathType(path);
+      if (type === 'missing') {
+        if (!force) terminalHTML(`<span class="term-error">rm: 无法删除 '${escapeHTML(requested)}': 没有那个文件或目录</span>`);
+        return;
+      }
+      if (!termCanWrite(path)) {
+        terminalHTML(`<span class="term-error">rm: 无法删除 '${escapeHTML(requested)}': 权限不够</span>`);
+        return;
+      }
+      if (type === 'directory' && !recursive) {
+        terminalHTML(`<span class="term-error">rm: 无法删除 '${escapeHTML(requested)}': 是一个目录</span>`);
+        return;
+      }
+      if (!termRemovePath(path, recursive)) {
+        terminalHTML(`<span class="term-error">rm: 无法删除 '${escapeHTML(requested)}': 目录非空或权限不够</span>`);
+        return;
+      }
+      if (verbose) terminalPrint(`已删除 '${requested}'`, 'term-line term-muted');
+    });
+  }
+
+  function terminalCommandCp(argument) {
+    const tokens = termSplit(argument);
+    const recursive = tokens.some((token) => /^-[a-zA-Z]*[rR]/.test(token) || token === '--recursive');
+    const paths = tokens.filter((token) => !token.startsWith('-'));
+    if (paths.length < 2) {
+      terminalHTML('<span class="term-warn">cp: 缺少文件操作数</span> <span class="term-muted">用法：cp [-r] &lt;源&gt; &lt;目标&gt;</span>');
+      return;
+    }
+    const source = terminalResolvePath(paths[0]);
+    let destination = terminalResolvePath(paths[1]);
+    if (termEntry(destination)) destination = termJoin(destination, termBaseName(source));
+    const sourceType = termPathType(source);
+    if (sourceType === 'missing') {
+      terminalHTML(`<span class="term-error">cp: 无法获取 '${escapeHTML(paths[0])}' 的状态: 没有那个文件或目录</span>`);
+      return;
+    }
+    if (sourceType === 'file') {
+      const read = termReadFile(source);
+      if (read.error || !termWriteFile(destination, read.text)) {
+        terminalHTML(`<span class="term-error">cp: 无法创建 '${escapeHTML(paths[1])}': 权限不够</span>`);
+      }
+      return;
+    }
+    const result = termCopyTree(source, destination, recursive);
+    if (result.error) terminalHTML(`<span class="term-error">cp: 无法复制 '${escapeHTML(paths[0])}': ${escapeHTML(result.error)}</span>`);
+  }
+
+  function terminalCommandMv(argument) {
+    const paths = termSplit(argument).filter((token) => !token.startsWith('-'));
+    if (paths.length < 2) {
+      terminalHTML('<span class="term-warn">mv: 缺少文件操作数</span> <span class="term-muted">用法：mv &lt;源&gt; &lt;目标&gt;</span>');
+      return;
+    }
+    const source = terminalResolvePath(paths[0]);
+    let destination = terminalResolvePath(paths[1]);
+    const sourceType = termPathType(source);
+    if (sourceType === 'missing') {
+      terminalHTML(`<span class="term-error">mv: 无法获取 '${escapeHTML(paths[0])}' 的状态: 没有那个文件或目录</span>`);
+      return;
+    }
+    if (!termCanWrite(source)) {
+      terminalHTML(`<span class="term-error">mv: 无法移动 '${escapeHTML(paths[0])}': 权限不够</span>`);
+      return;
+    }
+    if (termEntry(destination)) destination = termJoin(destination, termBaseName(source));
+    if (sourceType === 'file') {
+      const read = termReadFile(source);
+      if (read.error || !termWriteFile(destination, read.text)) {
+        terminalHTML(`<span class="term-error">mv: 无法创建 '${escapeHTML(paths[1])}': 权限不够</span>`);
+        return;
+      }
+    } else {
+      const result = termCopyTree(source, destination, true);
+      if (result.error) {
+        terminalHTML(`<span class="term-error">mv: 无法移动 '${escapeHTML(paths[0])}': ${escapeHTML(result.error)}</span>`);
+        return;
+      }
+    }
+    termRemovePath(source, true);
+  }
+
+  function terminalCommandLn(argument) {
+    const tokens = termSplit(argument);
+    const symbolic = tokens.some((token) => token === '-s' || token === '--symbolic');
+    const paths = tokens.filter((token) => !token.startsWith('-'));
+    if (paths.length < 2) {
+      terminalHTML('<span class="term-warn">ln: 缺少文件操作数</span> <span class="term-muted">用法：ln -s &lt;目标&gt; &lt;链接名&gt;</span>');
+      return;
+    }
+    const target = terminalResolvePath(paths[0]);
+    const link = terminalResolvePath(paths[1]);
+    if (termPathType(target) === 'missing') {
+      terminalHTML(`<span class="term-error">ln: 无法创建链接 '${escapeHTML(paths[1])}': 目标不存在</span>`);
+      return;
+    }
+    if (!termWriteFile(link, symbolic ? `symlink -> ${target}` : `hardlink -> ${target}`)) {
+      terminalHTML(`<span class="term-error">ln: 无法创建链接 '${escapeHTML(paths[1])}': 权限不够</span>`);
+    }
+  }
+
+  function terminalCommandFind(argument) {
+    const tokens = termSplit(argument);
+    let root = '.';
+    let namePattern = '*';
+    let type = '';
+    let index = 0;
+    if (tokens[0] && !tokens[0].startsWith('-')) {
+      root = tokens[0];
+      index = 1;
+    }
+    for (; index < tokens.length; index += 1) {
+      if (tokens[index] === '-name' || tokens[index] === '-iname') namePattern = tokens[index + 1] || '*';
+      if (tokens[index] === '-type') type = tokens[index + 1] || '';
+      if (tokens[index] === '-name' || tokens[index] === '-type') index += 1;
+    }
+    const base = terminalResolvePath(root);
+    if (!termEntry(base)) {
+      terminalHTML(`<span class="term-error">find: '${escapeHTML(root)}': 没有那个文件或目录</span>`);
+      return;
+    }
+    const matcher = termGlobToRegExp(namePattern);
+    const results = termAllPaths().filter((path) => {
+      const under = base === '/' ? true : path === base || path.startsWith(`${base}/`);
+      if (!under) return false;
+      if (type === 'f' && termEntry(path)) return false;
+      if (type === 'd' && !termEntry(path)) return false;
+      return matcher.test(termBaseName(path));
+    });
+    if (!results.length) {
+      terminalPrint(`find: 未找到匹配 '${namePattern}' 的条目`, 'term-line term-muted');
+      return;
+    }
+    results.forEach((path) => terminalPrint(path, 'term-line'));
+    lastOutputText = results.join('\n');
+  }
+
+  function terminalCommandTree(argument) {
+    const requested = termSplit(argument).find((token) => !token.startsWith('-')) || '.';
+    const rootPath = terminalResolvePath(requested);
+    const rootEntry = termEntry(rootPath);
+    if (!rootEntry) {
+      terminalHTML(`<span class="term-error">tree: ${escapeHTML(requested)}: 没有那个目录</span>`);
+      return;
+    }
+    const lines = [termBaseName(rootPath) === '~' ? '~' : termBaseName(rootPath) || '/'];
+    let directories = 0;
+    let files = 0;
+    const walk = (path, entry, prefix, depth) => {
+      if (depth > 7) return;
+      const dirs = [...entry.dirs].sort();
+      const names = [...entry.files].sort();
+      dirs.forEach((dir, index) => {
+        const last = index === dirs.length - 1 && !names.length;
+        lines.push(`${prefix}${last ? '└── ' : '├── '}${dir}/`);
+        directories += 1;
+        const child = termEntry(termJoin(path, dir));
+        if (child) walk(termJoin(path, dir), child, `${prefix}${last ? '    ' : '│   '}`, depth + 1);
+      });
+      names.forEach((file, index) => {
+        const last = index === names.length - 1;
+        lines.push(`${prefix}${last ? '└── ' : '├── '}${file}`);
+        files += 1;
+      });
+    };
+    walk(rootPath, rootEntry, '', 0);
+    terminalHTML(`<pre class="term-pre term-tree-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+    terminalPrint(`${directories} 个目录，${files} 个文件`, 'term-line term-muted');
+    lastOutputText = lines.join('\n');
+  }
+
+  function terminalCommandStat(argument) {
+    const requested = termSplit(argument).find((token) => !token.startsWith('-'));
+    if (!requested) {
+      terminalHTML('<span class="term-warn">stat: 缺少操作数</span>');
+      return;
+    }
+    const path = terminalResolvePath(requested);
+    const type = termPathType(path);
+    if (type === 'missing') {
+      terminalHTML(`<span class="term-error">stat: 无法获取 '${escapeHTML(requested)}' 的状态: 没有那个文件或目录</span>`);
+      return;
+    }
+    const isDir = type === 'directory';
+    const size = isDir ? 4096 : termFileSize(path);
+    const now = new Date().toLocaleString('zh-CN', { hour12: false });
+    const fields = [
+      ['文件', `${escapeHTML(requested)}`],
+      ['大小', `${size}\t块：${Math.ceil(size / 512)}\tIO 块：4096\t${isDir ? '目录' : '普通文件'}`],
+      ['设备', '179,2\tInode：1844674\t硬链接：1'],
+      ['权限', `${termPermission(path, isDir)} (${isDir ? '0755' : '0644'})  Uid：(1000/sniper)  Gid：(1000/sniper)`],
+      ['访问时间', now],
+      ['修改时间', now],
+      ['更改时间', now],
+      ['创建时间', now]
+    ];
+    terminalHTML(`<div class="term-kv">${fields.map(([key, value]) => `<dt>${key}</dt><dd>${value}</dd>`).join('')}</div>`);
+  }
+
+  function terminalCommandFileInfo(argument) {
+    const paths = termSplit(argument).filter((token) => !token.startsWith('-'));
+    if (!paths.length) {
+      terminalHTML('<span class="term-warn">file: 缺少操作数</span>');
+      return;
+    }
+    paths.forEach((requested) => {
+      const path = terminalResolvePath(requested);
+      const type = termPathType(path);
+      if (type === 'missing') {
+        terminalHTML(`<span class="term-error">file: 无法打开 '${escapeHTML(requested)}' (没有那个文件或目录)</span>`);
+        return;
+      }
+      let description;
+      if (type === 'directory') description = 'directory';
+      else if (/\.sh$/i.test(path)) description = 'Bourne-Again shell script, ASCII text executable';
+      else if (/\.(md|txt|conf|log|passwd|hosts|release)$/i.test(path)) description = 'UTF-8 Unicode text';
+      else if (/\.(png)$/i.test(path)) description = 'PNG image data, 3840 x 2160, 8-bit/color RGBA';
+      else if (/\.(heic)$/i.test(path)) description = 'HEIF image data, 4032 x 3024';
+      else if (/\.(pdf)$/i.test(path)) description = 'PDF document, version 1.7';
+      else if (/\.(zip)$/i.test(path)) description = 'Zip archive data, at least v2.0 to extract';
+      else if (/\.(gz|tgz)$/i.test(path)) description = 'gzip compressed data';
+      else if (/\.(scene)$/i.test(path)) description = 'AISniper Orbit scene descriptor, UTF-8 text';
+      else description = 'ASCII text';
+      terminalHTML(`<span class="term-file">${escapeHTML(requested)}</span><span class="term-muted">: ${escapeHTML(description)}</span>`, 'term-line');
+    });
+  }
+
+  function terminalPathSize(path) {
+    const entry = termEntry(path);
+    if (!entry) return termFileSize(path);
+    return 4096 + entry.files.reduce((sum, file) => sum + terminalPathSize(termJoin(path, file)), 0) + entry.dirs.reduce((sum, dir) => sum + terminalPathSize(termJoin(path, dir)), 0);
+  }
+
+  function terminalCommandDu(argument) {
+    const tokens = termSplit(argument);
+    const summary = tokens.some((token) => /^-[a-zA-Z]*s/.test(token));
+    const human = tokens.some((token) => /^-[a-zA-Z]*h/.test(token));
+    const paths = tokens.filter((token) => !token.startsWith('-'));
+    const targets = paths.length ? paths : ['.'];
+    targets.forEach((requested) => {
+      const path = terminalResolvePath(requested);
+      if (termPathType(path) === 'missing') {
+        terminalHTML(`<span class="term-error">du: 无法访问 '${escapeHTML(requested)}': 没有那个文件或目录</span>`);
+        return;
+      }
+      if (summary || !termEntry(path)) {
+        const size = terminalPathSize(path);
+        terminalPrint(`${human ? termHumanSize(size).padStart(7) : Math.ceil(size / 1024).toString().padStart(7)}\t${path}`);
+        return;
+      }
+      const entry = termEntry(path);
+      const walk = (dirPath, dirEntry) => {
+        dirEntry.dirs.forEach((dir) => {
+          const childPath = termJoin(dirPath, dir);
+          const child = termEntry(childPath);
+          if (child) walk(childPath, child);
+        });
+        const size = terminalPathSize(dirPath);
+        terminalPrint(`${human ? termHumanSize(size).padStart(7) : Math.ceil(size / 1024).toString().padStart(7)}\t${dirPath}`);
+      };
+      walk(path, entry);
+    });
+  }
+
+  function terminalCommandDf() {
+    const table = [
+      '文件系统          容量  已用  可用 已用% 挂载点',
+      '/dev/sda1         512G  187G  299G   39% /',
+      'tmpfs              12G  1.2G   11G   10% /run',
+      '/dev/sdb1          2.0T  1.4T  612G   70% /mnt/vault',
+      'vault.local:/vol   4.0T  2.8T  1.2T   70% /mnt/vault',
+      'tmpfs             6.0G     0  6.0G    0% /dev/shm'
+    ];
+    terminalHTML(`<pre class="term-pre">${escapeHTML(table.join('\n'))}</pre>`);
+    lastOutputText = table.join('\n');
+  }
+
+  function terminalReadTextInput(tokens, flags = []) {
+    const paths = tokens.filter((token) => !token.startsWith('-') && !flags.includes(token));
+    if (!paths.length) return { text: lastOutputText || '', path: null, requested: '标准输入' };
+    const requested = paths[0];
+    const path = terminalResolvePath(requested);
+    const read = termReadFile(path);
+    if (read.error) return { error: read.error, requested };
+    return { text: read.text, path, requested };
+  }
+
+  function terminalOutputText(text) {
+    terminalHTML(`<pre class="term-cat">${escapeHTML(text || ' ')}</pre>`);
     lastOutputText = text;
   }
 
+  function terminalCommandText(command, argument) {
+    const tokens = termSplit(argument);
+    if (command === 'head' || command === 'tail') {
+      let count = 10;
+      let index = 0;
+      const paths = [];
+      while (index < tokens.length) {
+        const token = tokens[index];
+        if (token === '-n') { count = Number(tokens[index + 1]) || 10; index += 2; continue; }
+        if (/^-\d+$/.test(token)) { count = Number(token.slice(1)); index += 1; continue; }
+        if (!token.startsWith('-')) paths.push(token);
+        index += 1;
+      }
+      if (!paths.length) {
+        terminalHTML(`<span class="term-warn">${command}: 缺少文件操作数</span>`);
+        return;
+      }
+      const read = terminalReadTextInput(paths);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">${command}: ${escapeHTML(paths[0])}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const lines = read.text.split('\n');
+      const selected = command === 'head' ? lines.slice(0, count) : lines.slice(Math.max(0, lines.length - count));
+      terminalOutputText(selected.join('\n'));
+      return;
+    }
+    if (command === 'less' || command === 'more') {
+      const read = terminalReadTextInput(tokens);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">${command}: ${escapeHTML(read.requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const lines = read.text.split('\n');
+      const visible = lines.slice(0, 120);
+      terminalOutputText(visible.join('\n'));
+      if (lines.length > visible.length) terminalPrint(`-- 更多 --（共 ${lines.length} 行，模拟分页器只显示前 120 行）`, 'term-line term-muted');
+      return;
+    }
+    if (command === 'wc') {
+      const showLines = tokens.includes('-l') || !tokens.some((token) => ['-w', '-c'].includes(token));
+      const showWords = tokens.includes('-w') || !tokens.some((token) => ['-l', '-c'].includes(token));
+      const showChars = tokens.includes('-c') || !tokens.some((token) => ['-l', '-w'].includes(token));
+      const read = terminalReadTextInput(tokens);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">wc: ${escapeHTML(read.requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const lines = read.text ? read.text.split('\n').length : 0;
+      const words = read.text.trim() ? read.text.trim().split(/\s+/).length : 0;
+      const chars = new TextEncoder().encode(read.text).length;
+      const cells = [];
+      if (showLines) cells.push(String(lines).padStart(7));
+      if (showWords) cells.push(String(words).padStart(7));
+      if (showChars) cells.push(String(chars).padStart(7));
+      terminalPrint(`${cells.join('')} ${read.requested}`, 'term-line');
+      lastOutputText = `${lines} ${words} ${chars}`;
+      return;
+    }
+    if (command === 'sort') {
+      const reverse = tokens.some((token) => /^-[a-zA-Z]*r/.test(token));
+      const numeric = tokens.some((token) => /^-[a-zA-Z]*n/.test(token));
+      const read = terminalReadTextInput(tokens);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">sort: ${escapeHTML(read.requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const lines = read.text.split('\n').filter((line, index, all) => line !== '' || index < all.length - 1);
+      lines.sort((a, b) => numeric ? (parseFloat(a) || 0) - (parseFloat(b) || 0) : a.localeCompare(b, 'zh-CN'));
+      if (reverse) lines.reverse();
+      terminalOutputText(lines.join('\n'));
+      return;
+    }
+    if (command === 'uniq') {
+      const counts = tokens.includes('-c');
+      const read = terminalReadTextInput(tokens);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">uniq: ${escapeHTML(read.requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const result = [];
+      let previous = null;
+      let count = 0;
+      read.text.split('\n').forEach((line) => {
+        if (line === previous) {
+          count += 1;
+          return;
+        }
+        if (previous !== null) result.push(counts ? `${String(count).padStart(4)} ${previous}` : previous);
+        previous = line;
+        count = 1;
+      });
+      if (previous !== null) result.push(counts ? `${String(count).padStart(4)} ${previous}` : previous);
+      terminalOutputText(result.join('\n'));
+      return;
+    }
+    if (command === 'cut') {
+      let delimiter = '\t';
+      let fields = '1';
+      const paths = [];
+      for (let index = 0; index < tokens.length; index += 1) {
+        if (tokens[index] === '-d' || tokens[index] === '--delimiter') { delimiter = tokens[index + 1] || '\t'; index += 1; }
+        else if (tokens[index] === '-f' || tokens[index] === '--fields') { fields = tokens[index + 1] || '1'; index += 1; }
+        else if (!tokens[index].startsWith('-')) paths.push(tokens[index]);
+      }
+      const read = terminalReadTextInput(paths);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">cut: ${escapeHTML(read.requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const selected = fields.split(',').map((value) => Number(value.split('-')[0]) - 1).filter((value) => value >= 0);
+      const output = read.text.split('\n').map((line) => line.split(delimiter).filter((value, index) => selected.includes(index)).join(delimiter)).join('\n');
+      terminalOutputText(output);
+      return;
+    }
+    if (command === 'tr') {
+      const values = tokens.filter((token) => !token.startsWith('-'));
+      if (values.length < 2) {
+        terminalHTML('<span class="term-warn">tr: 缺少操作数</span> <span class="term-muted">用法：tr &lt;源字符&gt; &lt;目标字符&gt;</span>');
+        return;
+      }
+      const [from, to] = values;
+      let text = lastOutputText;
+      if (/^[a-z]-[a-z]$/i.test(from) && /^[a-z]-[a-z]$/i.test(to)) {
+        const fromStart = from.charCodeAt(0);
+        const fromEnd = from.charCodeAt(2);
+        const toStart = to.charCodeAt(0);
+        text = [...text].map((char) => {
+          const code = char.charCodeAt(0);
+          if (code >= fromStart && code <= fromEnd) return String.fromCharCode(toStart + (code - fromStart));
+          return char;
+        }).join('');
+      } else {
+        const map = {};
+        [...from].forEach((char, index) => { map[char] = to[index] || to[to.length - 1] || ''; });
+        text = [...text].map((char) => Object.prototype.hasOwnProperty.call(map, char) ? map[char] : char).join('');
+      }
+      lastOutputText = text;
+      terminalOutputText(text);
+      return;
+    }
+    if (command === 'sed') {
+      const expression = tokens[0] || '';
+      const paths = tokens.slice(1).filter((token) => !token.startsWith('-'));
+      const read = terminalReadTextInput(paths);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">sed: ${escapeHTML(read.requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const replace = expression.match(/^s\/(.*?)\/(.*?)\/([gi]*)$/);
+      if (replace) {
+        const [, pattern, replacement, flags] = replace;
+        try {
+          const regex = new RegExp(pattern, flags.includes('g') ? 'g' : '');
+          terminalOutputText(read.text.split('\n').map((line) => line.replace(regex, replacement)).join('\n'));
+        } catch (error) {
+          terminalHTML(`<span class="term-error">sed: 正则表达式无效: ${escapeHTML(pattern)}</span>`);
+        }
+        return;
+      }
+      const printLine = expression.match(/^(\d+)p$/);
+      if (printLine) {
+        terminalOutputText(read.text.split('\n')[Number(printLine[1]) - 1] || '');
+        return;
+      }
+      const deleteLine = expression.match(/^(\d+)d$/);
+      if (deleteLine) {
+        terminalOutputText(read.text.split('\n').filter((line, index) => index !== Number(deleteLine[1]) - 1).join('\n'));
+        return;
+      }
+      terminalHTML('<span class="term-warn">sed: 当前模拟器支持 s/旧/新/g、N p 与 N d 表达式</span>');
+      return;
+    }
+    if (command === 'awk') {
+      const expression = tokens[0] || '{print $0}';
+      const paths = tokens.slice(1).filter((token) => !token.startsWith('-'));
+      const read = terminalReadTextInput(paths);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">awk: ${escapeHTML(read.requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      const match = expression.match(/\$(\d+)/);
+      const column = match ? Number(match[1]) : 0;
+      const output = read.text.split('\n').map((line) => {
+        const fields = line.trim().split(/\s+/);
+        return column === 0 ? line : (fields[column - 1] || '');
+      }).join('\n');
+      terminalOutputText(output);
+      return;
+    }
+    if (command === 'grep') {
+      const ignoreCase = tokens.some((token) => /^-[a-zA-Z]*i/.test(token));
+      const lineNumbers = tokens.some((token) => /^-[a-zA-Z]*n/.test(token));
+      const recursive = tokens.some((token) => /^-[a-zA-Z]*r/.test(token));
+      const invert = tokens.some((token) => /^-[a-zA-Z]*v/.test(token));
+      const values = tokens.filter((token) => !token.startsWith('-'));
+      if (!values.length) {
+        terminalHTML('<span class="term-warn">用法：grep [-inrv] &lt;模式&gt; [文件或目录]</span>');
+        return;
+      }
+      const pattern = values[0];
+      const targets = values.slice(1);
+      let regex;
+      try {
+        regex = new RegExp(pattern, ignoreCase ? 'i' : '');
+      } catch (error) {
+        terminalHTML(`<span class="term-error">grep: 无效的正则表达式: ${escapeHTML(pattern)}</span>`);
+        return;
+      }
+      const sources = [];
+      if (!targets.length) {
+        sources.push({ label: '(标准输入)', text: lastOutputText || '', showLabel: false });
+      } else {
+        targets.forEach((target) => {
+          const path = terminalResolvePath(target);
+          const entry = termEntry(path);
+          if (entry && recursive) {
+            const prefix = path === '/' ? '/' : `${path}/`;
+            Object.keys(TERM_SYSTEM_FILES).forEach((filePath) => {
+              if (filePath.startsWith(prefix)) sources.push({ label: filePath, text: TERM_SYSTEM_FILES[filePath], showLabel: true });
+            });
+            termAllPaths().filter((filePath) => filePath.startsWith(prefix) && termFileExists(filePath)).forEach((filePath) => {
+              const read = termReadFile(filePath);
+              if (!read.error) sources.push({ label: filePath, text: read.text, showLabel: true });
+            });
+          } else {
+            const read = termReadFile(path);
+            if (read.error) {
+              terminalHTML(`<span class="term-error">grep: ${escapeHTML(target)}: ${escapeHTML(read.error)}</span>`);
+              return;
+            }
+            sources.push({ label: target, text: read.text, showLabel: targets.length > 1 });
+          }
+        });
+      }
+      const matches = [];
+      sources.forEach((source) => {
+        source.text.split('\n').forEach((line, index) => {
+          const hit = regex.test(line);
+          if (hit !== invert) matches.push(`${source.showLabel ? `${source.label}:` : ''}${lineNumbers ? `${index + 1}:` : ''}${line}`);
+        });
+      });
+      if (!matches.length) return;
+      terminalOutputText(matches.join('\n'));
+      return;
+    }
+    if (command === 'diff') {
+      const paths = tokens.filter((token) => !token.startsWith('-'));
+      if (paths.length < 2) {
+        terminalHTML('<span class="term-warn">diff: 缺少操作数</span>');
+        return;
+      }
+      const left = termReadFile(terminalResolvePath(paths[0]));
+      const right = termReadFile(terminalResolvePath(paths[1]));
+      if (left.error || right.error) {
+        terminalHTML(`<span class="term-error">diff: ${escapeHTML(left.error || right.error)}</span>`);
+        return;
+      }
+      if (left.text === right.text) {
+        terminalPrint('文件相同', 'term-line term-muted');
+        return;
+      }
+      const leftLines = left.text.split('\n');
+      const rightLines = right.text.split('\n');
+      const output = [];
+      const max = Math.max(leftLines.length, rightLines.length);
+      for (let index = 0; index < max; index += 1) {
+        if (leftLines[index] === rightLines[index]) continue;
+        if (leftLines[index] !== undefined) output.push(`${index + 1}c${index + 1}`, `< ${leftLines[index]}`);
+        if (rightLines[index] !== undefined) output.push('---', `> ${rightLines[index]}`);
+      }
+      terminalOutputText(output.join('\n'));
+      return;
+    }
+    if (command === 'tee') {
+      const paths = tokens.filter((token) => !token.startsWith('-'));
+      const text = lastOutputText || '';
+      paths.forEach((requested) => {
+        const path = terminalResolvePath(requested);
+        if (!termWriteFile(path, text)) terminalHTML(`<span class="term-error">tee: ${escapeHTML(requested)}: 权限不够</span>`);
+      });
+      terminalOutputText(text);
+      return;
+    }
+    if (command === 'xargs') {
+      const rest = tokens.filter((token) => !token.startsWith('-'));
+      const lines = (lastOutputText || '').split('\n').filter(Boolean);
+      terminalPrint(`xargs: 已接收 ${lines.length} 个参数${rest.length ? `，准备执行 ${rest.join(' ')}` : ''}`, 'term-line term-muted');
+      terminalPrint('xargs: 模拟模式已阻止实际批量执行。', 'term-line term-muted');
+    }
+  }
+
+  function terminalCommandSystem(command, argument) {
+    const tokens = termSplit(argument);
+    const now = new Date();
+    if (command === 'ps') {
+      const rows = [
+        ['USER', 'PID', '%CPU', '%MEM', 'VSZ', 'RSS', 'TTY', 'STAT', 'START', 'TIME', 'COMMAND'],
+        ['root', '1', '0.0', '0.1', '168412', '12288', '?', 'Ss', '21:40', '0:02', '/sbin/init'],
+        ['root', '412', '0.1', '0.4', '84220', '38912', '?', 'Ss', '21:40', '0:04', '/usr/lib/systemd/systemd-journald'],
+        ['root', '812', '0.0', '0.2', '312440', '18432', '?', 'Ssl', '21:40', '0:01', '/usr/sbin/NetworkManager --no-daemon'],
+        ['www-data', '1180', '0.2', '0.8', '128840', '62440', '?', 'S', '21:41', '0:11', 'nginx: worker process'],
+        ['sniper', '2841', '0.0', '0.3', '15820', '9216', 'pts/0', 'Ss', '21:41', '0:00', 'sshd: sniper@pts/0'],
+        ['sniper', '3044', '1.4', '2.1', '812440', '162312', '?', 'Sl', '21:42', '0:38', 'node /opt/aisniper/agent.js'],
+        ['sniper', '3388', '0.0', '0.1', '12104', '4096', 'pts/0', 'R+', '21:54', '0:00', 'ps aux']
+      ];
+      if (tokens.includes('aux') || tokens.includes('-ef')) {
+        terminalHTML(`<pre class="term-pre">${escapeHTML(rows.map((row) => row.join('  ')).join('\n'))}</pre>`);
+      } else {
+        const shortRows = [['PID', 'TTY', 'TIME', 'CMD'], ...rows.slice(1).map((row) => [row[1], row[6], row[9], row[10]])];
+        terminalHTML(`<pre class="term-pre">${escapeHTML(shortRows.map((row) => row.join('  ')).join('\n'))}</pre>`);
+      }
+      lastOutputText = rows.map((row) => row.join(' ')).join('\n');
+      return;
+    }
+    if (command === 'top' || command === 'htop') {
+      const cpu = Math.round(health.cpu);
+      const memory = Math.round(health.memory);
+      const lines = [
+        `${command === 'top' ? 'top' : 'htop'} - ${now.toLocaleTimeString('zh-CN', { hour12: false })} up 5:07,  1 user,  load average: 0.21, 0.18, 0.14`,
+        `Tasks: 184 total,   1 running, 183 sleeping,   0 stopped,   0 zombie`,
+        `%Cpu(s): ${Math.max(1, Math.round(cpu / 8))}.3 us,  0.6 sy,  0.0 ni, ${100 - Math.max(1, Math.round(cpu / 8))}.1 id`,
+        `MiB Mem :  24000.0 total,   ${(24000 * (100 - memory) / 100).toFixed(1)} free,   ${(24000 * memory / 100).toFixed(1)} used`,
+        '',
+        '  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND',
+        '    1 root      20   0  168412  12288   8192 S   0.0   0.1   0:02.14 systemd',
+        ' 1180 www-data  20   0  128840  62440  18432 S   0.2   0.8   0:11.08 nginx',
+        ' 2841 sniper    20   0   15820   9216   6144 S   0.0   0.3   0:00.41 sshd',
+        ' 3044 sniper    20   0  812440 162312  72192 S   1.4   2.1   0:38.72 node',
+        ' 3388 sniper    20   0   12104   4096   3200 R   0.3   0.1   0:00.01 ' + command
+      ];
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+    if (command === 'free') {
+      const lines = [
+        '               total        used        free      shared  buff/cache   available',
+        'Mem:            23Gi       5.4Gi       8.7Gi       412Mi       9.1Gi        17Gi',
+        'Swap:          4.0Gi          0B       4.0Gi'
+      ];
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+    if (command === 'vmstat') {
+      terminalHTML('<pre class="term-pre">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----\n r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st\n 1  0      0 8921408 422656 9323008    0    0    12    38  284  612  4  1 95  0  0</pre>');
+      return;
+    }
+    if (command === 'lscpu') {
+      const lines = [
+        '架构：                         aarch64',
+        'CPU 运行模式：                 64-bit',
+        '字节序：                       Little Endian',
+        'CPU:                           8',
+        '在线 CPU 列表：                0-7',
+        '每个核的线程数：               1',
+        '每个座的核数：                 8',
+        '座：                           1',
+        '型号名称：                     AISniper M1 Neural Core',
+        'CPU 频率：                     3.20GHz',
+        'BogoMIPS：                     48.00',
+        'L1d 缓存：                     512 KiB',
+        'L2 缓存：                      8 MiB',
+        'L3 缓存：                      32 MiB',
+        'NUMA 节点：                    1',
+        '虚拟化：                       AISniper Hypervisor'
+      ];
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+    if (command === 'lsblk') {
+      terminalHTML('<pre class="term-pre">NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS\nsda      8:0    0   512G  0 disk\n├─sda1   8:1    0   511G  0 part /\n└─sda2   8:2    0     1G  0 part /boot\nsdb      8:16   0   2.0T  0 disk\n└─sdb1   8:17   0   2.0T  0 part /mnt/vault\nsr0     11:0    1  1024M  0 rom</pre>');
+      return;
+    }
+    if (command === 'lspci') {
+      terminalHTML('<pre class="term-pre">00:00.0 Host bridge: AISniper Aquila SoC\n00:02.0 VGA compatible controller: AISniper Neural GPU (rev 04)\n01:00.0 Network controller: Meridian Wi-Fi 6E AX210\n02:00.0 Ethernet controller: AISniper 10GbE Controller\n03:00.0 Non-Volatile memory controller: AISniper NVMe SSD</pre>');
+      return;
+    }
+    if (command === 'lsusb') {
+      terminalHTML('<pre class="term-pre">Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub\nBus 001 Device 004: ID 046d:c52b Logitech USB Receiver\nBus 001 Device 003: ID 28de:2300 Valve Software SteamVR Controller\nBus 001 Device 002: ID 2109:2817 AISniper USB 2.0 Hub\nBus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</pre>');
+      return;
+    }
+    if (command === 'dmesg') {
+      const lines = [
+        '[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x410fd0c0]',
+        '[    0.000000] Linux version 6.8.0-aisniper (build@aquila) #1 SMP PREEMPT_DYNAMIC aarch64',
+        '[    0.000000] Machine model: AISniper M1 Neural Core',
+        '[    0.284913] AISniper security monitor: root volume seal verified',
+        '[    0.842110] EXT4-fs (sda1): mounted filesystem with ordered data mode',
+        '[    1.027481] systemd[1]: Started Journal Service.',
+        '[    2.418203] nginx[1180]: edge proxy listening on 0.0.0.0:80',
+        '[   84.114092] eth0: Link is Up - 10Gbps/Full - flow control rx/tx'
+      ];
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+    if (command === 'journalctl') {
+      terminalHTML('<pre class="term-pre">-- Logs begin at Sun 2026-11-15 21:40:01 CST, end at Sun 2026-11-15 21:54:12 CST. --\nNov 15 21:44:02 aisniper sshd[2841]: Accepted publickey for sniper from 192.168.1.42 port 51422 ssh2\nNov 15 21:45:11 aisniper sudo[2910]: sniper : TTY=pts/0 ; PWD=/home/sniper ; USER=root ; COMMAND=/usr/bin/apt update\nNov 15 21:51:40 aisniper nginx[1180]: 192.168.1.42 - - "GET / HTTP/1.1" 200 612\n<span class="term-error">Nov 15 21:53:08 aisniper kernel: EXT4-fs warning (device sda1): ext4_dx_add_entry: Directory index full!</span>\nNov 15 21:54:01 aisniper systemd[1]: Started Daily apt download activities.</pre>');
+      lastOutputText = 'journalctl: 5 entries';
+      return;
+    }
+    if (command === 'systemctl' || command === 'service') {
+      const action = command === 'service' ? (tokens[1] || 'status') : (tokens[0] || 'list-units');
+      const unitName = (command === 'service' ? tokens[0] : tokens[1]) || 'nginx';
+      const unit = unitName.replace(/\.service$/, '');
+      const service = TERM_SERVICES.get(unit);
+      if (action === 'status') {
+        if (!service) {
+          terminalHTML(`<span class="term-error">Unit ${escapeHTML(unit)}.service could not be found.</span>`);
+          return;
+        }
+        const active = service.active;
+        terminalHTML(`<span class="${active ? 'term-success' : 'term-error'}">●</span> ${escapeHTML(unit)}.service - ${escapeHTML(service.description)}\n     Loaded: loaded (/lib/systemd/system/${escapeHTML(unit)}.service; enabled; preset: enabled)\n     Active: <span class="${active ? 'term-success' : 'term-error'}">${active ? 'active (running)' : 'inactive (dead)'}</span> since Sun 2026-11-15 21:40:12 CST; 14min ago\n       Docs: man:${escapeHTML(unit)}(8)\n   Main PID: ${active ? '1180 (nginx)' : '—'}\n      Tasks: ${active ? '4 (limit: 18808)' : '0'}\n     Memory: ${active ? '18.4M' : '0B'}\n        CPU: ${active ? '1.284s' : '0'}`);
+        return;
+      }
+      if (action === 'list-units') {
+        terminalHTML('<pre class="term-pre">UNIT                     LOAD   ACTIVE SUB     DESCRIPTION\nnginx.service            loaded active running AISniper edge proxy\nssh.service              loaded active running OpenBSD Secure Shell server\ndocker.service           loaded active running Docker Application Container Engine\naisniper-agent.service   loaded active running AISniper local agent\nsystemd-journald.service loaded active running Journal Service\n\n5 loaded units listed.</pre>');
+        return;
+      }
+      if (['start', 'stop', 'restart', 'enable', 'disable'].includes(action)) {
+        if (!service) {
+          terminalHTML(`<span class="term-error">Failed to ${escapeHTML(action)} ${escapeHTML(unit)}.service: Unit not found.</span>`);
+          return;
+        }
+        if (action === 'start' || action === 'restart') service.active = true;
+        if (action === 'stop') service.active = false;
+        terminalHTML(`<span class="term-success">${escapeHTML(action)} ${escapeHTML(unit)}.service</span> <span class="term-muted">（模拟 systemd）</span>`);
+        return;
+      }
+      terminalHTML('<span class="term-muted">systemctl：</span><span class="term-key">status</span> <span class="term-key">start</span> <span class="term-key">stop</span> <span class="term-key">restart</span> <span class="term-key">list-units</span> <span class="term-muted">[服务名]</span>');
+      return;
+    }
+    if (command === 'kill' || command === 'pkill' || command === 'killall' || command === 'pgrep') {
+      const numeric = tokens.filter((token) => /^\d+$/.test(token));
+      const names = tokens.filter((token) => !token.startsWith('-') && !/^\d+$/.test(token));
+      if (command === 'pgrep') {
+        if (!names.length) {
+          terminalHTML('<span class="term-warn">pgrep: 缺少进程名</span>');
+          return;
+        }
+        const pid = names[0] === 'nginx' ? '1180' : names[0] === 'node' ? '3044' : '2841';
+        terminalPrint(pid);
+        return;
+      }
+      if (numeric.includes('1')) {
+        terminalHTML('<span class="term-error">kill: (1): 不允许的操作</span>');
+        return;
+      }
+      if (!numeric.length && !names.length) {
+        terminalHTML(`<span class="term-warn">${command}: 缺少进程 ID 或名称</span>`);
+        return;
+      }
+      const target = numeric[0] || names[0];
+      terminalHTML(`<span class="term-muted">已向 ${escapeHTML(target)} 发送 SIGTERM。${command === 'killall' ? '匹配的进程已终止。' : ''}</span>`);
+      return;
+    }
+    if (command === 'mount') {
+      const lines = [
+        '/dev/sda1 on / type ext4 (rw,relatime,errors=remount-ro)',
+        '/dev/sda2 on /boot type vfat (rw,relatime,fmask=0077,dmask=0077,codepage=437)',
+        'tmpfs on /run type tmpfs (rw,nosuid,nodev,noexec,relatime,size=1228800k)',
+        'vault.local:/volume1 on /mnt/vault type nfs4 (rw,relatime,vers=4.2,rsize=1048576,wsize=1048576)',
+        'tmpfs on /dev/shm type tmpfs (rw,nosuid,nodev)'
+      ];
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+    if (command === 'umount') {
+      const target = tokens[0];
+      if (!target) terminalHTML('<span class="term-warn">umount: 缺少挂载点</span>');
+      else if (target === '/' || target === '/boot') terminalHTML('<span class="term-error">umount: /: target is busy.</span>');
+      else terminalHTML(`<span class="term-muted">已卸载 ${escapeHTML(target)}（模拟）。</span>`);
+      return;
+    }
+    if (command === 'crontab') {
+      if (tokens.includes('-l')) {
+        terminalHTML('<pre class="term-pre"># m h  dom mon dow   command\n  0 3  *   *   *     /usr/local/bin/aisniper-backup --incremental\n 30 4  *   *   0     /usr/bin/apt update && /usr/bin/apt upgrade -y\n  */10 * * * *      /usr/local/bin/healthcheck --quiet</pre>');
+      } else {
+        terminalHTML('<span class="term-muted">crontab: 当前仅支持查看模拟任务（crontab -l）</span>');
+      }
+      return;
+    }
+    if (command === 'date') {
+      const format = tokens[0] || '';
+      if (format.startsWith('+')) {
+        const padValue = (value) => String(value).padStart(2, '0');
+        const output = format.slice(1)
+          .replace(/%Y/g, String(now.getFullYear()))
+          .replace(/%m/g, padValue(now.getMonth() + 1))
+          .replace(/%d/g, padValue(now.getDate()))
+          .replace(/%H/g, padValue(now.getHours()))
+          .replace(/%M/g, padValue(now.getMinutes()))
+          .replace(/%S/g, padValue(now.getSeconds()))
+          .replace(/%F/g, `${now.getFullYear()}-${padValue(now.getMonth() + 1)}-${padValue(now.getDate())}`)
+          .replace(/%T/g, `${padValue(now.getHours())}:${padValue(now.getMinutes())}:${padValue(now.getSeconds())}`);
+        terminalPrint(output);
+      } else {
+        terminalPrint(now.toLocaleString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      }
+      return;
+    }
+    if (command === 'cal') {
+      const hasMonth = tokens.length >= 2;
+      const year = hasMonth ? (Number(tokens[1]) || now.getFullYear()) : (Number(tokens[0]) || now.getFullYear());
+      const month = hasMonth ? Math.min(11, Math.max(0, (Number(tokens[0]) || 1) - 1)) : now.getMonth();
+      const first = new Date(year, month, 1);
+      const days = new Date(year, month + 1, 0).getDate();
+      const start = first.getDay();
+      const monthName = first.toLocaleDateString('en-US', { month: 'long' });
+      const lines = [`     ${monthName} ${year}`, 'Su Mo Tu We Th Fr Sa'];
+      let week = '   '.repeat(start);
+      for (let day = 1; day <= days; day += 1) {
+        week += `${String(day).padStart(2, ' ')} `;
+        if ((start + day) % 7 === 0 || day === days) {
+          lines.push(week.trimEnd());
+          week = '';
+        }
+      }
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+    if (command === 'timedatectl') {
+      terminalHTML('<pre class="term-pre">               Local time: 日 2026-11-15 21:54:12 CST\n           Universal time: 日 2026-11-15 13:54:12 UTC\n                 RTC time: 日 2026-11-15 13:54:12\n                Time zone: Asia/Shanghai (CST, +0800)\nSystem clock synchronized: yes\n              NTP service: active\n          RTC in local TZ: no</pre>');
+      return;
+    }
+    if (command === 'hostname') { terminalPrint('aisniper'); return; }
+    if (command === 'hostnamectl') {
+      terminalHTML('<pre class="term-pre"> Static hostname: aisniper\n       Icon name: computer-laptop\n         Chassis: laptop\n      Machine ID: 7a1f9c2e4b8d4e11a6c05f3d2b9e8a10\n         Boot ID: 84c1d7e9a2f44b9ca1e6d8f072b34c55\nOperating System: AISniperOS 26.1.4 LTS\n          Kernel: Linux 6.8.0-aisniper\n    Architecture: arm64</pre>');
+      return;
+    }
+    if (command === 'arch' || command === 'nproc') { terminalPrint(command === 'arch' ? 'aarch64' : '8'); return; }
+    if (command === 'id') { terminalPrint('uid=1000(sniper) gid=1000(sniper) 组=1000(sniper),27(sudo),998(docker)'); return; }
+    if (command === 'groups') { terminalPrint('sniper sudo docker'); return; }
+    if (command === 'who') { terminalPrint('sniper   pts/0        2026-11-15 21:41 (192.168.1.42)'); return; }
+    if (command === 'w') {
+      terminalHTML('<pre class="term-pre"> 21:54:12 up 5:07,  1 user,  load average: 0.21, 0.18, 0.14\nUSER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT\nsniper   pts/0    192.168.1.42     21:41    0.00s  0.12s  0.01s w</pre>');
+      return;
+    }
+    if (command === 'users') { terminalPrint('sniper'); return; }
+    if (command === 'last') {
+      terminalHTML('<pre class="term-pre">sniper   pts/0        192.168.1.42     Sun Nov 15 21:41   still logged in\nsniper   pts/0        192.168.1.42     Sun Nov 15 18:22 - 20:04  (01:42)\nreboot   system boot  6.8.0-aisniper   Sun Nov 15 21:40   still running\n\nwtmp begins Sun Nov 15 21:40:01 2026</pre>');
+      return;
+    }
+    if (command === 'lastlog') {
+      terminalHTML('<pre class="term-pre">用户名           端口     来自             最后登录时间\nroot                                       **从未登录**\nsniper           pts/0    192.168.1.42     日 11月 15 21:41:08 +0800 2026\nnginx                                      **从未登录**</pre>');
+      return;
+    }
+    if (command === 'env' || command === 'printenv') {
+      const values = { ...TERM_ENV, PWD: terminalCwd === '~' ? '/home/sniper' : terminalCwd };
+      if (command === 'printenv' && tokens[0]) {
+        terminalPrint(values[tokens[0]] || '');
+        return;
+      }
+      const lines = Object.entries(values).map(([key, value]) => `${key}=${value}`);
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      lastOutputText = lines.join('\n');
+      return;
+    }
+    if (command === 'export') {
+      if (!tokens.length) {
+        terminalHTML(`<pre class="term-pre">${escapeHTML(Object.entries(TERM_ENV).map(([key, value]) => `declare -x ${key}="${value}"`).join('\n'))}</pre>`);
+        return;
+      }
+      tokens.forEach((token) => {
+        const [key, ...rest] = token.split('=');
+        if (key && rest.length) TERM_ENV[key] = rest.join('=');
+      });
+      return;
+    }
+    if (command === 'unset') {
+      tokens.forEach((key) => { delete TERM_ENV[key]; delete terminalAliases[key]; });
+      return;
+    }
+    if (command === 'alias') {
+      const raw = String(argument || '').trim();
+      if (!raw) {
+        terminalHTML(`<pre class="term-pre">${escapeHTML(Object.entries(terminalAliases).sort().map(([key, value]) => `alias ${key}='${value}'`).join('\n'))}</pre>`);
+        return;
+      }
+      const match = raw.match(/^([\w?.-]+)=(.+)$/);
+      if (match) {
+        terminalAliases[match[1]] = match[2].trim().replace(/^['"]|['"]$/g, '');
+      } else {
+        terminalHTML('<span class="term-warn">alias: 用法 alias 名称=\'命令\'</span>');
+      }
+      return;
+    }
+    if (command === 'unalias') {
+      if (tokens.includes('-a')) terminalAliases = { ...TERM_ALIASES };
+      else tokens.forEach((name) => { delete terminalAliases[name]; });
+      return;
+    }
+    if (command === 'source' || command === '.') {
+      const requested = tokens[0];
+      if (!requested) {
+        terminalHTML('<span class="term-warn">source: 缺少文件名</span>');
+        return;
+      }
+      const path = terminalResolvePath(requested);
+      const read = termReadFile(path);
+      if (read.error) {
+        terminalHTML(`<span class="term-error">bash: ${escapeHTML(requested)}: ${escapeHTML(read.error)}</span>`);
+        return;
+      }
+      read.text.split('\n').forEach((line) => {
+        const aliasMatch = line.match(/^\s*alias\s+([\w?.-]+)=(.*)$/);
+        if (aliasMatch) terminalAliases[aliasMatch[1]] = aliasMatch[2].trim().replace(/^['"]|['"]$/g, '');
+        const exportMatch = line.match(/^\s*export\s+([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+        if (exportMatch) TERM_ENV[exportMatch[1]] = exportMatch[2].trim().replace(/^['"]|['"]$/g, '');
+      });
+      terminalPrint(`已加载 ${requested}`, 'term-line term-muted');
+      return;
+    }
+    if (command === 'which' || command === 'whereis' || command === 'type' || command === 'command') {
+      const name = tokens.find((token) => !token.startsWith('-'));
+      if (!name) {
+        terminalHTML(`<span class="term-warn">${command}: 缺少参数</span>`);
+        return;
+      }
+      const builtin = (LINUX.SHELL_BUILTINS || []).includes(name);
+      if (command === 'type') {
+        terminalPrint(builtin ? `${name} 是 shell 内建` : TERM_COMMANDS.includes(name) ? `${name} 是 /usr/bin/${name}` : `bash: type: ${name}: 未找到`);
+        return;
+      }
+      if (!TERM_COMMANDS.includes(name)) {
+        terminalHTML(`<span class="term-error">${command}: 未找到 ${escapeHTML(name)}</span>`);
+        return;
+      }
+      if (command === 'whereis') terminalPrint(`${name}: /usr/bin/${name} /usr/share/man/man1/${name}.1.gz`);
+      else if (builtin) terminalPrint(name);
+      else terminalPrint(`/usr/bin/${name}`);
+      return;
+    }
+    if (command === 'sleep') {
+      const seconds = Number(tokens[0]) || 0;
+      terminalPrint(`sleep: 已模拟等待 ${seconds}s（不会阻塞界面）`, 'term-line term-muted');
+      return;
+    }
+    if (command === 'seq') {
+      const numbers = tokens.map(Number).filter((value) => Number.isFinite(value));
+      let start = 1;
+      let step = 1;
+      let end = 1;
+      if (numbers.length === 1) end = numbers[0];
+      else if (numbers.length === 2) { start = numbers[0]; end = numbers[1]; }
+      else if (numbers.length >= 3) { start = numbers[0]; step = numbers[1] || 1; end = numbers[2]; }
+      if (step === 0) { terminalHTML('<span class="term-error">seq: 步长不能为 0</span>'); return; }
+      const values = [];
+      for (let value = start; step > 0 ? value <= end : value >= end; value += step) {
+        values.push(String(value));
+        if (values.length > 200) break;
+      }
+      terminalOutputText(values.join('\n'));
+      return;
+    }
+    if (command === 'yes') {
+      const text = argument || 'y';
+      terminalOutputText(Array.from({ length: 12 }, () => text).join('\n'));
+      terminalPrint('yes: 已截断为 12 行，避免真的填满终端。', 'term-line term-muted');
+      return;
+    }
+    if (command === 'true' || command === 'false') return;
+    if (command === 'test') {
+      let result = false;
+      if (tokens[0] === '-f') result = termFileExists(terminalResolvePath(tokens[1] || ''));
+      else if (tokens[0] === '-d') result = Boolean(termEntry(terminalResolvePath(tokens[1] || '')));
+      else if (tokens[0] === '-e') result = termPathType(terminalResolvePath(tokens[1] || '')) !== 'missing';
+      else if (tokens[0] === '-z') result = (tokens[1] || '') === '';
+      else if (tokens[0] === '-n') result = (tokens[1] || '') !== '';
+      else if (tokens[1] === '=' || tokens[1] === '==') result = tokens[0] === tokens[2];
+      else if (tokens[1] === '!=') result = tokens[0] !== tokens[2];
+      terminalPrint(result ? '[ 真 ]' : '[ 假 ]', `term-line ${result ? 'term-success' : 'term-error'}`);
+      return;
+    }
+    if (command === 'expr' || command === 'bc') {
+      const expression = argument.replace(/\^/g, '**').trim();
+      if (!/^[\d\s+\-*/().%**]+$/.test(expression)) {
+        terminalHTML(`<span class="term-error">${command}: 仅支持数字算术表达式</span>`);
+        return;
+      }
+      try {
+        const result = Function(`"use strict"; return (${expression || 0});`)();
+        terminalPrint(String(result));
+        lastOutputText = String(result);
+      } catch (error) {
+        terminalHTML(`<span class="term-error">${command}: 表达式无效</span>`);
+      }
+      return;
+    }
+    if (command === 'factor') {
+      let value = Math.abs(parseInt(tokens[0], 10));
+      if (!Number.isFinite(value) || value < 2) {
+        terminalHTML('<span class="term-warn">factor: 请输入大于 1 的整数</span>');
+        return;
+      }
+      const factors = [];
+      for (let divisor = 2; divisor * divisor <= value; divisor += 1) {
+        while (value % divisor === 0) {
+          factors.push(divisor);
+          value /= divisor;
+        }
+      }
+      if (value > 1) factors.push(value);
+      terminalPrint(`${tokens[0]}: ${factors.join(' ')}`);
+      return;
+    }
+    if (command === 'shuf') {
+      const values = tokens.filter((token) => !token.startsWith('-'));
+      const source = values.length ? values : (lastOutputText || '').split('\n').filter(Boolean);
+      const shuffled = [...source].sort(() => Math.random() - 0.5);
+      terminalOutputText(shuffled.join('\n'));
+      return;
+    }
+  }
+
+  function terminalCommandNetworkTool(command, argument) {
+    const tokens = termSplit(argument);
+    const value = tokens.find((token) => !token.startsWith('-')) || '';
+    if (command === 'ping') {
+      let count = 4;
+      const countIndex = tokens.indexOf('-c');
+      if (countIndex >= 0) count = Math.min(10, Math.max(1, Number(tokens[countIndex + 1]) || 4));
+      const host = tokens.find((token) => !token.startsWith('-') && !/^\d+$/.test(token)) || 'aisniper.local';
+      const lines = [`PING ${host} (${host.includes('.') ? host : '192.168.1.1'}) 56(84) bytes of data.`];
+      const times = [];
+      for (let index = 0; index < count; index += 1) {
+        const latency = (host.includes('192.168.1.1') ? 0.42 : host.includes('aisniper') ? 0.18 : 8.4) + index * 0.17 + Math.random() * 0.2;
+        times.push(latency);
+        lines.push(`64 bytes from ${host}: icmp_seq=${index + 1} ttl=64 time=${latency.toFixed(2)} ms`);
+      }
+      const min = Math.min(...times);
+      const max = Math.max(...times);
+      const avg = times.reduce((sum, time) => sum + time, 0) / times.length;
+      lines.push('', `--- ${host} ping 统计 ---`, `${count} packets transmitted, ${count} received, 0% packet loss, time ${(count * 1000).toFixed(0)}ms`, `rtt min/avg/max/mdev = ${min.toFixed(3)}/${avg.toFixed(3)}/${max.toFixed(3)}/0.061 ms`);
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      lastOutputText = lines.join('\n');
+      return;
+    }
+    if (command === 'traceroute' || command === 'tracepath') {
+      const host = value || 'aisniper.local';
+      const lines = [`traceroute to ${host} (192.168.1.1), 30 hops max, 60 byte packets`, ' 1  router.local (192.168.1.1)  0.436 ms  0.412 ms  0.398 ms', ' 2  meridian-core (10.0.4.1)  1.284 ms  1.241 ms  1.302 ms', ' 3  172.16.8.1 (172.16.8.1)  3.112 ms  3.041 ms  3.288 ms', ' 4  edge-nrt1.aisniper.net (203.0.113.18)  7.841 ms  7.612 ms  7.903 ms', ` 5  ${host} (198.51.100.24)  9.214 ms  9.108 ms  9.337 ms`];
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+    if (command === 'dig') {
+      const host = value || 'aisniper.local';
+      const lines = ['; <<>> DiG 9.20.0 <<>> ' + host, ';; global options: +cmd', ';; Got answer:', ';; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 41208', ';; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1', '', ';; QUESTION SECTION:', `;${host}.IN\tA`, '', ';; ANSWER SECTION:', `${host}.\t300\tIN\tA\t192.168.1.1`, '', ';; Query time: 1 msec', ';; SERVER: 1.1.1.1#53(1.1.1.1) (UDP)', `;; WHEN: ${new Date().toLocaleString('zh-CN', { hour12: false })}`, ';; MSG SIZE  rcvd: 58'];
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+    if (command === 'nslookup' || command === 'host') {
+      const host = value || 'aisniper.local';
+      if (command === 'host') terminalPrint(`${host} has address 192.168.1.1`);
+      else terminalHTML(`<pre class="term-pre">Server:\t\t1.1.1.1\nAddress:\t1.1.1.1#53\n\nNon-authoritative answer:\nName:\t${escapeHTML(host)}\nAddress: 192.168.1.1</pre>`);
+      return;
+    }
+    if (command === 'curl') {
+      const headOnly = tokens.includes('-I') || tokens.includes('--head');
+      const url = value || 'https://aisniper.local';
+      const lines = headOnly
+        ? ['HTTP/2 200', 'server: nginx/1.26.2', 'content-type: text/html; charset=utf-8', 'content-length: 612', 'cache-control: max-age=60', `date: ${new Date().toUTCString()}`]
+        : ['HTTP/2 200', 'server: nginx/1.26.2', 'content-type: text/html; charset=utf-8', `date: ${new Date().toUTCString()}`, '', '<!doctype html>', '<html><head><title>AISniper Node</title></head>', '<body><h1>Meridian edge node online.</h1></body></html>'];
+      terminalHTML(`<pre class="term-pre">${escapeHTML(lines.join('\n'))}</pre>`);
+      terminalPrint(`curl: (模拟请求) ${url}`, 'term-line term-muted');
+      lastOutputText = lines.join('\n');
+      return;
+    }
+    if (command === 'wget') {
+      const url = value || 'https://aisniper.local/index.html';
+      const name = url.split('/').filter(Boolean).pop()?.split('?')[0] || 'index.html';
+      const destination = terminalJoinSafe(terminalCwd, name);
+      const saved = destination && termWriteFile(destination, `<!-- downloaded from ${url} -->\n` + (TERM_SYSTEM_FILES['/var/www/html/index.html'] || ''));
+      terminalHTML(`<pre class="term-pre">--${new Date().toISOString()}--  ${escapeHTML(url)}\n正在解析主机 aisniper.local... 192.168.1.1\n正在连接 192.168.1.1:443... 已连接。\nHTTP 请求已发送，正在等待回应... 200 OK\n长度：612 [text/html]\n正在保存至: “${escapeHTML(name)}”\n\n${escapeHTML(name)} 100%[===================>]     612  --.-KB/s    用时 0.01s\n\n${new Date().toISOString()} (2.84 MB/s) - 已保存 “${escapeHTML(name)}” [612/612]</pre>`);
+      if (!saved) terminalHTML('<span class="term-error">wget: 无法写入当前目录</span>');
+      return;
+    }
+    if (command === 'ssh') {
+      const host = value || 'sniper@aisniper.local';
+      terminalHTML(`<pre class="term-pre">The authenticity of host '${escapeHTML(host)}' can't be established.\nED25519 key fingerprint is SHA256:7mF1zKq9wV2y4nB8cR6pL0sT3xA5uH1jD9eG2iO4kM.\nThis key is not known by any other names.\nAre you sure you want to continue connecting (yes/no/[fingerprint])? yes\nWarning: Permanently added '${escapeHTML(host)}' to the list of known hosts.\n${escapeHTML(host)}: Permission denied (publickey).\nConnection closed by ${escapeHTML(host.split('@').pop())} port 22</pre>`);
+      return;
+    }
+    if (command === 'scp' || command === 'rsync') {
+      const paths = tokens.filter((token) => !token.startsWith('-'));
+      const source = paths[0] || '~/说明.md';
+      const target = paths[1] || 'sniper@aisniper.local:/tmp/';
+      terminalHTML(`<pre class="term-pre">${escapeHTML(source)}                100%  1.2KB   2.4MB/s   00:00\n${command}: ${command === 'rsync' ? 'sent 1,284 bytes  received 35 bytes  2,638.00 bytes/sec' : '文件已传输'} -> ${escapeHTML(target)}</pre>`);
+      return;
+    }
+    if (command === 'netstat' || command === 'ss') {
+      terminalHTML('<pre class="term-pre">Netid State  Local Address:Port    Peer Address:Port  Process\ntcp   LISTEN 0.0.0.0:22            0.0.0.0:*          sshd\ntcp   LISTEN 0.0.0.0:80            0.0.0.0:*          nginx\ntcp   LISTEN 0.0.0.0:443           0.0.0.0:*          nginx\ntcp   LISTEN 127.0.0.1:8888        0.0.0.0:*          baota_panel\ntcp   LISTEN 127.0.0.1:3040        0.0.0.0:*          aisniper-agent\nudp   UNCONN 0.0.0.0:68            0.0.0.0:*          dhclient</pre>');
+      return;
+    }
+    if (command === 'ip') {
+      const sub = tokens[0] || 'a';
+      if (sub === 'route' || sub === 'r') {
+        terminalHTML('<pre class="term-pre">default via 192.168.1.1 dev eth0 proto dhcp src 192.168.1.42 metric 100\n192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.42 metric 100\n10.0.4.0/24 dev docker0 proto kernel scope link src 10.0.4.1</pre>');
+      } else {
+        terminalHTML('<pre class="term-pre">1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000\n    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00\n    inet 127.0.0.1/8 scope host lo\n2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000\n    link/ether 8c:85:90:2a:71:0c brd ff:ff:ff:ff:ff:ff\n    inet 192.168.1.42/24 brd 192.168.1.255 scope global dynamic eth0\n3: wlan0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000\n    link/ether a4:83:e7:19:6b:21 brd ff:ff:ff:ff:ff:ff\n4: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default\n    link/ether 02:42:8f:31:0a:12 brd ff:ff:ff:ff:ff:ff\n    inet 10.0.4.1/24 brd 10.0.4.255 scope global docker0</pre>');
+      }
+      return;
+    }
+    if (command === 'ifconfig') {
+      terminalHTML('<pre class="term-pre">eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n        inet 192.168.1.42  netmask 255.255.255.0  broadcast 192.168.1.255\n        ether 8c:85:90:2a:71:0c  txqueuelen 1000  (Ethernet)\n        RX packets 184203  bytes 214881204 (214.8 MB)\n        TX packets 120418  bytes 18422014 (18.4 MB)\n\nlo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536\n        inet 127.0.0.1  netmask 255.0.0.0\n        loop  txqueuelen 1000  (Local Loopback)</pre>');
+      return;
+    }
+    if (command === 'route') {
+      terminalHTML('<pre class="term-pre">Kernel IP routing table\nDestination     Gateway         Genmask         Flags Metric Ref    Use Iface\n0.0.0.0         192.168.1.1     0.0.0.0         UG    100    0        0 eth0\n192.168.1.0     0.0.0.0         255.255.255.0   U     100    0        0 eth0</pre>');
+      return;
+    }
+    if (command === 'arp') {
+      terminalHTML('<pre class="term-pre">Address                  HWtype  HWaddress           Flags Mask            Iface\n192.168.1.1              ether   00:11:32:7c:4d:09   C                     eth0\n192.168.1.20             ether   00:11:32:7c:4d:10   C                     eth0\n192.168.1.51             ether   a4:83:e7:19:6b:21   C                     eth0</pre>');
+      return;
+    }
+    if (command === 'nmap') {
+      const host = value || '192.168.1.1';
+      terminalHTML(`<pre class="term-pre">Starting Nmap 7.95 ( https://nmap.org ) at ${new Date().toISOString()}\nNmap scan report for ${escapeHTML(host)}\nHost is up (0.00042s latency).\nNot shown: 996 closed tcp ports (reset)\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http\n443/tcp  open  https\n8443/tcp open  https-alt\n\nNmap done: 1 IP address (1 host up) scanned in 0.42 seconds</pre>`);
+    }
+  }
+
+  function terminalJoinSafe(base, name) {
+    if (!base || base === '/') return null;
+    return base === '~' ? `~/${name}` : `${base}/${name}`;
+  }
+
+  function terminalCommandTool(command, argument) {
+    const tokens = termSplit(argument);
+    if (['bash', 'sh', 'zsh'].includes(command)) {
+      if (tokens.includes('--version') || tokens.includes('-version')) { terminalPrint(LINUX.TOOL_VERSIONS?.[command] || `${command} 5.2`); return; }
+      const commandIndex = tokens.indexOf('-c');
+      if (commandIndex >= 0) {
+        const inner = tokens.slice(commandIndex + 1).join(' ');
+        if (inner) terminalExecute(inner, { silentEcho: true, recordHistory: false });
+        return;
+      }
+      terminalPrint(`${command}: 当前已在 AISniperOS bash 会话中（模拟子 shell）。`, 'term-line term-muted');
+      return;
+    }
+    const managerNames = { apt: 'apt 2.9.8 (arm64)', 'apt-get': 'apt 2.9.8 (arm64)', dnf: 'dnf 4.21.1', yum: 'yum 4.21.1', pacman: 'Pacman v7.0.0 - libalpm v15.0.0', apk: 'apk-tools 2.14.4', brew: 'Homebrew 4.4.2', snap: 'snap 2.63', flatpak: 'Flatpak 1.15.10' };
+    if (Object.prototype.hasOwnProperty.call(managerNames, command)) {
+      const sub = tokens[0] || '';
+      if (sub === '--version' || sub === '-v') { terminalPrint(managerNames[command]); return; }
+      if (!sub || sub === '--help' || sub === '-h') {
+        terminalHTML(`<span class="term-muted">${escapeHTML(command)}：</span><span class="term-key">update</span> <span class="term-key">upgrade</span> <span class="term-key">install &lt;包&gt;</span> <span class="term-key">remove &lt;包&gt;</span> <span class="term-key">list --installed</span>`);
+        return;
+      }
+      if (sub === 'update' || sub === 'upgrade' || sub === '-Sy' || sub === '-Syu' || sub === 'refresh') {
+        terminalHTML(`<pre class="term-pre">正在读取软件包列表... 完成\n正在分析软件包的依赖关系树... 完成\n正在读取状态信息... 完成\n所有软件包均为最新版本。${sub.includes('upgrade') || sub.includes('Syu') ? '\\n0 个软件包被升级，0 个新安装，0 个要删除。' : ''}</pre>`);
+        return;
+      }
+      if (sub === 'install' || sub === '-S' || sub === 'add') {
+        const packages = tokens.slice(1).filter((token) => !token.startsWith('-'));
+        const list = packages.length ? packages : ['nginx'];
+        list.forEach((name) => TERM_INSTALLED.add(name));
+        terminalHTML(`<pre class="term-pre">正在读取软件包列表... 完成\n正在分析软件包的依赖关系树... 完成\n下列【新】软件包将被安装：\n  ${escapeHTML(list.join(' '))}\n正在解压缩 ${escapeHTML(list[0])} ... 完成\n正在设置 ${escapeHTML(list[0])} ... 完成\n已安装 ${list.length} 个软件包。</pre>`);
+        return;
+      }
+      if (sub === 'remove' || sub === 'purge' || sub === '-R' || sub === 'del') {
+        const packages = tokens.slice(1).filter((token) => !token.startsWith('-'));
+        packages.forEach((name) => TERM_INSTALLED.delete(name));
+        terminalHTML(`<span class="term-success">已移除 ${escapeHTML(packages.join(' ') || '软件包')}。</span>`);
+        return;
+      }
+      if (sub === 'list' || sub === 'search' || sub === '-Q') {
+        terminalHTML(`<pre class="term-pre">${escapeHTML([...TERM_INSTALLED].sort().join('\n'))}</pre>`);
+        return;
+      }
+      terminalHTML(`<span class="term-error">${escapeHTML(command)}: 无法识别的操作 '${escapeHTML(sub)}'</span>`);
+      return;
+    }
+    if (command === 'dpkg') {
+      if (tokens.includes('-l') || tokens.includes('--list')) {
+        const rows = [...TERM_INSTALLED].sort().map((name, index) => `ii  ${name.padEnd(24)} 1.${index + 2}.0  arm64  AISniper package`);
+        terminalHTML(`<pre class="term-pre">Desired=Unknown/Install/Remove/Purge/Hold\n||/ Name                     Version      Architecture Description\n+++-========================-============-============-=========================\n${escapeHTML(rows.join('\n'))}</pre>`);
+        return;
+      }
+      if (tokens.includes('-i')) { terminalHTML(`<span class="term-success">dpkg: 已解包并配置 ${escapeHTML(tokens[tokens.indexOf('-i') + 1] || 'local.deb')}</span>`); return; }
+      terminalPrint('Debian dpkg 软件包管理器 1.22.11 (arm64)。', 'term-line term-muted');
+      return;
+    }
+    if (command === 'pip' || command === 'pip3') {
+      if (tokens.includes('--version') || tokens.includes('-V')) { terminalPrint(LINUX.TOOL_VERSIONS?.[command] || 'pip 24.3.1'); return; }
+      if (tokens[0] === 'install') {
+        const packages = tokens.slice(1).filter((token) => !token.startsWith('-'));
+        terminalHTML(`<pre class="term-pre">Collecting ${escapeHTML(packages[0] || 'requests')}\n  Downloading ${escapeHTML(packages[0] || 'requests')}-2.32.3-py3-none-any.whl (64 kB)\nInstalling collected packages: ${escapeHTML(packages.join(', ') || 'requests')}\nSuccessfully installed ${escapeHTML(packages.join(' ') || 'requests')}</pre>`);
+        return;
+      }
+      if (tokens[0] === 'list') {
+        terminalHTML('<pre class="term-pre">Package    Version\n---------- -------\npip        24.3.1\nrequests   2.32.3\nnumpy      2.1.3\nrich       13.9.4</pre>');
+        return;
+      }
+      if (tokens[0] === 'freeze') { terminalHTML('<pre class="term-pre">pip==24.3.1\nrequests==2.32.3\nnumpy==2.1.3\nrich==13.9.4</pre>'); return; }
+      terminalHTML('<span class="term-muted">pip：</span><span class="term-key">--version</span> <span class="term-key">install &lt;包&gt;</span> <span class="term-key">list</span> <span class="term-key">freeze</span>');
+      return;
+    }
+    if (command === 'npm') {
+      if (tokens.includes('--version') || tokens.includes('-v')) { terminalPrint(LINUX.TOOL_VERSIONS?.npm || '10.9.0'); return; }
+      if (tokens[0] === 'install' || tokens[0] === 'i') {
+        const packages = tokens.slice(1).filter((token) => !token.startsWith('-'));
+        terminalHTML(`<pre class="term-pre">added ${packages.length || 12} packages, and audited ${packages.length ? 13 : 184} packages in 1.2s\n\nfound 0 vulnerabilities</pre>`);
+        return;
+      }
+      if (tokens[0] === 'run') { terminalHTML(`<span class="term-muted">> aisniper@26.1.4 ${escapeHTML(tokens[1] || 'build')}\n> aisniper-build --production\n\n✓ 构建完成，用时 842ms</span>`); return; }
+      if (tokens[0] === 'list' || tokens[0] === 'ls') { terminalHTML('<pre class="term-pre">aisniper@26.1.4 /home/sniper\n├── vite@6.0.3\n├── three@0.170.0\n└── zod@3.23.8</pre>'); return; }
+      terminalHTML('<span class="term-muted">npm：</span><span class="term-key">--version</span> <span class="term-key">install</span> <span class="term-key">run &lt;脚本&gt;</span> <span class="term-key">list</span>');
+      return;
+    }
+    if (command === 'node') {
+      if (tokens.includes('-v') || tokens.includes('--version')) { terminalPrint(LINUX.TOOL_VERSIONS?.node || 'v22.11.0'); return; }
+      const evalIndex = tokens.indexOf('-e') >= 0 ? tokens.indexOf('-e') : tokens.indexOf('--eval');
+      if (evalIndex >= 0) {
+        const code = tokens[evalIndex + 1] || '';
+        const match = code.match(/console\.log\((['"])(.*?)\1\)/);
+        terminalPrint(match ? match[2] : 'undefined');
+        return;
+      }
+      terminalPrint('Welcome to Node.js v22.11.0.', 'term-line term-muted');
+      terminalPrint('输入 node -e "console.log(\'hello\')" 执行一段代码。', 'term-line term-muted');
+      return;
+    }
+    if (command === 'python' || command === 'python3') {
+      if (tokens.includes('--version') || tokens.includes('-V')) { terminalPrint(LINUX.TOOL_VERSIONS?.[command] || 'Python 3.12.7'); return; }
+      const evalIndex = tokens.indexOf('-c');
+      if (evalIndex >= 0) {
+        const code = tokens[evalIndex + 1] || '';
+        const match = code.match(/print\((['"])(.*?)\1\)/);
+        terminalPrint(match ? match[2] : '');
+        return;
+      }
+      terminalHTML('<pre class="term-pre">Python 3.12.7 (main, Nov  2 2026, 10:12:04) [GCC 13.2.0] on linux\nType "help", "copyright", "credits" or "license" for more information.\n>>> （模拟 REPL，输入 python3 -c "print(\'hello\')" 执行代码）</pre>');
+      return;
+    }
+    if (command === 'git') {
+      if (tokens.includes('--version')) { terminalPrint(LINUX.TOOL_VERSIONS?.git || 'git version 2.47.0'); return; }
+      const sub = tokens[0] || '';
+      if (!sub) { terminalPrint('usage: git [--version] <command> [<args>]', 'term-line term-muted'); return; }
+      if (sub === 'status') { terminalHTML('<pre class="term-pre">On branch main\nYour branch is up to date with \'origin/main\'.\n\nnothing to commit, working tree clean</pre>'); return; }
+      if (sub === 'log') { terminalHTML('<pre class="term-pre">84c1d7e (HEAD -> main, origin/main) polish terminal command catalogue\n2fec6d4 add wallpapers and browser embed fallback\na4a8ffa upload AISniperOS web desktop</pre>'); return; }
+      if (sub === 'branch') { terminalPrint('* main'); return; }
+      if (sub === 'remote') { terminalPrint('origin  https://github.com/GhostQAQ-VRC/AIsniperOSds4.1f.git (fetch)\norigin  https://github.com/GhostQAQ-VRC/AIsniperOSds4.1f.git (push)'); return; }
+      if (sub === 'init') { terminalPrint('已初始化空的 Git 仓库于 /home/sniper/.git/'); return; }
+      if (sub === 'add') { terminalPrint('已暂存更改。', 'term-line term-muted'); return; }
+      if (sub === 'commit') { terminalHTML('<span class="term-success">[main 84c1d7e] 本地提交</span> <span class="term-muted">1 file changed, 1 insertion(+)</span>'); return; }
+      if (sub === 'clone') { terminalPrint(`正克隆到 '${tokens[1] || 'repository'}'...\nremote: Enumerating objects: 128, done.\n接收对象中: 100% (128/128), 完成.`, 'term-line term-muted'); return; }
+      terminalPrint(`git: '${sub}' 不是 git 命令。`, 'term-line term-error');
+      return;
+    }
+    if (['gcc', 'make', 'java', 'go', 'rustc'].includes(command)) {
+      if (tokens.includes('--version') || tokens.includes('-v') || tokens.includes('version')) { terminalPrint(LINUX.TOOL_VERSIONS?.[command] || `${command} version 1.0`); return; }
+      const source = tokens.find((token) => !token.startsWith('-'));
+      if (command === 'gcc') {
+        if (!source) { terminalPrint('gcc: 致命错误：没有输入文件', 'term-line term-error'); return; }
+        terminalPrint(`gcc: 已编译 ${source} -> a.out（模拟）`, 'term-line term-muted');
+        return;
+      }
+      if (command === 'make') {
+        if (!termFileExists(terminalResolvePath('Makefile'))) terminalHTML('<span class="term-error">make: *** 未找到 Makefile。停止。</span>');
+        else terminalHTML('<pre class="term-pre">gcc -O2 -Wall -o aisniper main.c\naisniper: 构建完成。</pre>');
+        return;
+      }
+      if (command === 'java') { terminalPrint('java: 请先编译源文件，或运行 java -version。', 'term-line term-muted'); return; }
+      terminalPrint(`${command}: 已处理 ${source || '当前项目'}（模拟工具链）`, 'term-line term-muted');
+    }
+  }
+
+  function termUtf8Base64(text) {
+    const bytes = new TextEncoder().encode(String(text));
+    let binary = '';
+    bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+    return btoa(binary);
+  }
+
+  function termBase64Utf8(value) {
+    const binary = atob(String(value).replace(/\s+/g, ''));
+    return new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
+  }
+
+  function termSimpleHash(text) {
+    let hash = 2166136261;
+    for (const char of String(text)) {
+      hash ^= char.charCodeAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    const part = (hash >>> 0).toString(16).padStart(8, '0');
+    return (part + part.split('').reverse().join('') + part + part.split('').reverse().join('')).slice(0, 64);
+  }
+
+  async function terminalChecksum(command, argument) {
+    const paths = termSplit(argument).filter((token) => !token.startsWith('-'));
+    if (!paths.length) {
+      terminalHTML(`<span class="term-warn">${command}: 缺少文件操作数</span>`);
+      return;
+    }
+    const path = terminalResolvePath(paths[0]);
+    const read = termReadFile(path);
+    if (read.error) {
+      terminalHTML(`<span class="term-error">${command}: ${escapeHTML(paths[0])}: ${escapeHTML(read.error)}</span>`);
+      return;
+    }
+    let digest = termSimpleHash(read.text);
+    if (command === 'sha256sum' && window.crypto?.subtle) {
+      try {
+        const hash = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(read.text));
+        digest = [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+      } catch (error) { /* keep deterministic fallback */ }
+    }
+    terminalPrint(`${digest}  ${paths[0]}`);
+    lastOutputText = `${digest}  ${paths[0]}`;
+  }
+
+  function terminalCommandMisc(command, argument) {
+    const tokens = termSplit(argument);
+    if (command === 'chmod') {
+      const values = tokens.filter((token) => !token.startsWith('-'));
+      if (values.length < 2) {
+        terminalHTML('<span class="term-warn">chmod: 缺少操作数</span> <span class="term-muted">用法：chmod [-R] 权限 文件...</span>');
+        return;
+      }
+      const mode = values[0];
+      if (!/^[0-7]{3,4}$/.test(mode) && !/^[ugoa]*[+-][rwxXst]+$/.test(mode)) {
+        terminalHTML(`<span class="term-error">chmod: 无效模式: '${escapeHTML(mode)}'</span>`);
+        return;
+      }
+      values.slice(1).forEach((requested) => {
+        const path = terminalResolvePath(requested);
+        if (!termCanWrite(path)) terminalHTML(`<span class="term-error">chmod: 更改 '${escapeHTML(requested)}' 的权限: 只读文件系统</span>`);
+      });
+      return;
+    }
+    if (command === 'chown' || command === 'chgrp') {
+      const values = tokens.filter((token) => !token.startsWith('-'));
+      if (values.length < 2) {
+        terminalHTML(`<span class="term-warn">${command}: 缺少操作数</span>`);
+        return;
+      }
+      values.slice(1).forEach((requested) => {
+        const path = terminalResolvePath(requested);
+        if (!termCanWrite(path)) terminalHTML(`<span class="term-error">${command}: 更改 '${escapeHTML(requested)}' 的所有者: 只读文件系统</span>`);
+      });
+      return;
+    }
+    if (command === 'umask') {
+      if (tokens[0] && /^[0-7]{3,4}$/.test(tokens[0])) TERM_ENV.UMASK = tokens[0];
+      terminalPrint(TERM_ENV.UMASK || '0022');
+      return;
+    }
+    if (command === 'basename') {
+      if (!tokens[0]) { terminalHTML('<span class="term-warn">basename: 缺少操作数</span>'); return; }
+      let value = termBaseName(tokens[0].replace(/\/+$/, ''));
+      if (tokens[1]) value = value.endsWith(tokens[1]) ? value.slice(0, -tokens[1].length) : value;
+      terminalPrint(value);
+      return;
+    }
+    if (command === 'dirname') {
+      if (!tokens[0]) { terminalHTML('<span class="term-warn">dirname: 缺少操作数</span>'); return; }
+      terminalPrint(tokens[0].includes('/') ? tokens[0].slice(0, tokens[0].lastIndexOf('/')) || '/' : '.');
+      return;
+    }
+    if (command === 'realpath' || command === 'readlink') {
+      if (!tokens[0]) { terminalHTML(`<span class="term-warn">${command}: 缺少操作数</span>`); return; }
+      const path = terminalResolvePath(tokens[0]);
+      if (command === 'readlink') {
+        const read = termReadFile(path);
+        const match = read.error ? null : read.text.match(/^(symlink|hardlink) -> (.+)$/);
+        terminalPrint(match ? match[2] : '');
+      } else {
+        terminalPrint(termAbsolutePath(path));
+      }
+      return;
+    }
+    if (command === 'md5sum' || command === 'sha256sum') {
+      terminalChecksum(command, argument);
+      return;
+    }
+    if (command === 'dd') {
+      const input = tokens.find((token) => token.startsWith('if='))?.slice(3) || '/dev/zero';
+      const output = tokens.find((token) => token.startsWith('of='))?.slice(3);
+      if (!output) { terminalHTML('<span class="term-warn">dd: 缺少 of= 输出目标</span>'); return; }
+      terminalPrint(`记录了 ${input} 的输入`, 'term-line term-muted');
+      terminalPrint(`记录了 ${output} 的输出`, 'term-line term-muted');
+      terminalPrint('复制了 1048576 字节（1.0 MB，模拟）', 'term-line term-muted');
+      return;
+    }
+    if (command === 'mkfs' || command.startsWith('mkfs.')) {
+      const target = tokens.find((token) => !token.startsWith('-'));
+      if (!target) { terminalHTML('<span class="term-warn">mkfs: 缺少设备或镜像路径</span>'); return; }
+      terminalPrint(`mke2fs 1.47.1 (20-Nov-2024)`, 'term-line term-muted');
+      terminalPrint(`正在创建文件系统，块大小=4096：${target}`, 'term-line term-muted');
+      terminalPrint('写入超级块与 inode 表：完成（模拟）', 'term-line term-success');
+      return;
+    }
+    if (command === 'wipefs' || command === 'shred') {
+      const target = tokens.find((token) => !token.startsWith('-'));
+      if (!target) { terminalHTML(`<span class="term-warn">${command}: 缺少目标</span>`); return; }
+      terminalPrint(command === 'wipefs' ? `wipefs: 已擦除 ${target} 的签名（模拟）` : `shred: ${target}: 已通过 3 次覆写（模拟）`, 'term-line term-muted');
+      return;
+    }
+    if (command === 'truncate') {
+      const values = tokens.filter((token) => !token.startsWith('-'));
+      const target = values[values.length - 1];
+      if (!target || values.length < 2) { terminalHTML('<span class="term-warn">truncate: 缺少目标文件</span>'); return; }
+      const path = terminalResolvePath(target);
+      if (!termCanWrite(path) || !termWriteFile(path, '')) terminalHTML(`<span class="term-error">truncate: 无法修改 '${escapeHTML(target)}': 权限不够</span>`);
+      return;
+    }
+    if (command === 'base64') {
+      const decode = tokens.includes('-d') || tokens.includes('--decode');
+      const values = tokens.filter((token) => !token.startsWith('-'));
+      let text = values.length ? termReadFile(terminalResolvePath(values[0])) : { text: lastOutputText };
+      if (text.error) {
+        terminalHTML(`<span class="term-error">base64: ${escapeHTML(text.error)}</span>`);
+        return;
+      }
+      try {
+        terminalPrint(decode ? termBase64Utf8(text.text) : termUtf8Base64(text.text));
+      } catch (error) {
+        terminalHTML('<span class="term-error">base64: 输入无效</span>');
+      }
+      return;
+    }
+    if (command === 'tar' || command === 'zip' || command === 'unzip' || command === 'gzip' || command === 'gunzip') {
+      if (command === 'tar') {
+        const extract = tokens.some((token) => /^-[a-zA-Z]*x/.test(token));
+        const archive = tokens.find((token) => /\.(tar|tgz|tar\.gz|tar\.bz2)$/i.test(token)) || 'archive.tar.gz';
+        const archivePath = terminalResolvePath(archive);
+        if (extract) {
+          const read = termReadFile(archivePath);
+          if (read.error) { terminalHTML(`<span class="term-error">tar: ${escapeHTML(archive)}: 没有那个文件或目录</span>`); return; }
+          terminalHTML(`<pre class="term-pre">${escapeHTML(archive)}\n已解包：项目/\n已解包：项目/笔记.md\n已解包：说明.md</pre>`);
+          return;
+        }
+        if (!termWriteFile(archivePath, `tar archive ${new Date().toISOString()}`)) {
+          terminalHTML(`<span class="term-error">tar: 无法创建 ${escapeHTML(archive)}: 权限不够</span>`);
+          return;
+        }
+        terminalPrint(`已创建归档 ${archive}`, 'term-line term-muted');
+        return;
+      }
+      if (command === 'zip') {
+        const values = tokens.filter((token) => !token.startsWith('-'));
+        const archive = values[0] || 'archive.zip';
+        const archivePath = terminalResolvePath(archive);
+        if (!termWriteFile(archivePath, `zip archive: ${values.slice(1).join(' ')}`)) {
+          terminalHTML(`<span class="term-error">zip: 无法创建 ${escapeHTML(archive)}</span>`);
+          return;
+        }
+        terminalHTML(`<pre class="term-pre">  adding: ${escapeHTML(values[1] || '文件')} (deflated 42%)\n  adding: 说明.md (deflated 18%)</pre>`);
+        return;
+      }
+      if (command === 'unzip') {
+        const archive = tokens.find((token) => /\.zip$/i.test(token)) || 'archive.zip';
+        const path = terminalResolvePath(archive);
+        if (!termFileExists(path)) { terminalHTML(`<span class="term-error">unzip: 无法找到 ${escapeHTML(archive)}</span>`); return; }
+        terminalHTML(`<pre class="term-pre">Archive:  ${escapeHTML(archive)}\n  inflating: 说明.md\n  inflating: 项目/笔记.md</pre>`);
+        return;
+      }
+      const file = tokens.find((token) => !token.startsWith('-'));
+      if (!file) { terminalHTML(`<span class="term-warn">${command}: 缺少文件操作数</span>`); return; }
+      const path = terminalResolvePath(file);
+      if (command === 'gzip') {
+        const read = termReadFile(path);
+        if (read.error) { terminalHTML(`<span class="term-error">gzip: ${escapeHTML(file)}: ${escapeHTML(read.error)}</span>`); return; }
+        if (termWriteFile(`${path}.gz`, read.text)) termRemovePath(path, false);
+        terminalPrint(`已压缩 ${file} -> ${file}.gz`, 'term-line term-muted');
+        return;
+      }
+      if (!/\.gz$/i.test(path)) { terminalHTML(`<span class="term-error">gunzip: ${escapeHTML(file)}: 不是 gzip 格式</span>`); return; }
+      const read = termReadFile(path);
+      if (read.error) { terminalHTML(`<span class="term-error">gunzip: ${escapeHTML(file)}: ${escapeHTML(read.error)}</span>`); return; }
+      termWriteFile(path.replace(/\.gz$/i, ''), read.text);
+      termRemovePath(path, false);
+      terminalPrint(`已解压 ${file}`, 'term-line term-muted');
+      return;
+    }
+    if (command === 'vim' || command === 'nano' || command === 'emacs' || command === 'vi') {
+      const requested = tokens.find((token) => !token.startsWith('-'));
+      if (!requested) {
+        terminalPrint(`${command}: 已打开模拟编辑器，未指定文件。`, 'term-line term-muted');
+        return;
+      }
+      const path = terminalResolvePath(requested);
+      const read = termReadFile(path);
+      if (read.error && command === 'vim') {
+        termWriteFile(path, '');
+        terminalPrint(`"${requested}" [新文件]  0L, 0B`, 'term-line term-muted');
+        return;
+      }
+      if (!read.error) {
+        const preview = read.text.split('\n').slice(0, 10).map((line, index) => `${String(index + 1).padStart(3, ' ')}  ${line}`).join('\n');
+        terminalHTML(`<pre class="term-pre">${escapeHTML(preview)}\n~\n~\n"${escapeHTML(requested)}" ${read.text.split('\n').length}L, ${new TextEncoder().encode(read.text).length}B</pre>`);
+        terminalPrint(`${command}: 只读预览模式，按 :q 退出（模拟）。`, 'term-line term-muted');
+      }
+      return;
+    }
+    if (command === 'printf') {
+      let format = tokens[0] || '';
+      const values = tokens.slice(1);
+      let index = 0;
+      const output = format.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/%[sd]/g, () => values[index++] ?? '');
+      terminalPrint(output);
+      lastOutputText = output;
+      return;
+    }
+    if (command === 'cowsay') {
+      const text = argument || '专注，凝练。';
+      const top = ` ${'_'.repeat(text.length + 2)}`;
+      const bottom = ` ${'-'.repeat(text.length + 2)}`;
+      terminalHTML(`<pre class="term-pre">${escapeHTML(`${top}\n< ${text} >\n${bottom}\n        \\   ^__^\n         \\  (oo)\\_______\n            (__)\\       )\\/\\\n                ||----w |\n                ||     ||`)}</pre>`);
+      return;
+    }
+    if (command === 'fortune') {
+      const fortunes = LINUX.FORTUNES || ['精准不是更多，而是更少。'];
+      terminalPrint(fortunes[Math.floor(Math.random() * fortunes.length)]);
+      return;
+    }
+    if (command === 'sl') {
+      terminalHTML('<pre class="term-pre">      ====        ________                ___________\n  _D _|  |_______/        \\__I_I_____===__|_________|\n   |(_)---  |   H\\________/ |   |        =|___ ___|  |\n   /     |  |   H  |  |     |   |         ||_| |_||  |\n  |      |  |   H  |__--------------------| [___] |  |\n  | ________|___H__/__|_____/[][]~\\_______|       |  |\n  |/ |   |-----------I_____I [][] []  D   |=======|__|\n__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__|\n |/-=|___|=O=====O=====O=====O   |_____/~\\___/        |\n  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            \\_/</pre>');
+      terminalPrint('sl: 你输入的是 sl，不是 ls。', 'term-line term-muted');
+      return;
+    }
+    if (command === 'matrix' || command === 'cmatrix') {
+      const glyphs = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ';
+      const lines = Array.from({ length: 14 }, () => Array.from({ length: 64 }, () => glyphs[Math.floor(Math.random() * glyphs.length)]).join(''));
+      terminalHTML(`<pre class="term-pre" style="color:#7bdfbd;text-shadow:0 0 8px rgba(100,255,190,.25)">${escapeHTML(lines.join('\n'))}</pre>`);
+      terminalPrint('matrix: 模拟数字雨已生成。', 'term-line term-muted');
+      return;
+    }
+    if (command === 'banner' || command === 'figlet') {
+      const text = (argument || 'AISNIPER').toUpperCase().slice(0, 18);
+      const lines = [
+        `╔${'═'.repeat(text.length + 2)}╗`,
+        `║ ${text} ║`,
+        `╚${'═'.repeat(text.length + 2)}╝`
+      ];
+      terminalHTML(`<pre class="term-pre" style="color:#e4d7a9">${escapeHTML(lines.join('\n'))}</pre>`);
+      return;
+    }
+  }
+
   function terminalCommandOpen(argument) {
-    if (!argument) {
+    const name = termSplit(argument)[0] || '';
+    if (!name) {
       terminalHTML('<span class="term-muted">用法：</span>open <span class="term-key">finder | browser | messages | agent | calculator | settings | terminal | ops | steam | unity | game</span>');
       return;
     }
     const aliases = { '访达': 'finder', '浏览器': 'browser', '计算器': 'calculator', '系统设置': 'settings', '终端': 'terminal', '深空信号': 'game', '游戏': 'game', '设置': 'settings', '信息': 'messages', '消息': 'messages', '智能体': 'agent', 'AI': 'agent', 'ai': 'agent', '运维台': 'ops', '面板': 'ops', '宝塔': 'ops', 'Steam': 'steam', 'steam': 'steam', '反恐精英': 'cs2', 'CS2': 'cs2', 'cs2': 'cs2', 'VR聊天': 'vrchat', 'VRChat': 'vrchat', 'vrchat': 'vrchat', 'SteamVR': 'steamvr', 'OVR': 'ovrtk', 'OVR Toolkit': 'ovrtk', 'ovr': 'ovrtk', '史莱姆': 'slimevr', 'SlimeVR': 'slimevr', 'slimevr': 'slimevr', 'Unity': 'unity', 'unity': 'unity', '编辑器': 'unity' };
-    const target = aliases[argument] || argument.toLowerCase();
+    const target = aliases[name] || name.toLowerCase();
     if (target === 'game' || target === 'void' || target === 'void signal') {
       openApp('game');
       terminalHTML('<span class="term-success">正在打开《深空信号》轨道界面…</span>');
@@ -4066,7 +6025,7 @@
       terminalHTML(`<span class="term-success">正在打开${escapeHTML(APPS[target].name)}…</span>`);
       return;
     }
-    terminalHTML(`<span class="term-error">open：未找到应用“${escapeHTML(argument)}”</span>`);
+    terminalHTML(`<span class="term-error">open：未找到应用“${escapeHTML(name)}”</span>`);
   }
 
   function terminalCommandTheme(argument) {
@@ -4285,34 +6244,375 @@
       terminalCommandStatus();
       terminalCommandDocker('ps');
     } else {
-      terminalHTML(`<span class="term-error">zsh：没有找到脚本：${escapeHTML(command)}</span> <span class="term-muted">输入</span> <span class="term-key">scripts</span> <span class="term-muted">查看可用脚本。</span>`);
+      terminalHTML(`<span class="term-error">bash：没有找到脚本：${escapeHTML(command)}</span> <span class="term-muted">输入</span> <span class="term-key">scripts</span> <span class="term-muted">查看可用脚本。</span>`);
     }
   }
 
-  function terminalExecute(raw) {
-    const input = raw.trim();
-    if (!input) return;
-    terminalEcho(input);
-    lastOutputText = '';
-    if (terminalCommandHistory[terminalCommandHistory.length - 1] !== input) terminalCommandHistory.push(input);
-    if (terminalCommandHistory.length > 60) terminalCommandHistory.shift();
-    terminalHistoryIndex = terminalCommandHistory.length;
-    const tokens = input.match(/(?:[^\s"]+|"[^"]*")+/g)?.map((token) => token.replace(/^"|"$/g, '')) || [];
-    let command = tokens.shift() || '';
-    command = TERM_ALIASES[command] || command;
-    const argument = tokens.join(' ');
-    if (command === 'help') terminalCommandHelp();
-    else if (command === 'clear') terminalClear();
+  function systemWipeRecord() {
+    try {
+      const raw = localStorage.getItem(SYSTEM_WIPED_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : { command: 'rm -rf /' };
+    } catch (error) {
+      return { command: 'rm -rf /' };
+    }
+  }
+
+  function terminalWipeStorage(command) {
+    const doomed = [];
+    try {
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key && key.startsWith('aisniper')) doomed.push(key);
+      }
+      doomed.forEach((key) => localStorage.removeItem(key));
+      localStorage.setItem(SYSTEM_WIPED_KEY, JSON.stringify({ command, at: Date.now(), version: '26.1.4' }));
+    } catch (error) { /* storage can be unavailable */ }
+  }
+
+  let kernelRecoverBound = false;
+
+  function showKernelPanic(command, options = {}) {
+    const overlay = $('#kernelPanic');
+    if (!overlay) return;
+    document.body.classList.remove('is-booting');
+    document.body.classList.add('is-kernel-panic');
+    const boot = $('#bootScreen');
+    if (boot) {
+      boot.classList.add('is-ready');
+      boot.style.display = 'none';
+    }
+    const login = $('#loginScreen');
+    if (login) {
+      login.classList.remove('is-visible');
+      login.setAttribute('aria-hidden', 'true');
+    }
+    const actions = $('#kernelPanicActions');
+    if (actions) actions.hidden = true;
+    overlay.hidden = false;
+    const log = $('#kernelPanicLog');
+    if (!log) return;
+    log.replaceChildren();
+    const lines = [
+      ['AISNIPEROS 26.1.4 LTS  ·  emergency console  ·  tty1', 'kp-dim'],
+      ['', ''],
+      ['[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x410fd0c0]', 'kp-dim'],
+      ['[    0.000000] Linux version 6.8.0-aisniper (build@aquila) #1 SMP PREEMPT_DYNAMIC aarch64', 'kp-dim'],
+      ['[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-6.8.0-aisniper root=/dev/aisniper0 ro quiet', 'kp-dim'],
+      ['[    0.284913] AISniper security monitor: integrity seal broken', 'kp-warn'],
+      ['[    0.285004] AISniper security monitor: root volume signature missing', 'kp-warn'],
+      ['[    0.842110] EXT4-fs (sda1): VFS: Can\'t find ext4 filesystem', 'kp-warn'],
+      ['[    1.027481] systemd[1]: Failed to mount /sysroot.', 'kp-critical'],
+      ['[    1.248331] systemd[1]: Emergency mode entered, but root file system is missing.', 'kp-critical'],
+      [`[    1.249002] recovery: last destructive command: ${command || 'rm -rf /'}`, 'kp-critical'],
+      ['[    1.250114] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)', 'kp-critical'],
+      ['[    1.250337] CPU: 0 PID: 1 Comm: systemd Not tainted 6.8.0-aisniper #1', 'kp-grey'],
+      ['[    1.250512] Hardware name: AISniper M1 Neural Core / AISNIPER-AQUILA', 'kp-grey'],
+      ['[    1.250671] Call trace:', 'kp-grey'],
+      ['[    1.250802]  dump_backtrace+0x0/0x1c0', 'kp-grey'],
+      ['[    1.250941]  show_stack+0x20/0x70', 'kp-grey'],
+      ['[    1.251094]  dump_stack_lvl+0x60/0x88', 'kp-grey'],
+      ['[    1.251237]  panic+0x180/0x3b0', 'kp-grey'],
+      ['[    1.251374]  mount_block_root+0x1a4/0x290', 'kp-grey'],
+      ['[    1.251528]  prepare_namespace+0x150/0x1a0', 'kp-grey'],
+      ['[    1.251694]  kernel_init+0x1d0/0x1e0', 'kp-grey'],
+      ['[    1.251835]  ret_from_fork+0x10/0x20', 'kp-grey'],
+      ['[    1.252004] ---[ end Kernel panic - not syncing: VFS ]---', 'kp-critical'],
+      ['', ''],
+      ['系统卷已丢失。所有 AISniperOS 本地数据已从 localStorage 中移除。', 'kp-dim'],
+      ['救援镜像仍在浏览器静态缓存中，可执行冷重建。', 'kp-dim']
+    ];
+    const step = options.startup ? 0 : 42;
+    lines.forEach(([text, className], index) => {
+      const line = document.createElement('span');
+      line.className = `kp-line ${className}`.trim();
+      line.textContent = text || ' ';
+      if (step === 0) {
+        log.appendChild(line);
+        return;
+      }
+      setTimeout(() => {
+        log.appendChild(line);
+        overlay.scrollTop = overlay.scrollHeight;
+      }, index * step);
+    });
+    if (step === 0) overlay.scrollTop = 0;
+    setTimeout(() => {
+      if (actions) actions.hidden = false;
+    }, lines.length * step + (options.startup ? 80 : 380));
+    if (!kernelRecoverBound) {
+      kernelRecoverBound = true;
+      $('#kernelRecoverBtn')?.addEventListener('click', () => {
+        try { localStorage.removeItem(SYSTEM_WIPED_KEY); } catch (error) { /* no-op */ }
+        location.reload();
+      });
+    }
+  }
+
+  function terminalCatastrophe(raw) {
+    if (terminalCatastropheRunning) return;
+    terminalCatastropheRunning = true;
+    const reason = LINUX.dangerReason ? LINUX.dangerReason(raw) : '不可逆的系统级操作';
+    const steps = [
+      ['term-error', `bash: 检测到 root 级不可逆操作：${raw}`],
+      ['term-warn', `bash: 操作类型：${reason}`],
+      ['term-error', 'rm: 正在递归删除 / ...'],
+      ['term-success', "[  OK  ] Removed /bin"],
+      ['term-success', "[  OK  ] Removed /boot"],
+      ['term-success', "[  OK  ] Removed /etc"],
+      ['term-success', "[  OK  ] Removed /home"],
+      ['term-success', "[  OK  ] Removed /lib"],
+      ['term-success', "[  OK  ] Removed /opt"],
+      ['term-success', "[  OK  ] Removed /sbin"],
+      ['term-success', "[  OK  ] Removed /usr"],
+      ['term-success', "[  OK  ] Removed /var"],
+      ['term-error', "rm: 无法删除 '/dev/watchdog': 设备或资源忙"],
+      ['term-error', "rm: 无法删除 '/proc/kcore': 权限不够"],
+      ['term-error', "rm: 无法删除 '/sys/firmware': 只读文件系统"],
+      ['term-warn', '[  FAILED  ] Failed unmounting /home.'],
+      ['term-error', '[    2.114] I/O error, dev sda, sector 0 op 0x1:(WRITE)'],
+      ['term-error', '[    2.881] EXT4-fs error (device sda1): detected aborted journal'],
+      ['term-error', '[    2.999] Kernel panic - not syncing: VFS: Unable to mount root fs'],
+      ['term-error', 'Segmentation fault (core dumped)']
+    ];
+    terminalHTML('<div class="term-rule term-danger-rule">UNRECOVERABLE OPERATION</div>');
+    steps.forEach(([className, text], index) => {
+      setTimeout(() => {
+        terminalPrint(text, `term-line ${className}`);
+        if (index === steps.length - 1) {
+          setTimeout(() => {
+            terminalWipeStorage(raw);
+            showKernelPanic(raw);
+            terminalCatastropheRunning = false;
+          }, 220);
+        }
+      }, index * 82);
+    });
+  }
+
+  function terminalCommandSudo(argument) {
+    if (!argument) {
+      terminalHTML('<span class="term-warn">权限已授予——但只有操作员决定准星落在哪里。</span>');
+      return;
+    }
+    terminalPrint('[sudo] sniper 的密码：********', 'term-line term-muted');
+    terminalPrint('已获得 root 权限，正在执行。', 'term-line term-muted');
+    terminalSudoDepth += 1;
+    terminalExecute(argument, { silentEcho: true, recordHistory: false });
+    terminalSudoDepth = Math.max(0, terminalSudoDepth - 1);
+  }
+
+  function terminalCommandUser(command, argument) {
+    const target = termSplit(argument).find((token) => !token.startsWith('-')) || '';
+    if (command === 'passwd') {
+      terminalHTML('<pre class="term-pre">更改 sniper 的密码。\n当前密码：********\n新密码：********\n重新输入新密码：********\npasswd: 密码已更新成功</pre>');
+      return;
+    }
+    if (command === 'su') {
+      terminalHTML('<span class="term-error">su: 认证失败</span> <span class="term-muted">AISniperOS 演示账户不启用 root 登录，请使用 sudo。</span>');
+      return;
+    }
+    if (command === 'useradd' || command === 'adduser') {
+      if (!target) { terminalHTML(`<span class="term-warn">${command}: 缺少用户名</span>`); return; }
+      terminalHTML(`<span class="term-success">${command}: 已创建用户 ${escapeHTML(target)}（模拟）</span>`);
+      return;
+    }
+    if (command === 'userdel') {
+      if (!target) { terminalHTML('<span class="term-warn">userdel: 缺少用户名</span>'); return; }
+      terminalHTML(`<span class="term-muted">userdel: 已删除用户 ${escapeHTML(target)}（模拟）</span>`);
+      return;
+    }
+    if (command === 'usermod') {
+      terminalHTML(`<span class="term-muted">usermod: 已更新 ${escapeHTML(target || '用户')} 的属性（模拟）</span>`);
+      return;
+    }
+    if (command === 'groupadd') {
+      if (!target) { terminalHTML('<span class="term-warn">groupadd: 缺少组名</span>'); return; }
+      terminalHTML(`<span class="term-muted">groupadd: 已创建组 ${escapeHTML(target)}（模拟）</span>`);
+    }
+  }
+
+  function terminalCommandEcho(argument, tokens) {
+    let noNewline = false;
+    let interpret = false;
+    const values = [];
+    tokens.forEach((token) => {
+      if (token === '-n') noNewline = true;
+      else if (token === '-e') interpret = true;
+      else values.push(token);
+    });
+    let text = values.join(' ');
+    text = text.replace(/\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))/g, (match, braced, plain) => {
+      const key = braced || plain;
+      return TERM_ENV[key] ?? '';
+    });
+    if (interpret) text = text.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\e/g, '\x1b');
+    if (noNewline) terminalHTML(`<span class="term-file">${escapeHTML(text)}</span>`, 'term-line');
+    else terminalPrint(text);
+    lastOutputText = text;
+  }
+
+  function terminalSplitChain(input) {
+    const parts = [];
+    let buffer = '';
+    let quote = '';
+    for (let index = 0; index < input.length; index += 1) {
+      const char = input[index];
+      if (quote) {
+        buffer += char;
+        if (char === quote && input[index - 1] !== '\\') quote = '';
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        quote = char;
+        buffer += char;
+        continue;
+      }
+      if (char === ';') {
+        if (buffer.trim()) parts.push(buffer.trim());
+        buffer = '';
+        continue;
+      }
+      if (char === '&' && input[index + 1] === '&') {
+        if (buffer.trim()) parts.push(buffer.trim());
+        buffer = '';
+        index += 1;
+        continue;
+      }
+      buffer += char;
+    }
+    if (buffer.trim()) parts.push(buffer.trim());
+    return parts;
+  }
+
+  function terminalSplitPipes(input) {
+    const parts = [];
+    let buffer = '';
+    let quote = '';
+    for (let index = 0; index < input.length; index += 1) {
+      const char = input[index];
+      if (quote) {
+        buffer += char;
+        if (char === quote && input[index - 1] !== '\\') quote = '';
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        quote = char;
+        buffer += char;
+        continue;
+      }
+      if (char === '|' && input[index - 1] !== '|' && input[index + 1] !== '|') {
+        if (buffer.trim()) parts.push(buffer.trim());
+        buffer = '';
+        continue;
+      }
+      buffer += char;
+    }
+    if (buffer.trim()) parts.push(buffer.trim());
+    return parts;
+  }
+
+  function terminalExecute(raw, options = {}) {
+    const input = String(raw || '').trim();
+    if (!input || terminalCatastropheRunning) return;
+    if (!options.silentEcho) terminalEcho(input);
+    if (options.recordHistory !== false) {
+      if (terminalCommandHistory[terminalCommandHistory.length - 1] !== input) terminalCommandHistory.push(input);
+      if (terminalCommandHistory.length > 80) terminalCommandHistory.shift();
+      terminalHistoryIndex = terminalCommandHistory.length;
+    }
+    const chain = terminalSplitChain(input);
+    if (chain.length > 1) {
+      chain.forEach((part) => terminalExecute(part, { silentEcho: true, recordHistory: false }));
+      return;
+    }
+    const pipeline = terminalSplitPipes(input);
+    if (pipeline.length > 1) {
+      const previousCapture = terminalCaptureBuffer;
+      pipeline.forEach((part, index) => {
+        if (index < pipeline.length - 1) {
+          terminalCaptureBuffer = [];
+          terminalExecute(part, { silentEcho: true, recordHistory: false });
+          lastOutputText = terminalCaptureBuffer.join('\n');
+          terminalCaptureBuffer = previousCapture;
+        } else {
+          terminalExecute(part, { silentEcho: true, recordHistory: false });
+        }
+      });
+      return;
+    }
+    const rawTokens = input.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+    let command = (rawTokens.shift() || '').replace(/^["']|["']$/g, '').toLowerCase();
+    if (!command) return;
+    let argTokens = rawTokens;
+    const expansion = terminalAliases[command];
+    if (expansion) {
+      const expanded = termSplit(expansion);
+      command = (expanded.shift() || '').toLowerCase();
+      argTokens = [...expanded, ...argTokens];
+    }
+    const argument = argTokens.join(' ');
+    const dispatchInput = [command, ...argTokens].join(' ');
+    if (typeof LINUX.isCatastrophic === 'function' && LINUX.isCatastrophic(dispatchInput, terminalCwd)) {
+      terminalCatastrophe(dispatchInput);
+      return;
+    }
+    const tokens = argTokens.map((token) => token.replace(/^["']|["']$/g, ''));
+    const fileCommands = ['ls', 'cd', 'pwd', 'cat', 'touch', 'mkdir', 'rmdir', 'rm', 'cp', 'mv', 'ln', 'find', 'tree', 'stat', 'file', 'du', 'df'];
+    const textCommands = ['head', 'tail', 'less', 'more', 'wc', 'sort', 'uniq', 'cut', 'tr', 'sed', 'awk', 'grep', 'diff', 'tee', 'xargs'];
+    const systemCommands = ['ps', 'top', 'htop', 'kill', 'pkill', 'killall', 'pgrep', 'free', 'vmstat', 'lscpu', 'lsblk', 'lspci', 'lsusb', 'dmesg', 'journalctl', 'systemctl', 'service', 'mount', 'umount', 'crontab', 'date', 'cal', 'timedatectl', 'hostname', 'hostnamectl', 'arch', 'nproc', 'id', 'groups', 'who', 'w', 'users', 'last', 'lastlog', 'env', 'printenv', 'export', 'unset', 'alias', 'unalias', 'source', '.', 'which', 'whereis', 'type', 'command', 'sleep', 'seq', 'yes', 'true', 'false', 'test', 'expr', 'bc', 'factor', 'shuf'];
+    const networkCommands = ['ping', 'traceroute', 'tracepath', 'dig', 'nslookup', 'host', 'curl', 'wget', 'ssh', 'scp', 'rsync', 'netstat', 'ss', 'ip', 'ifconfig', 'route', 'arp', 'nmap'];
+    const toolCommands = ['apt', 'apt-get', 'dpkg', 'dnf', 'yum', 'pacman', 'apk', 'brew', 'snap', 'flatpak', 'pip', 'pip3', 'npm', 'node', 'python', 'python3', 'git', 'make', 'gcc', 'java', 'go', 'rustc', 'bash', 'sh', 'zsh'];
+    const miscCommands = ['chmod', 'chown', 'chgrp', 'umask', 'basename', 'dirname', 'realpath', 'readlink', 'md5sum', 'sha256sum', 'base64', 'tar', 'zip', 'unzip', 'gzip', 'gunzip', 'vim', 'vi', 'nano', 'emacs', 'printf', 'cowsay', 'fortune', 'sl', 'matrix', 'cmatrix', 'banner', 'figlet', 'dd', 'mkfs', 'mkfs.ext4', 'wipefs', 'shred', 'truncate'];
+    const userCommands = ['passwd', 'su', 'useradd', 'userdel', 'usermod', 'groupadd', 'adduser'];
+
+    if (command === 'help') terminalCommandHelp(termSplit(argument)[0] || '');
+    else if (command === 'man' || command === 'info') terminalCommandMan(termSplit(argument)[0] || '');
+    else if (command === 'whatis') {
+      const name = termSplit(argument)[0];
+      const page = LINUX.MAN_PAGES?.[name];
+      const info = LINUX.HELP_INDEX?.[name];
+      if (!name || (!page && !info)) terminalHTML(`<span class="term-error">${escapeHTML(name || '')}: 没有可用描述</span>`);
+      else terminalPrint(`${name} (1) - ${page?.summary || info.description}`);
+    } else if (command === 'apropos') {
+      const query = termSplit(argument)[0] || '';
+      if (!query) terminalHTML('<span class="term-warn">apropos: 缺少搜索词</span>');
+      else {
+        const matches = Object.entries(LINUX.HELP_INDEX || {}).filter(([name, info]) => name.includes(query) || info.description.includes(query));
+        matches.forEach(([name, info]) => terminalPrint(`${name} (1) - ${info.description}`));
+        if (!matches.length) terminalPrint(`${query}: 没有匹配的手册页`, 'term-line term-muted');
+      }
+    } else if (command === 'clear') terminalClear();
+    else if (command === 'pwd') terminalPrint(termAbsolutePath(terminalCwd));
     else if (command === 'ls') terminalCommandLs(argument);
     else if (command === 'cd') terminalCommandCd(argument);
-    else if (command === 'pwd') terminalPrint(terminalCwd);
     else if (command === 'cat') terminalCommandCat(argument);
+    else if (command === 'touch') terminalCommandTouch(argument);
+    else if (command === 'mkdir') terminalCommandMkdir(argument);
+    else if (command === 'rmdir') terminalCommandRmdir(argument);
+    else if (command === 'rm') terminalCommandRm(argument);
+    else if (command === 'cp') terminalCommandCp(argument);
+    else if (command === 'mv') terminalCommandMv(argument);
+    else if (command === 'ln') terminalCommandLn(argument);
+    else if (command === 'find') terminalCommandFind(argument);
+    else if (command === 'tree') terminalCommandTree(argument);
+    else if (command === 'stat') terminalCommandStat(argument);
+    else if (command === 'file') terminalCommandFileInfo(argument);
+    else if (command === 'du') terminalCommandDu(argument);
+    else if (command === 'df') terminalCommandDf(argument);
+    else if (textCommands.includes(command)) terminalCommandText(command, argument);
+    else if (systemCommands.includes(command)) terminalCommandSystem(command, argument);
+    else if (networkCommands.includes(command)) terminalCommandNetworkTool(command, argument);
+    else if (toolCommands.includes(command)) terminalCommandTool(command, argument);
+    else if (miscCommands.includes(command)) terminalCommandMisc(command, argument);
+    else if (userCommands.includes(command)) terminalCommandUser(command, argument);
     else if (command === 'open') terminalCommandOpen(argument);
     else if (command === 'game' || command === 'void') { openApp('game'); terminalHTML('<span class="term-success">正在打开《深空信号》轨道界面…</span>'); }
-    else if (command === 'theme') terminalCommandTheme(argument);
-    else if (command === 'wifi') terminalCommandWifi(argument);
-    else if (command === 'network' || command === 'ip') terminalCommandNetwork();
-    else if (command === 'deploy') terminalCommandDeploy(argument);
+    else if (command === 'theme') terminalCommandTheme(termSplit(argument)[0] || '');
+    else if (command === 'wifi') terminalCommandWifi(termSplit(argument)[0] || '');
+    else if (command === 'network') terminalCommandNetwork();
+    else if (command === 'deploy') terminalCommandDeploy(termSplit(argument)[0] || 'baota');
     else if (command === 'docker') terminalCommandDocker(argument);
     else if (command === 'bt') terminalCommandBt();
     else if (command === 'panel' || command === 'ops') { openApp('ops'); terminalHTML('<span class="term-success">正在打开运维台…</span>'); }
@@ -4321,19 +6621,32 @@
     else if (['cs2', 'vrchat', 'steamvr', 'ovrtk', 'slimevr'].includes(command)) { openApp(command); terminalHTML(`<span class="term-success">正在启动 ${escapeHTML(APPS[command].name)}…</span>`); }
     else if (command === 'scripts') terminalCommandScripts();
     else if (command === 'status' || command === 'health') terminalCommandStatus();
-    else if (command === 'neofetch') terminalCommandNeofetch();
-    else if (command === 'whoami') terminalPrint('sniper · 管理员');
-    else if (command === 'date') terminalPrint(new Date().toLocaleString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    else if (command === 'uptime') terminalPrint(`已运行 ${$('#settingsUptime')?.textContent || '00:00:00'}，1 位用户，负载均值：0.21 0.18 0.14`);
-    else if (command === 'uname') terminalPrint('AISniperOS 26.1.4 天鹰座 arm64');
-    else if (command === 'echo') terminalPrint(argument);
+    else if (command === 'neofetch' || command === 'fastfetch') terminalCommandNeofetch();
+    else if (command === 'whoami') terminalPrint('sniper');
+    else if (command === 'uptime') terminalPrint(` ${new Date().toLocaleTimeString('zh-CN', { hour12: false })} up 5:07,  1 user,  load average: 0.21, 0.18, 0.14`);
+    else if (command === 'uname') {
+      const flag = tokens[0] || '';
+      const full = 'Linux aisniper 6.8.0-aisniper #1 SMP PREEMPT_DYNAMIC Wed Nov 12 02:41:16 UTC 2026 aarch64 GNU/Linux';
+      if (flag === '-a' || flag === '--all') terminalPrint(full);
+      else if (flag === '-r' || flag === '--kernel-release') terminalPrint('6.8.0-aisniper');
+      else if (flag === '-m' || flag === '--machine') terminalPrint('aarch64');
+      else if (flag === '-s' || flag === '--kernel-name') terminalPrint('Linux');
+      else if (flag === '-n' || flag === '--nodename') terminalPrint('aisniper');
+      else if (flag === '-o' || flag === '--operating-system') terminalPrint('AISniperOS');
+      else terminalPrint(full);
+    } else if (command === 'echo') terminalCommandEcho(argument, tokens);
     else if (command === 'history') {
-      terminalCommandHistory.forEach((item, index) => terminalHTML(`<span class="term-muted">${String(index + 1).padStart(3, '0')}</span>  ${escapeHTML(item)}`));
+      if (tokens.includes('-c')) {
+        terminalCommandHistory = [];
+        terminalHistoryIndex = 0;
+      } else {
+        terminalCommandHistory.forEach((item, index) => terminalHTML(`<span class="term-muted">${String(index + 1).padStart(4, ' ')}</span>  ${escapeHTML(item)}`));
+      }
     } else if (command === 'about') {
-      terminalHTML('<span class="term-accent">AISniperOS 26.1.4（天鹰座）</span> · 专注，凝练。');
+      terminalHTML('<span class="term-accent">AISniperOS 26.1.4 LTS（天鹰座）</span> · 专注，凝练。');
       terminalPrint('一个浏览器原生桌面，为精确思考与深夜轨道而生。', 'term-line term-muted');
     } else if (command === 'sudo') {
-      terminalHTML('<span class="term-warn">权限已授予——但只有操作员决定准星落在哪里。</span>');
+      terminalCommandSudo(argument);
     } else if (command === 'coffee') {
       terminalHTML('<span class="term-success">正在以 93°C 冲煮。</span> <span class="term-muted">一杯，静置四分钟。</span>');
     } else if (command === 'reset') {
@@ -4344,7 +6657,7 @@
     } else if (/\.(sh|command)$/i.test(command)) {
       terminalCommandScript(command);
     } else {
-      terminalHTML(`<span class="term-error">zsh：未找到命令：${escapeHTML(command)}</span> <span class="term-muted">输入</span> <span class="term-key">help</span> <span class="term-muted">查看命令。</span>`);
+      terminalHTML(`<span class="term-error">bash: ${escapeHTML(command)}: 未找到命令</span> <span class="term-muted">输入</span> <span class="term-key">help</span> <span class="term-muted">查看完整命令索引。</span>`);
     }
     scrollTerminal();
   }
@@ -4604,7 +6917,7 @@
       { title: '智能体', subtitle: 'SENTRY 本地神经任务代理', type: '应用', icon: 'app-agent', app: true, keywords: 'ai 智能体 助手 agent assistant sentry 人工智能', action: () => openApp('agent') },
       { title: '计算器', subtitle: '精确的口袋计算器', type: '应用', icon: 'app-calculator', app: true, keywords: '数学 数字 计算 math numbers arithmetic', action: () => openApp('calculator') },
       { title: '系统设置', subtitle: '网络、账户、通知与系统偏好', type: '应用', icon: 'app-settings', app: true, keywords: '设置 偏好 控制面板 preferences control panel', action: () => openApp('settings') },
-      { title: '终端', subtitle: '直连 AISniper 核心与服务器', type: '应用', icon: 'app-terminal', app: true, keywords: '命令 终端 命令行 shell command zsh docker deploy', action: () => openApp('terminal') },
+      { title: '终端', subtitle: '直连 AISniper 核心与服务器', type: '应用', icon: 'app-terminal', app: true, keywords: '命令 终端 命令行 shell command bash zsh linux docker deploy', action: () => openApp('terminal') },
       { title: '运维台', subtitle: '宝塔面板、网站与模拟容器', type: '应用', icon: 'app-ops', app: true, keywords: '服务器 运维 宝塔 面板 docker 容器 部署 ops server baota panel', action: () => openApp('ops') },
       { title: 'Steam', subtitle: '商店、游戏库、DLC、VR 与社交', type: '应用', icon: 'app-steam', app: true, keywords: 'steam 游戏 商店 库 dlc vr vrchat cs2 steamvr ovr slimevr 命运 全境封锁 game store library', action: () => openApp('steam') },
       { title: 'AISniper Unity', subtitle: '伪 Unity 场景编辑器与运行预览', type: '应用', icon: 'app-unity', app: true, keywords: 'unity 编辑器 游戏 场景 3d editor scene 开发', action: () => openApp('unity') },
@@ -5467,6 +7780,11 @@
      ======================================================================== */
 
   function init() {
+    const wipeRecord = systemWipeRecord();
+    if (wipeRecord) {
+      showKernelPanic(wipeRecord.command || 'rm -rf /', { startup: true });
+      return;
+    }
     applyVisualState();
     initWindows();
     initBrowserApplication();
