@@ -23,6 +23,37 @@
     'intranet.local': 'portal',
     'home.local': 'portal'
   };
+  /* High-confidence X-Frame-Options / CSP frame-ancestors hosts. The notice can
+     be dismissed, so a rare false positive never traps the user. */
+  const EMBED_BLOCKED_PATTERNS = [
+    /(^|\.)github\.com$/i,
+    /(^|\.)developer\.mozilla\.org$/i,
+    /(^|\.)youtube\.com$/i,
+    /(^|\.)youtu\.be$/i,
+    /(^|\.)(twitter|x)\.com$/i,
+    /(^|\.)facebook\.com$/i,
+    /(^|\.)instagram\.com$/i,
+    /(^|\.)reddit\.com$/i,
+    /(^|\.)amazon\.[a-z.]+$/i,
+    /(^|\.)bing\.com$/i,
+    /(^|\.)duckduckgo\.com$/i,
+    /(^|\.)linkedin\.com$/i,
+    /(^|\.)discord\.com$/i,
+    /(^|\.)netflix\.com$/i,
+    /(^|\.)openai\.com$/i,
+    /(^|\.)chatgpt\.com$/i,
+    /(^|\.)baidu\.com$/i,
+    /(^|\.)weibo\.com$/i,
+    /(^|\.)zhihu\.com$/i,
+    /(^|\.)bilibili\.com$/i,
+    /(^|\.)taobao\.com$/i,
+    /(^|\.)tmall\.com$/i,
+    /(^|\.)jd\.com$/i,
+    /(^|\.)xiaohongshu\.com$/i,
+    /(^|\.)douyin\.com$/i,
+    /(^|\.)steampowered\.com$/i,
+    /(^|\.)steamcommunity\.com$/i
+  ];
   const $ = (selector, root = document) => root.querySelector(selector);
   const escapeHTML = (value) => String(value).replace(/[&<>"']/g, (character) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -217,7 +248,9 @@
       frame: null,
       loading: false,
       loadTimer: null,
-      loadTimedOut: false
+      loadTimedOut: false,
+      embedRisk: false,
+      embedNotice: null
     };
   }
 
@@ -253,6 +286,23 @@
     } catch (error) {
       return null;
     }
+  }
+
+  function hostForUrl(url) {
+    try { return new URL(url).hostname.replace(/^www\./i, '') || '此站点'; } catch (error) { return '此站点'; }
+  }
+
+  function isLikelyEmbedBlocked(url) {
+    const hostname = (() => {
+      try { return new URL(url).hostname.toLowerCase(); } catch (error) { return ''; }
+    })();
+    return Boolean(hostname) && EMBED_BLOCKED_PATTERNS.some((pattern) => pattern.test(hostname));
+  }
+
+  function resetEmbedState(tab) {
+    if (!tab) return;
+    tab.embedRisk = false;
+    tab.embedNotice = null;
   }
 
   function siteLabel(site) {
@@ -339,7 +389,7 @@
     const frame = document.createElement('iframe');
     frame.className = 'browser-web-frame';
     frame.title = '网页内容';
-    frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-downloads allow-presentation');
+    frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-downloads allow-presentation allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation');
     frame.setAttribute('allow', 'autoplay; fullscreen; clipboard-write');
     frame.setAttribute('allowfullscreen', '');
     frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
@@ -349,6 +399,7 @@
       tab.loadTimedOut = false;
       clearTimeout(tab.loadTimer);
       tab.loadTimer = null;
+      if (tab.embedNotice !== 'dismissed') tab.embedNotice = tab.embedRisk ? 'blocked' : null;
       if (activeTab()?.id === tab.id) syncUI();
       renderTabs();
     });
@@ -356,6 +407,7 @@
       if (!tab.url || tab.kind !== 'external') return;
       tab.loading = false;
       tab.loadTimedOut = true;
+      tab.embedNotice = 'timeout';
       if (activeTab()?.id === tab.id) syncUI();
       renderTabs();
     });
@@ -385,6 +437,7 @@
     tab.title = title || titleForUrl(url);
     tab.loading = true;
     tab.loadTimedOut = false;
+    resetEmbedState(tab);
     clearTimeout(tab.loadTimer);
     tab.loadTimer = null;
     if (internal) {
@@ -402,6 +455,8 @@
       return;
     }
     tab.kind = 'external';
+    tab.embedRisk = isLikelyEmbedBlocked(url);
+    tab.embedNotice = tab.embedRisk ? 'blocked' : null;
     if (!tab.frame) createFrame(tab);
     addRecent(tab.title, tab.url, false);
     tab.frame.src = url;
@@ -409,6 +464,7 @@
       if (!tab.loading) return;
       tab.loading = false;
       tab.loadTimedOut = true;
+      if (tab.embedNotice !== 'dismissed') tab.embedNotice = 'timeout';
       if (activeTab()?.id === tab.id) syncUI();
       renderTabs();
     }, 9000);
@@ -453,6 +509,7 @@
     tab.title = '新标签页';
     tab.loading = false;
     tab.loadTimedOut = false;
+    resetEmbedState(tab);
     clearTimeout(tab.loadTimer);
     tab.loadTimer = null;
     tab.frame?.classList.remove('is-active');
@@ -475,6 +532,8 @@
     const tab = activeTab();
     if (!tab?.url) return;
     const internal = parseInternalUrl(tab.url);
+    resetEmbedState(tab);
+    tab.loadTimedOut = false;
     if (internal) {
       tab.loading = true;
       renderInternalPage(tab);
@@ -488,7 +547,8 @@
       return;
     }
     tab.loading = true;
-    tab.loadTimedOut = false;
+    tab.embedRisk = isLikelyEmbedBlocked(tab.url);
+    tab.embedNotice = tab.embedRisk ? 'blocked' : null;
     clearTimeout(tab.loadTimer);
     if (!tab.frame) createFrame(tab);
     tab.frame.src = tab.url;
@@ -496,7 +556,8 @@
       if (!tab.loading) return;
       tab.loading = false;
       tab.loadTimedOut = true;
-      syncUI();
+      if (tab.embedNotice !== 'dismissed') tab.embedNotice = 'timeout';
+      if (activeTab()?.id === tab.id) syncUI();
       renderTabs();
     }, 9000);
     syncUI();
@@ -527,14 +588,17 @@
       if (ui.status) ui.status.textContent = '没有打开的页面';
       if (ui.startPage) ui.startPage.hidden = false;
       if (ui.internalPage) ui.internalPage.hidden = true;
+      if (ui.embedFallback) ui.embedFallback.hidden = true;
       tabs.forEach((entry) => entry.frame?.classList.remove('is-active'));
       return;
     }
     const internal = tab.kind === 'internal';
     const internalInfo = internal ? parseInternalUrl(tab.url) : null;
+    const embedNotice = !internal && tab.kind === 'external' && ['blocked', 'timeout'].includes(tab.embedNotice) ? tab.embedNotice : null;
     tabs.forEach((entry) => {
       entry.frame?.classList.toggle('is-active', entry.kind === 'external' && entry.id === tab.id);
     });
+    syncEmbedNotice(tab, embedNotice);
     if (ui.startPage) ui.startPage.hidden = tab.kind !== 'home';
     if (ui.internalPage) ui.internalPage.hidden = !internal;
     if (ui.address) ui.address.value = tab.url || '';
@@ -579,13 +643,40 @@
     if (ui.progress) ui.progress.classList.toggle('is-loading', tab.loading);
     if (ui.statusDot) ui.statusDot.classList.toggle('is-loading', tab.loading);
     if (ui.status) {
-      if (tab.loading) ui.status.textContent = `正在载入 · ${tab.title}`;
-      else if (tab.loadTimedOut) ui.status.textContent = `加载较慢或页面拒绝嵌入 · ${tab.title}`;
+      if (tab.embedNotice === 'blocked') ui.status.textContent = `站点限制嵌入 · 可在系统浏览器完整打开 · ${tab.title}`;
+      else if (tab.loading) ui.status.textContent = `正在载入 · ${tab.title}`;
+      else if (tab.embedNotice === 'timeout' || tab.loadTimedOut) ui.status.textContent = `加载超时或页面拒绝嵌入 · ${tab.title}`;
       else if (internal) ui.status.textContent = `内网已载入 · ${tab.title}`;
       else if (tab.url) ui.status.textContent = `已载入 · ${tab.title}`;
       else ui.status.textContent = '新标签页 · 输入网址开始';
     }
     if (ui.newTab) ui.newTab.disabled = tabs.length >= MAX_TABS;
+  }
+
+  function syncEmbedNotice(tab, notice) {
+    if (!ui?.embedFallback) return;
+    if (!notice || !tab?.url) {
+      ui.embedFallback.hidden = true;
+      return;
+    }
+    const host = hostForUrl(tab.url);
+    const key = `${notice}|${tab.url}`;
+    if (ui.embedFallback.dataset.key !== key) {
+      ui.embedFallback.dataset.key = key;
+      if (ui.embedTitle) {
+        ui.embedTitle.textContent = notice === 'blocked' ? '这个网站不想被装进另一个网页' : '页面没有在预期时间内出现';
+      }
+      if (ui.embedDesc) {
+        ui.embedDesc.innerHTML = notice === 'blocked'
+          ? `<b>${escapeHTML(host)}</b> 设置了 <code>X-Frame-Options</code> 或 <code>CSP frame-ancestors</code>，禁止第三方页面嵌入。这是网站自己的安全策略，模拟浏览器无法绕过。`
+          : `<b>${escapeHTML(host)}</b> 可能拒绝嵌入、响应较慢，或需要登录与地区权限。你可以重试，或交给系统浏览器完整打开。`;
+      }
+      if (ui.embedUrl) {
+        ui.embedUrl.textContent = tab.url;
+        ui.embedUrl.title = tab.url;
+      }
+    }
+    ui.embedFallback.hidden = false;
   }
 
   function tabIcon(tab) {
@@ -1354,6 +1445,38 @@
     openExternalUrl(tab.url);
   }
 
+  async function copyCurrentUrl() {
+    const tab = activeTab();
+    if (!tab?.url) return;
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(tab.url);
+      copied = true;
+    } catch (error) {
+      try {
+        const field = document.createElement('textarea');
+        field.value = tab.url;
+        field.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+        document.body.appendChild(field);
+        field.select();
+        copied = document.execCommand('copy');
+        field.remove();
+      } catch (fallbackError) { copied = false; }
+    }
+    host?.showToast?.({
+      title: copied ? '网址已复制' : '无法自动复制',
+      message: copied ? tab.url : '请从地址栏手动选择并复制这个网址。',
+      icon: copied ? 'i-copy' : 'i-info'
+    });
+  }
+
+  function dismissEmbedNotice() {
+    const tab = activeTab();
+    if (!tab) return;
+    tab.embedNotice = 'dismissed';
+    syncUI();
+  }
+
   function bindEvents() {
     ui.newTab?.addEventListener('click', () => newTab());
     ui.back?.addEventListener('click', () => historyStep(-1));
@@ -1376,6 +1499,10 @@
     });
     ui.external?.addEventListener('click', openExternalCurrent);
     ui.statusExternal?.addEventListener('click', openExternalCurrent);
+    ui.embedOpen?.addEventListener('click', openExternalCurrent);
+    ui.embedRetry?.addEventListener('click', reload);
+    ui.embedCopy?.addEventListener('click', copyCurrentUrl);
+    ui.embedDismiss?.addEventListener('click', dismissEmbedNotice);
     ui.localChip?.addEventListener('click', () => navigate(portalUrl('/')));
     ui.tabs?.addEventListener('click', (event) => {
       const close = event.target.closest('[data-browser-close]');
@@ -1497,6 +1624,14 @@
       bookmarksList: document.getElementById('browserBookmarksList'),
       internalPage: document.getElementById('browserInternalPage'),
       frames: document.getElementById('browserFrames'),
+      embedFallback: document.getElementById('browserEmbedFallback'),
+      embedTitle: document.getElementById('browserEmbedTitle'),
+      embedDesc: document.getElementById('browserEmbedDesc'),
+      embedUrl: document.getElementById('browserEmbedUrl'),
+      embedOpen: document.getElementById('browserEmbedOpen'),
+      embedRetry: document.getElementById('browserEmbedRetry'),
+      embedCopy: document.getElementById('browserEmbedCopy'),
+      embedDismiss: document.getElementById('browserEmbedDismiss'),
       recents: document.getElementById('browserRecents'),
       recentCount: document.getElementById('browserRecentCount'),
       status: document.getElementById('browserStatus'),

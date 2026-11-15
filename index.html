@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#070a10">
   <meta name="description" content="AISniperOS — 可登录的浏览器桌面伪系统，内置带 DLC 与下载队列的 Steam 商店、可玩 CS2 / VRChat / 命运 2 / 全境封锁、八款 Canvas 游戏、伪 Unity 编辑器、语音视频通话、VR 工具、Finder、SENTRY 智能体、信息、宝塔式运维台、可进入路由器与 NAS 后台的内网浏览器，以及 3D 太空射击游戏。">
   <title>AISniperOS · 专注的操作系统</title>
-  <link rel="stylesheet" href="css/os.css?v=26.4.7">
-  <link rel="stylesheet" href="css/browser.css?v=26.4">
+  <link rel="stylesheet" href="css/os.css?v=26.5">
+  <link rel="stylesheet" href="css/browser.css?v=26.5">
   <link rel="stylesheet" href="css/apps.css?v=26.4">
   <link rel="stylesheet" href="css/app-ui.css?v=26.4">
   <link rel="stylesheet" href="css/steam.css?v=26.4.3">
@@ -907,12 +907,31 @@
                 </div>
                 <div class="browser-embed-note">
                   <svg viewBox="0 0 24 24"><use href="#i-info"></use></svg>
-                  <span>部分外部网站会拒绝被网页内嵌显示；内网页面由 AISniperOS 本地渲染。输入 192.168.1.1 可以进入这台设备的路由器后台，所有设置仅在本机模拟。</span>
+                  <span>部分外部网站会用 X-Frame-Options / CSP 拒绝被网页内嵌显示。遇到时浏览器会给出兼容性提示，可用“在系统浏览器中打开”完整访问；内网页面由 AISniperOS 本地渲染，输入 192.168.1.1 可以进入这台设备的路由器后台。</span>
                 </div>
               </div>
             </div>
             <div class="browser-internal-page" id="browserInternalPage" hidden></div>
             <div class="browser-frames" id="browserFrames"></div>
+            <div class="browser-embed-fallback" id="browserEmbedFallback" hidden>
+              <div class="browser-embed-card" role="alertdialog" aria-labelledby="browserEmbedTitle" aria-describedby="browserEmbedDesc">
+                <div class="browser-embed-art" aria-hidden="true">
+                  <span class="browser-embed-orbit"></span>
+                  <span class="browser-embed-glyph"><svg viewBox="0 0 24 24"><use href="#i-external"></use></svg></span>
+                </div>
+                <div class="browser-embed-kicker">EMBED COMPATIBILITY</div>
+                <h2 id="browserEmbedTitle">这个网站不想被装进另一个网页</h2>
+                <p id="browserEmbedDesc"><b id="browserEmbedHost">此站点</b> 设置了 <code>X-Frame-Options</code> 或 <code>CSP frame-ancestors</code>，禁止第三方页面嵌入。这是网站自己的安全策略，模拟浏览器无法绕过。</p>
+                <div class="browser-embed-url" id="browserEmbedUrl">https://example.com</div>
+                <div class="browser-embed-actions">
+                  <button class="browser-embed-primary" id="browserEmbedOpen" type="button"><svg viewBox="0 0 24 24"><use href="#i-external"></use></svg>在系统浏览器中打开</button>
+                  <button id="browserEmbedRetry" type="button"><svg viewBox="0 0 24 24"><use href="#i-reload"></use></svg>重试</button>
+                  <button id="browserEmbedCopy" type="button"><svg viewBox="0 0 24 24"><use href="#i-copy"></use></svg>复制网址</button>
+                  <button class="browser-embed-dismiss" id="browserEmbedDismiss" type="button">仍然显示页面</button>
+                </div>
+                <small>内网模拟页面（192.168.1.1、192.168.1.20、aisniper.local）不受此限制。</small>
+              </div>
+            </div>
           </div>
         </div>
         <div class="browser-statusbar">
@@ -1321,6 +1340,51 @@
                 <button class="wallpaper-choice" data-wallpaper-choice="glacier">
                   <span class="wallpaper-thumb thumb-glacier"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
                   <span class="wallpaper-choice-meta"><b>冰川空气</b><span>极地光线 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="midnight">
+                  <span class="wallpaper-thumb thumb-midnight"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>极夜</b><span>靛蓝星海 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="sakura">
+                  <span class="wallpaper-thumb thumb-sakura"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>樱雾</b><span>暮色花云 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="dunes">
+                  <span class="wallpaper-thumb thumb-dunes"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>沙丘</b><span>金色风脊 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="forest">
+                  <span class="wallpaper-thumb thumb-forest"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>苔林</b><span>雾中针叶 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="ocean">
+                  <span class="wallpaper-thumb thumb-ocean"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>潮汐</b><span>深海蓝光 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="nebula">
+                  <span class="wallpaper-thumb thumb-nebula"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>星云</b><span>紫红星尘 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="mono">
+                  <span class="wallpaper-thumb thumb-mono"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>石墨</b><span>银灰极简 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="solaris">
+                  <span class="wallpaper-thumb thumb-solaris"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>日冕</b><span>金色日蚀 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="abyss">
+                  <span class="wallpaper-thumb thumb-abyss"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>深潜</b><span>钴蓝深渊 · 动态</span></span>
                   <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
                 </button>
               </div>
@@ -1948,7 +2012,7 @@
 
   <script src="vendor/three.min.js"></script>
   <script src="js/game.js?v=26.4"></script>
-  <script src="js/browser.js?v=26.4"></script>
+  <script src="js/browser.js?v=26.5"></script>
   <script src="js/agent.js?v=26.4"></script>
   <script src="js/messages.js?v=26.4"></script>
   <script src="js/ops.js?v=26.4"></script>
@@ -1956,6 +2020,6 @@
   <script src="js/steammini.js?v=26.5.38"></script>
   <script src="js/unity.js?v=26.4"></script>
   <script src="js/steam.js?v=26.4.29"></script>
-  <script src="js/os.js?v=26.4.3"></script>
+  <script src="js/os.js?v=26.5"></script>
 </body>
 </html>

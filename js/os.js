@@ -35,6 +35,21 @@
     game: { name: '深空信号', window: 'window-game', width: 1080, height: 678, minWidth: 620, minHeight: 460, resizable: true }
   };
   const LAUNCH_APP = { finder: 'finder', browser: 'browser', messages: 'messages', agent: 'agent', calculator: 'calculator', settings: 'settings', terminal: 'terminal', ops: 'ops', steam: 'steam', unity: 'unity', game: 'game', trash: 'finder' };
+  const WALLPAPERS = {
+    meridian: { name: '子午线', hint: '高山黄昏' },
+    ember: { name: '余烬旷野', hint: '日晕薄雾' },
+    glacier: { name: '冰川空气', hint: '极地光线' },
+    midnight: { name: '极夜', hint: '靛蓝星海' },
+    sakura: { name: '樱雾', hint: '暮色花云' },
+    dunes: { name: '沙丘', hint: '金色风脊' },
+    forest: { name: '苔林', hint: '雾中针叶' },
+    ocean: { name: '潮汐', hint: '深海蓝光' },
+    nebula: { name: '星云', hint: '紫红星尘' },
+    mono: { name: '石墨', hint: '银灰极简' },
+    solaris: { name: '日冕', hint: '金色日蚀' },
+    abyss: { name: '深潜', hint: '钴蓝深渊' }
+  };
+  const WALLPAPER_KEYS = Object.keys(WALLPAPERS);
 
   const defaultState = {
     appearance: 'dark',
@@ -81,7 +96,7 @@
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       if (!saved || typeof saved !== 'object') return safe;
       if (['light', 'dark', 'auto'].includes(saved.appearance)) safe.appearance = saved.appearance;
-      if (['meridian', 'ember', 'glacier'].includes(saved.wallpaper)) safe.wallpaper = saved.wallpaper;
+      if (WALLPAPER_KEYS.includes(saved.wallpaper)) safe.wallpaper = saved.wallpaper;
       if (['solar', 'signal', 'iris', 'ember'].includes(saved.accent)) safe.accent = saved.accent;
       ['glass', 'reduceMotion', 'animateWallpaper', 'widgets', 'magnification', 'dockAutoHide', 'dockIndicators', 'wifi', 'askNetworks', 'interfaceSounds', 'notifications', 'notificationSounds', 'notificationBadges', 'focusReduceMotion', 'locationServices', 'cameraAccess', 'micAccess', 'analytics', 'firewall', 'clock24', 'showMenuDate', 'autoTime', 'autoUpdates', 'autoLogin', 'showLoginHint', 'restoreWindows'].forEach((key) => {
         if (typeof saved[key] === 'boolean') safe[key] = saved[key];
@@ -329,12 +344,11 @@
   }
 
   function setWallpaper(name, options = {}) {
-    if (!['meridian', 'ember', 'glacier'].includes(name)) return;
+    if (!WALLPAPER_KEYS.includes(name)) return;
     state.wallpaper = name;
     saveSettings();
     applyVisualState();
-    const names = { meridian: '子午线', ember: '余烬旷野', glacier: '冰川空气' };
-    if (options.announce) showToast({ title: '墙纸已更换', message: `${names[name]} 已成为你的新地平线。`, icon: 'i-image' });
+    if (options.announce) showToast({ title: '墙纸已更换', message: `${WALLPAPERS[name].name} 已成为你的新地平线。`, icon: 'i-image' });
   }
 
   function setAccent(name) {
@@ -4603,7 +4617,7 @@
     return [
       { title: resolvedTheme() === 'dark' ? '切换到浅色外观' : '切换到深色外观', subtitle: '切换 AISniperOS 的整体界面', type: '操作', icon: 'i-sun', keywords: '外观 主题 浅色 深色 theme appearance dark light', action: () => toggleAppearance({ announce: true }) },
       { title: '部署宝塔面板', subtitle: '启动演示服务器、网站与容器', type: '操作', icon: 'app-ops', keywords: '部署 宝塔 面板 容器 docker server deploy container baota', action: () => { const result = opsController?.deployBaota?.({ open: true }); if (!result) openApp('ops'); } },
-      { title: '更换墙纸', subtitle: '子午线、余烬旷野、冰川空气', type: '设置', icon: 'i-image', keywords: '桌面 背景 壁纸 地平线 background horizon', action: () => openApp('settings', { panel: 'wallpaper' }) },
+      { title: '更换墙纸', subtitle: '子午线、余烬旷野、冰川空气等 12 套动态地平线', type: '设置', icon: 'i-image', keywords: '桌面 背景 壁纸 地平线 极夜 樱雾 沙丘 苔林 潮汐 星云 石墨 日冕 深潜 background horizon', action: () => openApp('settings', { panel: 'wallpaper' }) },
       { title: '网络', subtitle: '以太网、Wi-Fi 与网络诊断', type: '设置', icon: 'i-ethernet', keywords: '网络 有线 以太网 无线 局域网 wifi wi-fi 互联网 network ethernet wireless internet', action: () => openApp('settings', { panel: 'wifi' }) },
       { title: '通知与专注', subtitle: '横幅、声音与勿扰专注', type: '设置', icon: 'i-bell', keywords: '通知 横幅 声音 专注 勿扰 notifications focus do not disturb', action: () => openApp('settings', { panel: 'notifications' }) },
       { title: '用户与账户', subtitle: 'Sniper、登录与自动登录', type: '设置', icon: 'i-user', keywords: '用户 账户 登录 密码 account user login', action: () => openApp('settings', { panel: 'users' }) },
