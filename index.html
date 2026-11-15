@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-wallpaper="meridian" data-accent="solar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#070a10">
+  <meta name="description" content="AISniperOS — 可登录的浏览器桌面伪系统，内置带 DLC 与下载队列的 Steam 商店、可玩 CS2 / VRChat / 命运 2 / 全境封锁、八款 Canvas 游戏、伪 Unity 编辑器、语音视频通话、VR 工具、Finder、SENTRY 智能体、信息、宝塔式运维台、可进入路由器与 NAS 后台的内网浏览器，以及 3D 太空射击游戏。">
+  <title>AISniperOS · 专注的操作系统</title>
+  <link rel="stylesheet" href="css/os.css?v=26.4.7">
+  <link rel="stylesheet" href="css/browser.css?v=26.4">
+  <link rel="stylesheet" href="css/apps.css?v=26.4">
+  <link rel="stylesheet" href="css/app-ui.css?v=26.4">
+  <link rel="stylesheet" href="css/steam.css?v=26.4.3">
+  <link rel="stylesheet" href="css/steam-games.css?v=26.4">
+  <link rel="stylesheet" href="css/steammini.css?v=26.4.8">
+  <link rel="stylesheet" href="css/unity.css?v=26.4">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b1018'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%23f4a261' stroke-width='1.5'/%3E%3Cpath d='M16 4v6M16 22v6M4 16h6M22 16h6' stroke='%23f7f5ef' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23f4a261'/%3E%3C/svg%3E">
+</head>
+<body class="is-booting is-locked" data-app="finder">
+  <!-- SVG SPRITE -->
+  <svg class="svg-sprite" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="finderTile" x1="7" y1="3" x2="57" y2="63" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#5ed9ff"/><stop offset=".52" stop-color="#238ee8"/><stop offset="1" stop-color="#0d59c8"/>
+      </linearGradient>
+      <linearGradient id="finderGloss" x1="32" y1="1" x2="32" y2="48" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#fff" stop-opacity=".38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="calcTile" x1="8" y1="2" x2="56" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#3d4552"/><stop offset=".46" stop-color="#20242d"/><stop offset="1" stop-color="#0e1015"/>
+      </linearGradient>
+      <linearGradient id="calcScreen" x1="15" y1="12" x2="49" y2="26" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#c8f8e9"/><stop offset="1" stop-color="#76cdb7"/>
+      </linearGradient>
+      <linearGradient id="settingsSteel" x1="18" y1="11" x2="48" y2="55" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#f8fafc"/><stop offset=".35" stop-color="#adb7c5"/><stop offset=".68" stop-color="#717e8f"/><stop offset="1" stop-color="#eef2f6"/>
+      </linearGradient>
+      <linearGradient id="settingsTile" x1="6" y1="4" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#3a404b"/><stop offset=".55" stop-color="#1b1e26"/><stop offset="1" stop-color="#0b0e13"/>
+      </linearGradient>
+      <linearGradient id="terminalTile" x1="6" y1="2" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#26313a"/><stop offset=".45" stop-color="#11161c"/><stop offset="1" stop-color="#030507"/>
+      </linearGradient>
+      <linearGradient id="gameTile" x1="7" y1="3" x2="58" y2="61" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#392a63"/><stop offset=".42" stop-color="#17182f"/><stop offset="1" stop-color="#060b13"/>
+      </linearGradient>
+      <linearGradient id="gameNebula" x1="18" y1="12" x2="45" y2="47" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#ffcf8a"/><stop offset=".48" stop-color="#ee8d5c"/><stop offset="1" stop-color="#5773de" stop-opacity=".1"/>
+      </linearGradient>
+      <linearGradient id="trashMetal" x1="20" y1="15" x2="46" y2="56" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#f5f7fa"/><stop offset=".5" stop-color="#a6b2bf"/><stop offset="1" stop-color="#e9eef4"/>
+      </linearGradient>
+      <linearGradient id="orbGrad" x1="18" y1="18" x2="46" y2="48" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#ffe8bd"/><stop offset=".5" stop-color="#f4a261"/><stop offset="1" stop-color="#bc5b3d"/>
+      </linearGradient>
+      <radialGradient id="orbGlow" cx=".5" cy=".5" r=".5">
+        <stop stop-color="#ffd9a4" stop-opacity=".9"/><stop offset=".55" stop-color="#f4a261" stop-opacity=".2"/><stop offset="1" stop-color="#f4a261" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="glassSheen" x1="32" y1="1" x2="32" y2="35" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="browserTile" x1="8" y1="3" x2="56" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#2d8fa7"/><stop offset=".48" stop-color="#164963"/><stop offset="1" stop-color="#07111a"/>
+      </linearGradient>
+      <linearGradient id="browserGlobe" x1="18" y1="14" x2="47" y2="51" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#f2fdff"/><stop offset=".55" stop-color="#8ae5df"/><stop offset="1" stop-color="#f7bc7d"/>
+      </linearGradient>
+      <radialGradient id="browserHalo" cx=".5" cy=".5" r=".5">
+        <stop stop-color="#8cebea" stop-opacity=".42"/><stop offset=".62" stop-color="#35a5b4" stop-opacity=".12"/><stop offset="1" stop-color="#35a5b4" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="messagesTile" x1="8" y1="3" x2="57" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#56e0af"/><stop offset=".5" stop-color="#168f79"/><stop offset="1" stop-color="#073b38"/>
+      </linearGradient>
+      <linearGradient id="agentTile" x1="7" y1="3" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#8d7dff"/><stop offset=".46" stop-color="#352b78"/><stop offset="1" stop-color="#0b0917"/>
+      </linearGradient>
+      <linearGradient id="agentOrb" x1="22" y1="18" x2="44" y2="46" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#fff4cf"/><stop offset=".42" stop-color="#ffb86d"/><stop offset="1" stop-color="#8d7dff"/>
+      </linearGradient>
+      <linearGradient id="opsTile" x1="7" y1="3" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#59636e"/><stop offset=".4" stop-color="#1d242d"/><stop offset="1" stop-color="#080b10"/>
+      </linearGradient>
+      <linearGradient id="opsGlow" x1="18" y1="14" x2="46" y2="50" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#ffd6a1"/><stop offset=".6" stop-color="#f4a261" stop-opacity=".3"/><stop offset="1" stop-color="#f4a261" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="steamTile" x1="8" y1="2" x2="57" y2="63" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#4b7796"/><stop offset=".46" stop-color="#1b2838"/><stop offset="1" stop-color="#070c12"/>
+      </linearGradient>
+      <linearGradient id="unityTile" x1="7" y1="3" x2="57" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#d8e0e6"/><stop offset=".38" stop-color="#4c535c"/><stop offset="1" stop-color="#090c11"/>
+      </linearGradient>
+      <linearGradient id="divisionTile" x1="7" y1="3" x2="57" y2="62" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#f0b16d"/><stop offset=".44" stop-color="#3b474b"/><stop offset="1" stop-color="#0b1114"/>
+      </linearGradient>
+      <radialGradient id="steamGlow" cx=".5" cy=".5" r=".5">
+        <stop stop-color="#c7f0ff" stop-opacity=".4"/><stop offset=".62" stop-color="#66c0f4" stop-opacity=".11"/><stop offset="1" stop-color="#66c0f4" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <symbol id="i-mark" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1.1"/>
+      <circle cx="12" cy="12" r="4.1" fill="none" stroke="currentColor" stroke-width="1.25"/>
+      <path d="M12 1.8v5M12 17.2v5M1.8 12h5M17.2 12h5" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="1.25" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="10.7" cy="10.7" r="6.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <path d="m15.5 15.5 4.4 4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24">
+      <path d="M3.4 8.7a13.5 13.5 0 0 1 17.2 0M6.4 12.1a9 9 0 0 1 11.2 0M9.3 15.5a4.6 4.6 0 0 1 5.4 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <circle cx="12" cy="19" r="1.35" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-health" viewBox="0 0 24 24">
+      <path d="M2.5 12.5h4l2.2-6 4 12 2.5-7 1.7 3.3h4.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-control" viewBox="0 0 24 24">
+      <rect x="3" y="4.5" width="18" height="5.3" rx="2.65" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <rect x="3" y="14.2" width="18" height="5.3" rx="2.65" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <circle cx="16" cy="7.15" r="1.7" fill="currentColor"/><circle cx="8" cy="16.85" r="1.7" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-battery" viewBox="0 0 28 24">
+      <rect x="1.3" y="7" width="22.2" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+      <rect x="3.5" y="9.2" width="15.3" height="5.6" rx="1.45" fill="currentColor"/>
+      <path d="M25.2 10.2v3.6c1.1-.2 1.7-.9 1.7-1.8s-.6-1.6-1.7-1.8Z" fill="currentColor" opacity=".6"/>
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4.1" fill="currentColor"/>
+      <path d="M12 1.8v2.7M12 19.5v2.7M1.8 12h2.7M19.5 12h2.7M4.8 4.8l1.9 1.9M17.3 17.3l1.9 1.9M19.2 4.8l-1.9 1.9M6.7 17.3l-1.9 1.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24">
+      <path d="M19.8 14.1A8.4 8.4 0 0 1 9.9 4.2 8.6 8.6 0 1 0 19.8 14.1Z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m14.5 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m5 9 7 7 7-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24">
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 24 24">
+      <path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="M3.2 7.2c0-1.1.9-2 2-2h4.1l2 2.2h7.5c1.1 0 2 .9 2 2v8.4c0 1.1-.9 2-2 2H5.2c-1.1 0-2-.9-2-2V7.2Z" fill="currentColor" opacity=".22"/>
+      <path d="M3.2 7.2c0-1.1.9-2 2-2h4.1l2 2.2h7.5c1.1 0 2 .9 2 2v8.4c0 1.1-.9 2-2 2H5.2c-1.1 0-2-.9-2-2V7.2Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24">
+      <path d="M6 3.5h7.5L19 9v11.5H6V3.5Z" fill="currentColor" opacity=".14"/><path d="M6 3.5h7.5L19 9v11.5H6V3.5Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M13.3 3.8V9h5.1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+    </symbol>
+    <symbol id="i-image" viewBox="0 0 24 24">
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8.7" cy="9.5" r="1.8" fill="currentColor"/><path d="m5.5 17 4.8-5 3.1 3.1 2.3-2.4 3 4.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-app" viewBox="0 0 24 24">
+      <rect x="4" y="4" width="16" height="16" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m8 16 4-8 4 8M9.5 13h5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 7v5.3l3.2 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1" fill="currentColor"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24">
+      <path d="M4 9.5v5h3.4l4.6 3.7V5.8L7.4 9.5H4Z" fill="currentColor"/><path d="M15 9a4.5 4.5 0 0 1 0 6M17.6 6.5a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24">
+      <path d="M4 9.5v5h3.4l4.6 3.7V5.8L7.4 9.5H4Z" fill="currentColor"/><path d="m16 9 5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-video" viewBox="0 0 24 24">
+      <rect x="3" y="6.5" width="12.2" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="m15.2 10.2 5-2.9v9.4l-5-2.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <circle cx="8.1" cy="12" r="1.4" fill="currentColor" opacity=".72"/>
+    </symbol>
+    <symbol id="i-phone-end" viewBox="0 0 24 24">
+      <path d="M4.2 15.3c4.1-3.6 11.5-3.6 15.6 0l1.1 1.2-2.7 2.8-3-2.9c-1.8.4-3.1.4-4.9 0l-3 2.9-2.7-2.8 1.1-1.2Z" fill="currentColor"/>
+      <path d="m4 4 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24">
+      <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24">
+      <rect x="5" y="10" width="14" height="10.5" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 10V7.8a3.5 3.5 0 0 1 7 0V10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24">
+      <rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 8.5V6.2c0-1.2-1-2.2-2.2-2.2H6.2c-1.2 0-2.2 1-2.2 2.2v7.1c0 1.2 1 2.2 2.2 2.2h2.3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M5.5 7.5h13l-.9 11.2a1.8 1.8 0 0 1-1.8 1.6H8.2a1.8 1.8 0 0 1-1.8-1.6L5.5 7.5Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 7.5h16M9 4.5h6M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.5 2.5 5.8 13h5.8l-1.4 8.5 7.9-11h-5.7l1.1-8Z" fill="currentColor"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.6 20 6v5.7c0 4.7-3.2 8.3-8 9.7-4.8-1.4-8-5-8-9.7V6l8-3.4Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m8.5 11.8 2.4 2.5 4.8-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24">
+      <path d="M4 7h9M17 7h3M4 17h3M11 17h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="15" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24">
+      <path d="M12 3a9 9 0 0 0 0 18h1.3c1.4 0 2.1-1.6 1.2-2.6-.8-.9-.2-2.4 1.1-2.4h1.9A4.5 4.5 0 0 0 22 11.5C21.7 6.7 17.4 3 12 3Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="7.5" cy="10" r="1.2" fill="currentColor"/><circle cx="10" cy="6.8" r="1.2" fill="currentColor"/><circle cx="15" cy="7.3" r="1.2" fill="currentColor"/><circle cx="6.6" cy="14.6" r="1.2" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-desktop" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="12.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 20h7M12 16.5V20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-display" viewBox="0 0 24 24">
+      <rect x="2.5" y="4" width="19" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 20.5h8M12 17v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="10.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".7"/>
+    </symbol>
+    <symbol id="i-speaker" viewBox="0 0 24 24">
+      <rect x="6" y="2.8" width="12" height="18.4" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="15.2" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="7.8" r="1.2" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 10.7v6M12 7.1v.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 20V4m0 0L5.5 10.5M12 4l6.5 6.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+
+    <symbol id="i-reload" viewBox="0 0 24 24">
+      <path d="M19.5 8.6A8.4 8.4 0 1 0 20.3 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <path d="M19.8 4.3v5.2h-5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="m3.8 11 8.2-7 8.2 7v8.2c0 .8-.7 1.5-1.5 1.5H5.3c-.8 0-1.5-.7-1.5-1.5V11Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M9.4 20.5v-5.3h5.2v5.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-star" viewBox="0 0 24 24">
+      <path d="m12 3.2 2.7 5.5 6 .9-4.3 4.3 1 6-5.4-2.9-5.4 2.9 1-6-4.3-4.3 6-.9L12 3.2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-external" viewBox="0 0 24 24">
+      <path d="M14 4h6v6M20 4l-9 9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M18 14v5c0 .6-.4 1-1 1H5c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <ellipse cx="12" cy="12" rx="4.2" ry="8.8" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".7"/>
+      <path d="M3.6 9.2h16.8M3.6 14.8h16.8" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".6"/>
+    </symbol>
+    <symbol id="i-ethernet" viewBox="0 0 24 24">
+      <rect x="4" y="7" width="16" height="9" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M7.8 7V3.6M12 7V3.6m4.2 3.4V3.6M8.5 21h7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M8 11.5h1.6M11.2 11.5h1.6M14.4 11.5H16M8 13.7h1.6M11.2 13.7h1.6M14.4 13.7H16" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" opacity=".7"/>
+    </symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24">
+      <path d="M6.2 17.5h11.6c-.9-1.2-1.3-2.7-1.3-4.5v-1.6a4.5 4.5 0 1 0-9 0V13c0 1.8-.4 3.3-1.3 4.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M10.2 20.2a2.1 2.1 0 0 0 3.6 0M12 3.2V5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="8.2" r="3.7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M4.8 20.2c.7-3.6 3.5-5.6 7.2-5.6s6.5 2 7.2 5.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24">
+      <path d="m12 2.8 1.9 5.7 5.7 1.9-5.7 1.9-1.9 5.7-1.9-5.7-5.7-1.9 5.7-1.9L12 2.8Z" fill="currentColor"/>
+      <path d="m19 15.2.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9.9-2.4Z" fill="currentColor" opacity=".55"/>
+    </symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24">
+      <path d="M4 5.5h11.5A0.8.8 0 0 1 16.3 6.3v7.2a.8.8 0 0 1-.8.8H9.3L5.2 17.6v-3.3H4.8A.8.8 0 0 1 4 13.5V5.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M16.4 9h2.8a.8.8 0 0 1 .8.8v6.7a.8.8 0 0 1-.8.8h-1.1v2.5l-3-2.5h-3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" opacity=".6"/>
+    </symbol>
+    <symbol id="i-send" viewBox="0 0 24 24">
+      <path d="m3.4 11.3 17-7.1-5.2 16.5-3.4-6.4-8.4-3Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="m11.8 14.3 4.5-4.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24">
+      <path d="M4 8.5h16v10.2c0 .8-.7 1.5-1.5 1.5h-13c-.8 0-1.5-.7-1.5-1.5V8.5Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M3.2 4.3h17.6v4.2H3.2z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M9.5 12h5M12 12v3.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-pdf" viewBox="0 0 24 24">
+      <path d="M6 3.5h7.5L19 9v11.5H6V3.5Z" fill="currentColor" opacity=".14"/><path d="M6 3.5h7.5L19 9v11.5H6V3.5Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M13.3 3.8V9h5.1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M8.5 16.8v-3.3h1a1.1 1.1 0 0 1 0 2.2h-1m3.1 1.1v-3.3h1.2a1.65 1.65 0 0 1 0 3.3h-1.2Zm4.4 0v-3.3h2" fill="none" stroke="currentColor" stroke-width=".95" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M12 3.5v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24">
+      <path d="m4 17.2-.8 3.6 3.6-.8L18.9 7.9l-2.8-2.8L4 17.2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="m14.7 6.5 2.8 2.8M4 17.2 6.8 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24">
+      <path d="M2.8 12s3.4-5.8 9.2-5.8S21.2 12 21.2 12s-3.4 5.8-9.2 5.8S2.8 12 2.8 12Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="12" cy="12" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="i-server" viewBox="0 0 24 24">
+      <rect x="4" y="3.5" width="16" height="6.4" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <rect x="4" y="14.1" width="16" height="6.4" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M7.3 6.7h.1m2.2 0h3M7.3 17.3h.1m2.2 0h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="17" cy="6.7" r="1" fill="currentColor"/><circle cx="17" cy="17.3" r="1" fill="currentColor" opacity=".55"/>
+    </symbol>
+    <symbol id="i-box" viewBox="0 0 24 24">
+      <path d="m12 3 8 4.2v9.5L12 21l-8-4.3V7.2L12 3Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="m4.2 7.3 7.8 4.2 7.8-4.2M12 11.5V21" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" opacity=".65"/>
+    </symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24">
+      <path d="M3.2 4.2h2l2 10.1h10.6l2-7.8H6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="9.2" cy="18.7" r="1.35" fill="currentColor"/><circle cx="16.8" cy="18.7" r="1.35" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-headset" viewBox="0 0 24 24">
+      <path d="M4.2 12.2V10a7.8 7.8 0 0 1 15.6 0v2.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <rect x="2.8" y="11.2" width="5" height="7.6" rx="2.1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <rect x="16.2" y="11.2" width="5" height="7.6" rx="2.1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M7.8 16h2.1a2.1 2.1 0 0 0 2.1 2.1h1.7" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".65"/>
+    </symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24">
+      <path d="M8 4h8v5.2a4 4 0 0 1-8 0V4Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M8 5.2H4.5v2.1A3.4 3.4 0 0 0 8 10.6M16 5.2h3.5v2.1a3.4 3.4 0 0 1-3.5 3.3M12 13.2v4.3M8.5 20.2h7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="app-steam" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#steamTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".3"/>
+      <circle cx="33" cy="31" r="25" fill="url(#steamGlow)"/>
+      <circle cx="28.5" cy="27" r="9.2" fill="none" stroke="#f4fbff" stroke-width="3.1"/>
+      <circle cx="42" cy="37.5" r="5.7" fill="none" stroke="#d7eef8" stroke-width="2.4" opacity=".9"/>
+      <path d="m34.2 32.8 4.2 2.4" stroke="#e5f7ff" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="28.5" cy="27" r="2.7" fill="#9de6ff"/>
+      <circle cx="42" cy="37.5" r="1.8" fill="#b7f6e7"/>
+      <path d="M10.5 20.5c3-5 7.1-8 12.6-9.4M43.5 54c4.3-2 7.2-5 9.3-9" fill="none" stroke="#f5fbff" stroke-width="1.1" stroke-linecap="round" opacity=".28"/>
+      <path d="M46 15h7M49.5 11.5v7" stroke="#a6e4ff" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".18"/>
+    </symbol>
+    <symbol id="app-unity" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#unityTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".32"/>
+      <path d="m32 12 17 10v20L32 52 15 42V22Z" fill="#151c23" fill-opacity=".92" stroke="#f4fbff" stroke-opacity=".7" stroke-width="1.3"/>
+      <path d="m32 20 9 5.2v10.4L32 41l-9-5.4V25.2Z" fill="#e9f7ff" fill-opacity=".16" stroke="#dff7ff" stroke-opacity=".5" stroke-width="1"/>
+      <path d="M32 7v9M32 41v13M8 25l15 8M41 33l15 8" stroke="#f3d18b" stroke-width="1.6" stroke-linecap="round" opacity=".72"/>
+      <circle cx="32" cy="32" r="3.1" fill="#f1c77d"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".16"/>
+    </symbol>
+    <symbol id="app-division" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#divisionTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".3"/>
+      <circle cx="32" cy="32" r="18" fill="none" stroke="#ffe3a7" stroke-width="2.2"/>
+      <path d="M32 13v8M32 43v8M13 32h8M43 32h8M19 19l5.6 5.6M39.4 39.4 45 45M45 19l-5.6 5.6M24.6 39.4 19 45" stroke="#ffe3a7" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M32 25v14M25 32h14" stroke="#e9a15a" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="32" cy="32" r="4" fill="#f4d9a4"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".16"/>
+    </symbol>
+    <symbol id="app-messages" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#messagesTile)"/>      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".42"/>
+      <path d="M12.5 17.5h27.8c2 0 3.7 1.7 3.7 3.7v13.6c0 2-1.7 3.7-3.7 3.7H26.7L17 45.4v-6.9h-4.5c-2 0-3.7-1.7-3.7-3.7V21.2c0-2 1.7-3.7 3.7-3.7Z" fill="#f4fffb" fill-opacity=".94"/>
+      <path d="M28 29.4h25.4c1.8 0 3.3 1.5 3.3 3.3v9.5c0 1.8-1.5 3.3-3.3 3.3h-3v5.3l-7.3-5.3H28c-1.8 0-3.3-1.5-3.3-3.3v-9.5c0-1.8 1.5-3.3 3.3-3.3Z" fill="#0b4e48" fill-opacity=".78" stroke="#d8fff2" stroke-opacity=".64" stroke-width="1.1"/>
+      <g fill="#168f79"><circle cx="18" cy="28" r="2.2"/><circle cx="25" cy="28" r="2.2"/><circle cx="32" cy="28" r="2.2"/></g>
+      <g fill="#b9ffe9"><circle cx="33" cy="39" r="1.7"/><circle cx="39" cy="39" r="1.7"/><circle cx="45" cy="39" r="1.7"/></g>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".2"/>
+    </symbol>
+    <symbol id="app-agent" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#agentTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".36"/>
+      <circle cx="32" cy="32" r="22.5" fill="none" stroke="#c8bcff" stroke-opacity=".2" stroke-width=".9"/>
+      <ellipse cx="32" cy="32" rx="26" ry="9" fill="none" stroke="#ffca8d" stroke-opacity=".5" stroke-width="1" transform="rotate(-27 32 32)"/>
+      <ellipse cx="32" cy="32" rx="19" ry="26" fill="none" stroke="#9e91ff" stroke-opacity=".36" stroke-width=".9" transform="rotate(37 32 32)"/>
+      <circle cx="32" cy="32" r="11" fill="url(#orbGlow)" opacity=".6"/>
+      <circle cx="32" cy="32" r="7.8" fill="url(#agentOrb)"/>
+      <circle cx="32" cy="32" r="2.6" fill="#1a1430"/>
+      <circle cx="35.5" cy="28.2" r="1.15" fill="#fff4dd" opacity=".9"/>
+      <path d="M32 5.5v8M32 50.5v8M5.5 32h8M50.5 32h8" stroke="#f6e8ff" stroke-width="1.05" stroke-linecap="round" opacity=".55"/>
+      <circle cx="49.5" cy="16" r="2" fill="#ffd49b"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".18"/>
+    </symbol>
+    <symbol id="app-ops" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#opsTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".32"/>
+      <circle cx="32" cy="32" r="23" fill="url(#opsGlow)" opacity=".9"/>
+      <rect x="12" y="12" width="40" height="10.5" rx="3" fill="#10161d" stroke="#dce8f2" stroke-opacity=".38" stroke-width="1"/>
+      <rect x="12" y="26.8" width="40" height="10.5" rx="3" fill="#10161d" stroke="#dce8f2" stroke-opacity=".3" stroke-width="1"/>
+      <rect x="12" y="41.5" width="40" height="10.5" rx="3" fill="#10161d" stroke="#dce8f2" stroke-opacity=".22" stroke-width="1"/>
+      <g fill="#f4a261"><circle cx="19" cy="17.2" r="1.8"/><circle cx="19" cy="32" r="1.8"/><circle cx="19" cy="46.8" r="1.8" opacity=".45"/></g>
+      <path d="M25 17.2h17M25 32h12" stroke="#e6f1fa" stroke-opacity=".58" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M25 46.8h20" stroke="#f4a261" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M47.5 31v-6.2a4 4 0 0 0-8 0V31" fill="none" stroke="#ffe3bc" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".16"/>
+    </symbol>
+    <symbol id="app-browser" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#browserTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".55"/>
+      <circle cx="32" cy="32" r="27" fill="url(#browserHalo)"/>
+      <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#browserGlobe)" stroke-width="1.55"/>
+      <ellipse cx="32" cy="32" rx="8.2" ry="17.5" fill="none" stroke="#d9fbfa" stroke-width="1" opacity=".62"/>
+      <path d="M15 32h34M17.8 23.5h28.4M17.8 40.5h28.4" fill="none" stroke="#d9fbfa" stroke-width="1" opacity=".45"/>
+      <path d="M32 14.5c-4 5-6.1 10.6-6.1 17.5s2.1 12.5 6.1 17.5c4-5 6.1-10.6 6.1-17.5s-2.1-12.5-6.1-17.5Z" fill="none" stroke="#a9efec" stroke-width=".9" opacity=".25"/>
+      <ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="#f4b27b" stroke-width="1" opacity=".6" transform="rotate(-24 32 32)"/>
+      <path d="M48 11v7M44.5 14.5h7" stroke="#f4b27b" stroke-width="1.1" stroke-linecap="round" opacity=".9"/>
+      <circle cx="48" cy="14.5" r="1.8" fill="#ffc58c"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".2"/>
+    </symbol>
+    <symbol id="app-finder" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#finderTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)"/>
+      <path d="M32 7.5v49" stroke="#fff" stroke-opacity=".22" stroke-width="1"/>
+      <path d="M20 22.5c-4.2 0-7 4.4-7 9.5s2.8 9.5 7 9.5M25.5 22c3.2 1.2 4.6 5.2 4.6 10s-1.4 8.8-4.6 10" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-opacity=".94"/>
+      <path d="M44 22.5c4.2 0 7 4.4 7 9.5s-2.8 9.5-7 9.5M38.5 22c-3.2 1.2-4.6 5.2-4.6 10s1.4 8.8 4.6 10" fill="none" stroke="#eaf8ff" stroke-width="2.1" stroke-linecap="round" stroke-opacity=".74"/>
+      <path d="M19.5 41.5c3.7 2 7.9 3 12.5 3s8.8-1 12.5-3" fill="none" stroke="#08294f" stroke-opacity=".3" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="44.5" cy="18.5" r="2.2" fill="#ffe0ad" opacity=".95"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".23"/>
+    </symbol>
+    <symbol id="app-calculator" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#calcTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".55"/>
+      <rect x="11" y="10" width="42" height="13" rx="4" fill="url(#calcScreen)"/>
+      <path d="M17 16.5h16" stroke="#173931" stroke-opacity=".55" stroke-width="1.4" stroke-linecap="round"/>
+      <g fill="#e9edf2" opacity=".9">
+        <circle cx="17" cy="33" r="3.4"/><circle cx="27" cy="33" r="3.4"/><circle cx="37" cy="33" r="3.4"/>
+        <circle cx="17" cy="43" r="3.4"/><circle cx="27" cy="43" r="3.4"/><circle cx="37" cy="43" r="3.4"/>
+        <circle cx="17" cy="53" r="3.4"/><circle cx="27" cy="53" r="3.4"/><circle cx="37" cy="53" r="3.4"/>
+      </g>
+      <g fill="#f2a35d">
+        <circle cx="47" cy="33" r="3.4"/><circle cx="47" cy="43" r="3.4"/><circle cx="47" cy="53" r="3.4"/>
+      </g>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".15"/>
+    </symbol>
+    <symbol id="app-settings" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#settingsTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".45"/>
+      <g fill="url(#settingsSteel)">
+        <rect x="29.2" y="8" width="5.6" height="10.5" rx="2.8"/>
+        <rect x="29.2" y="8" width="5.6" height="10.5" rx="2.8" transform="rotate(45 32 32)"/>
+        <rect x="29.2" y="8" width="5.6" height="10.5" rx="2.8" transform="rotate(90 32 32)"/>
+        <rect x="29.2" y="8" width="5.6" height="10.5" rx="2.8" transform="rotate(135 32 32)"/>
+        <rect x="29.2" y="8" width="5.6" height="10.5" rx="2.8" transform="rotate(180 32 32)"/>
+        <rect x="29.2" y="8" width="5.6" height="10.5" rx="2.8" transform="rotate(225 32 32)"/>
+        <rect x="29.2" y="8" width="5.6" height="10.5" rx="2.8" transform="rotate(270 32 32)"/>
+        <rect x="29.2" y="8" width="5.6" height="10.5" rx="2.8" transform="rotate(315 32 32)"/>
+        <circle cx="32" cy="32" r="16" fill="none" stroke="url(#settingsSteel)" stroke-width="7"/>
+      </g>
+      <circle cx="32" cy="32" r="7.5" fill="#10141a" stroke="#d6dde5" stroke-opacity=".38" stroke-width="1"/>
+      <circle cx="32" cy="32" r="2.5" fill="none" stroke="#f3f6f9" stroke-width="1.3" opacity=".78"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".16"/>
+    </symbol>
+    <symbol id="app-terminal" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#terminalTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".34"/>
+      <circle cx="13" cy="12.5" r="2" fill="#ff7c68"/><circle cx="20" cy="12.5" r="2" fill="#f7c45f"/><circle cx="27" cy="12.5" r="2" fill="#66d39d"/>
+      <path d="M13 25.5 23 34l-10 8.5" fill="none" stroke="#8ff0cb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M29 43h20" stroke="#f1f4f7" stroke-opacity=".78" stroke-width="3" stroke-linecap="round"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".13"/>
+    </symbol>
+    <symbol id="app-game" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#gameTile)"/>
+      <ellipse cx="32" cy="33" rx="23" ry="10.5" fill="none" stroke="url(#gameNebula)" stroke-width="1.2" transform="rotate(-23 32 33)" opacity=".7"/>
+      <ellipse cx="32" cy="33" rx="16.5" ry="25" fill="none" stroke="#7f8dec" stroke-opacity=".32" stroke-width="1" transform="rotate(42 32 33)"/>
+      <circle cx="49.5" cy="26" r="11" fill="url(#orbGlow)" opacity=".55"/>
+      <circle cx="49.5" cy="26" r="5.5" fill="url(#orbGrad)"/>
+      <path d="m32 19 8.5 22-8.5-5-8.5 5L32 19Z" fill="#f8fbfd" stroke="#d8e9f5" stroke-width=".8"/>
+      <path d="M32 26v8" stroke="#3ed9c4" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="19.5" cy="19" r="10" fill="none" stroke="#f4a261" stroke-width="1" stroke-dasharray="15 10" opacity=".85"/>
+      <path d="M19.5 7v6M19.5 25v6M7.5 19h6M25.5 19h6" stroke="#f4a261" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="19.5" cy="19" r="1.6" fill="#f4a261"/>
+      <circle cx="48" cy="47" r="1.2" fill="#fff" opacity=".75"/><circle cx="12" cy="42" r=".9" fill="#8ff0eb" opacity=".7"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".16"/>
+    </symbol>
+    <symbol id="app-trash" viewBox="0 0 64 64">
+      <path d="M19 17h26l-2.6 38.1a3.2 3.2 0 0 1-3.2 3H24.8a3.2 3.2 0 0 1-3.2-3L19 17Z" fill="url(#trashMetal)" fill-opacity=".26" stroke="#e9eff5" stroke-opacity=".72" stroke-width="1.6"/>
+      <path d="M15 14h34M26 9.5h12" stroke="#eef3f8" stroke-opacity=".9" stroke-width="2.3" stroke-linecap="round"/>
+      <path d="M27 25v24M32 25v24M37 25v24" stroke="#dbe6ee" stroke-opacity=".44" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M22 18h20" stroke="#fff" stroke-opacity=".3" stroke-width="1"/>
+    </symbol>
+    <symbol id="icon-orbit-logo" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="22" fill="none" stroke="#f4a261" stroke-opacity=".5" stroke-width="1.2"/>
+      <circle cx="32" cy="32" r="14" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width=".8"/>
+      <ellipse cx="32" cy="32" rx="29" ry="11" fill="none" stroke="#f4a261" stroke-opacity=".6" stroke-width="1" transform="rotate(-24 32 32)"/>
+      <path d="M32 4v12M32 48v12M4 32h12M48 32h12" stroke="#f8fafc" stroke-width="1.4" stroke-linecap="round" opacity=".8"/>
+      <circle cx="32" cy="32" r="3.2" fill="#f4a261"/>
+      <circle cx="54" cy="20" r="2" fill="#ffe4be"/>
+    </symbol>
+  </svg>
+
+  <!-- BOOT -->
+  <div class="boot-screen" id="bootScreen" role="status" aria-label="AISniperOS 正在启动">
+    <div class="boot-aurora"></div>
+    <div class="boot-core">
+      <div class="boot-mark-wrap">
+        <span class="boot-ring boot-ring--one"></span>
+        <span class="boot-ring boot-ring--two"></span>
+        <svg class="boot-mark"><use href="#icon-orbit-logo"></use></svg>
+      </div>
+      <h1 class="boot-wordmark">AISNIPER<span>OS</span></h1>
+      <p class="boot-tagline">专注，凝练。</p>
+      <div class="boot-progress" aria-hidden="true"><span></span></div>
+      <p class="boot-status" id="bootStatus">正在校准光学系统</p>
+    </div>
+    <div class="boot-build">AISNIPER 系统 · 版本 26.1.4</div>
+  </div>
+
+  <!-- LOGIN / LOCK SCREEN -->
+  <div class="login-screen" id="loginScreen" aria-hidden="true">
+    <div class="login-aurora"></div>
+    <div class="login-topbar">
+      <span class="login-network"><i></i>以太网已连接</span>
+      <span class="login-top-date" id="loginTopDate">11月13日 星期五</span>
+    </div>
+    <div class="login-clock" aria-hidden="true">
+      <span class="login-time" id="loginTime">21:41</span>
+      <span class="login-date" id="loginDate">2026年11月13日 星期五</span>
+    </div>
+    <div class="login-panel">
+      <div class="login-avatar-wrap">
+        <div class="login-avatar"><svg viewBox="0 0 64 64"><use href="#icon-orbit-logo"></use></svg></div>
+        <span class="login-avatar-status" aria-hidden="true"></span>
+      </div>
+      <div class="login-identity">
+        <h1>Sniper</h1>
+        <p><span class="login-account-role">管理员</span> · AISniperOS 账户</p>
+      </div>
+      <form class="login-form" id="loginForm" autocomplete="off">
+        <label class="login-field" for="loginPassword">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"></use></svg>
+          <input id="loginPassword" type="password" name="password" placeholder="输入登录密码" autocomplete="current-password" aria-describedby="loginHint" spellcheck="false">
+          <button type="submit" id="loginSubmit" aria-label="登录"><svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+        </label>
+        <p class="login-error" id="loginError" hidden role="alert">密码不正确，请重新输入。</p>
+        <p class="login-hint" id="loginHint">密码提示 <code id="loginPasswordHint">aisniper</code></p>
+      </form>
+      <div class="login-session-note" id="loginSessionNote">输入账户密码，进入你的私人工作区。</div>
+    </div>
+    <div class="login-bottom">
+      <div class="login-bottom-mark"><svg viewBox="0 0 64 64"><use href="#icon-orbit-logo"></use></svg><span>AISNIPER<span>OS</span></span></div>
+      <p>安全启动 · 所有数据留在此设备</p>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="desktop" id="desktop">
+    <div class="wallpaper" id="wallpaper" aria-hidden="true">
+      <div class="wallpaper-sky"></div>
+      <div class="wallpaper-aurora aurora-one"></div>
+      <div class="wallpaper-aurora aurora-two"></div>
+      <div class="wallpaper-starfield" id="wallpaperStarfield"></div>
+      <div class="wallpaper-orb-wrap">
+        <div class="wallpaper-orb-halo"></div>
+        <div class="wallpaper-orbit-line orbit-line-a"></div>
+        <div class="wallpaper-orbit-line orbit-line-b"></div>
+        <div class="wallpaper-orb"></div>
+      </div>
+      <svg class="wallpaper-ridges" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+        <path class="ridge ridge-back" d="M0,572 C118,557 203,589 318,562 C425,538 503,503 609,532 C711,560 799,527 895,515 C998,503 1068,541 1182,528 C1302,514 1397,488 1600,532 L1600,900 L0,900 Z"/>
+        <path class="ridge ridge-mid" d="M0,674 C145,627 259,662 386,625 C507,590 597,622 709,608 C833,593 930,548 1045,579 C1164,612 1287,590 1408,570 C1487,557 1545,566 1600,581 L1600,900 L0,900 Z"/>
+        <path class="ridge ridge-front" d="M0,762 C146,709 279,750 432,719 C566,691 682,742 826,714 C969,686 1097,724 1238,700 C1365,679 1470,690 1600,682 L1600,900 L0,900 Z"/>
+      </svg>
+      <div class="wallpaper-mist"></div>
+      <div class="wallpaper-grain"></div>
+      <div class="wallpaper-vignette"></div>
+    </div>
+
+    <!-- MENU BAR -->
+    <header class="menu-bar" id="menuBar">
+      <div class="menu-bar-left">
+        <button class="brand-button" id="brandMenuBtn" aria-label="AISniperOS 菜单" aria-haspopup="menu">
+          <svg viewBox="0 0 24 24"><use href="#i-mark"></use></svg>
+        </button>
+        <button class="app-menu-button" id="appMenuBtn" aria-haspopup="menu"><span id="activeAppName">访达</span></button>
+        <nav class="menu-links" id="menuLinks" aria-label="应用菜单">
+          <button class="menu-item" data-menu="file">文件</button>
+          <button class="menu-item" data-menu="edit">编辑</button>
+          <button class="menu-item" data-menu="view">显示</button>
+          <button class="menu-item" data-menu="go">前往</button>
+          <button class="menu-item" data-menu="window">窗口</button>
+        </nav>
+      </div>
+      <div class="menu-bar-right">
+        <button class="status-button health-status" id="healthStatusBtn" data-popover-trigger="health" aria-label="系统健康度" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24"><use href="#i-health"></use></svg>
+          <span class="health-dot"></span>
+        </button>
+        <button class="status-button ethernet-status" id="wifiStatusBtn" data-popover-trigger="wifi" aria-label="网络，以太网已连接" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24"><use href="#i-ethernet"></use></svg>
+          <span class="network-ok-dot" aria-hidden="true"></span>
+        </button>
+        <button class="battery-status" data-popover-trigger="health" aria-label="电池 86%">
+          <span class="battery-label">86%</span>
+          <svg viewBox="0 0 28 24"><use href="#i-battery"></use></svg>
+        </button>
+        <button class="status-button" id="spotlightBtn" aria-label="打开聚焦搜索">
+          <svg viewBox="0 0 24 24"><use href="#i-search"></use></svg>
+        </button>
+        <button class="status-button" data-popover-trigger="control" aria-label="控制中心" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24"><use href="#i-control"></use></svg>
+        </button>
+        <button class="clock-status" id="clockStatusBtn" data-popover-trigger="calendar" aria-label="日期与时间" aria-haspopup="dialog">
+          <span class="clock-date" id="menuBarDate">11月13日 周五</span>
+          <span class="clock-time" id="menuBarTime">21:41</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="desktop-area" id="desktopArea">
+      <!-- DESKTOP WIDGETS -->
+      <aside class="widget-stack" aria-label="桌面小组件">
+        <article class="widget browser-widget">
+          <div class="widget-heading">
+            <span class="browser-widget-brand"><span class="browser-widget-mark"><svg viewBox="0 0 64 64"><use href="#app-browser"></use></svg></span>浏览器</span>
+            <span class="weather-live"><i></i>就绪</span>
+          </div>
+          <p class="browser-widget-copy">输入网址，或搜索世界。</p>
+          <form class="browser-widget-form" id="desktopBrowserForm">
+            <svg viewBox="0 0 24 24"><use href="#i-search"></use></svg>
+            <input id="desktopBrowserInput" type="text" placeholder="搜索或输入网址" autocomplete="off" spellcheck="false" aria-label="搜索或输入网址">
+            <button type="submit" aria-label="打开网址"><svg viewBox="0 0 24 24"><use href="#i-arrow-up"></use></svg></button>
+          </form>
+          <button class="browser-widget-open" id="desktopBrowserOpen">打开浏览器 <svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+        </article>
+
+        <article class="widget weather-widget">
+          <div class="widget-heading">
+            <span>山脊观测站</span>
+            <span class="weather-live"><i></i>实时</span>
+          </div>
+          <div class="weather-scene">
+            <div class="weather-sun"></div>
+            <div class="weather-haze"></div>
+            <svg class="weather-ridge" viewBox="0 0 260 86" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M0,72 C42,58 67,66 99,52 C120,43 143,58 171,54 C204,49 227,34 260,44 L260,86 L0,86Z" fill="currentColor"/>
+            </svg>
+            <div class="weather-temp">4<span>°</span></div>
+            <div class="weather-cond">晴空万里<br><span>体感 1°</span></div>
+          </div>
+          <div class="weather-footer">
+            <span><b>高</b> 8°</span><span><b>低</b> −3°</span><span class="weather-wind">西北风 12 km/h</span>
+          </div>
+        </article>
+
+        <article class="widget agenda-widget" id="agendaWidget">
+          <div class="widget-heading">
+            <span>11月13日 星期五</span>
+            <button class="widget-icon-button" id="openCalendarBtn" aria-label="打开日历"><svg viewBox="0 0 24 24"><use href="#i-clock"></use></svg></button>
+          </div>
+          <div class="agenda-list">
+            <div class="agenda-item"><span class="agenda-time">09:30</span><span class="agenda-bar amber"></span><span><b>设计评审</b><small>Aperture 工作室</small></span></div>
+            <div class="agenda-item"><span class="agenda-time">14:00</span><span class="agenda-bar teal"></span><span><b>轨道试飞</b><small>深空信号</small></span></div>
+            <div class="agenda-item"><span class="agenda-time">18:30</span><span class="agenda-bar violet"></span><span><b>山脊散步</b><small>个人专注</small></span></div>
+          </div>
+          <div class="agenda-footer"><span class="focus-orb"></span><span id="agendaFocusLabel">静默专注至 16:00</span></div>
+        </article>
+      </aside>
+
+      <!-- FINDER WINDOW -->
+      <section class="window finder-window" id="window-finder" data-app="finder" role="dialog" aria-label="访达">
+        <div class="window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭访达"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化访达"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放访达"></button>
+          </div>
+          <div class="window-title">访达</div>
+          <div class="window-bar-tools">
+            <button class="icon-button" id="finderMoreBtn" aria-label="更多访达操作"><svg viewBox="0 0 24 24"><use href="#i-sliders"></use></svg></button>
+          </div>
+        </div>
+        <div class="finder-layout">
+          <aside class="finder-sidebar">
+            <div class="sidebar-search">
+              <svg viewBox="0 0 24 24"><use href="#i-search"></use></svg>
+              <input id="finderSidebarSearch" type="search" placeholder="搜索" aria-label="搜索访达边栏">
+            </div>
+            <div class="sidebar-scroll">
+              <div class="sidebar-group">
+                <div class="sidebar-label">个人收藏</div>
+                <button class="sidebar-item" data-location="recents"><svg class="sidebar-star"><use href="#i-clock"></use></svg><span>最近使用</span></button>
+                <button class="sidebar-item" data-location="applications"><svg><use href="#i-app"></use></svg><span>应用程序</span></button>
+                <button class="sidebar-item" data-location="desktop"><svg><use href="#i-desktop"></use></svg><span>桌面</span></button>
+                <button class="sidebar-item" data-location="documents"><svg><use href="#i-file"></use></svg><span>文稿</span></button>
+                <button class="sidebar-item" data-location="downloads"><svg><use href="#i-arrow-up"></use></svg><span>下载</span></button>
+              </div>
+              <div class="sidebar-group">
+                <div class="sidebar-label">AISniper 云盘</div>
+                <button class="sidebar-item" data-location="drive"><svg><use href="#i-folder"></use></svg><span>AISniper 云盘</span></button>
+                <button class="sidebar-item" data-location="shared"><svg><use href="#i-folder"></use></svg><span>共享</span></button>
+              </div>
+              <div class="sidebar-group">
+                <div class="sidebar-label">位置</div>
+                <button class="sidebar-item" data-location="core"><svg><use href="#i-display"></use></svg><span>AISniper 核心</span></button>
+                <button class="sidebar-item" data-location="trash"><svg><use href="#i-trash"></use></svg><span>废纸篓</span></button>
+              </div>
+              <div class="sidebar-group">
+                <div class="sidebar-label">标签</div>
+                <button class="sidebar-item tag-item" data-location="tag-solar"><span class="tag-dot solar"></span><span>暖阳</span></button>
+                <button class="sidebar-item tag-item" data-location="tag-signal"><span class="tag-dot signal"></span><span>信号</span></button>
+                <button class="sidebar-item tag-item" data-location="tag-iris"><span class="tag-dot iris"></span><span>鸢尾</span></button>
+              </div>
+            </div>
+            <div class="sidebar-storage">
+              <div class="storage-line"><span>已使用 74.2 GB / 共 256 GB</span><span>29%</span></div>
+              <div class="storage-bar"><i></i></div>
+            </div>
+          </aside>
+          <div class="finder-main">
+            <div class="finder-toolbar">
+              <div class="finder-nav">
+                <button class="toolbar-button" id="finderBack" aria-label="后退"><svg viewBox="0 0 24 24"><use href="#i-chevron-left"></use></svg></button>
+                <button class="toolbar-button" id="finderForward" aria-label="前进" disabled><svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+              </div>
+              <div class="finder-path" id="finderPath">AISniper 核心 / 最近使用</div>
+              <div class="finder-toolbar-actions">
+                <label class="finder-search">
+                  <svg viewBox="0 0 24 24"><use href="#i-search"></use></svg>
+                  <input id="finderSearch" type="search" placeholder="搜索" aria-label="搜索文件">
+                </label>
+                <div class="view-switcher" role="group" aria-label="视图方式">
+                  <button class="is-active" data-view="icons" aria-label="图标视图"><svg viewBox="0 0 24 24"><use href="#i-grid"></use></svg></button>
+                  <button data-view="list" aria-label="列表视图"><svg viewBox="0 0 24 24"><use href="#i-list"></use></svg></button>
+                </div>
+              </div>
+            </div>
+            <div class="finder-content">
+              <div class="finder-content-head">
+                <h1 id="finderTitle">最近使用</h1>
+                <span id="finderCount">7 个项目</span>
+              </div>
+              <div class="finder-scroll" id="finderScroll">
+                <div class="file-grid" id="finderGrid"></div>
+                <div class="finder-empty" id="finderEmpty" hidden>
+                  <div class="empty-mark"><svg viewBox="0 0 24 24"><use href="#i-search"></use></svg></div>
+                  <h2>没有匹配项</h2>
+                  <p>请尝试其他名称或位置。</p>
+                </div>
+              </div>
+              <div class="finder-status">
+                <span id="finderSelectionInfo">7 个项目</span>
+                <span id="finderFreeSpace">可用空间 74.2 GB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="quicklook" id="quicklook" hidden>
+          <button class="quicklook-close" id="quicklookClose" aria-label="关闭预览"><svg viewBox="0 0 24 24"><use href="#i-close"></use></svg></button>
+          <div class="quicklook-preview" id="quicklookPreview"></div>
+          <div class="quicklook-info">
+            <h3 id="quicklookName">预览</h3>
+            <p id="quicklookMeta">AISniperOS</p>
+          </div>
+        </div>
+
+        <div class="pdf-viewer" id="pdfViewer" hidden>
+          <div class="pdf-viewer-bar">
+            <button class="pdf-close" id="pdfClose" aria-label="关闭 PDF"><svg viewBox="0 0 24 24"><use href="#i-close"></use></svg></button>
+            <div class="pdf-identity">
+              <span class="pdf-badge">PDF</span>
+              <div><b id="pdfTitle">文稿.pdf</b><span id="pdfSubtitle">AISniperOS 预览</span></div>
+            </div>
+            <div class="pdf-controls">
+              <button id="pdfZoomOut" aria-label="缩小"><svg viewBox="0 0 24 24"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+              <span id="pdfZoomLabel">100%</span>
+              <button id="pdfZoomIn" aria-label="放大"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+              <span class="pdf-divider"></span>
+              <button id="pdfPrev" aria-label="上一页"><svg viewBox="0 0 24 24"><use href="#i-chevron-left"></use></svg></button>
+              <span class="pdf-page-readout"><b id="pdfPageCurrent">1</b> / <span id="pdfPageTotal">2</span></span>
+              <button id="pdfNext" aria-label="下一页"><svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+            </div>
+          </div>
+          <div class="pdf-workspace">
+            <aside class="pdf-thumbs" id="pdfThumbs" aria-label="页面缩略图"></aside>
+            <div class="pdf-stage" id="pdfStage">
+              <article class="pdf-page" id="pdfPage"></article>
+            </div>
+          </div>
+          <div class="pdf-footer"><span id="pdfFooterMeta">AISniperOS 文稿预览</span><span>文稿已在本机解锁 · 只读</span></div>
+        </div>
+
+        <div class="archive-sheet" id="archiveSheet" hidden>
+          <div class="archive-card" role="dialog" aria-modal="true" aria-labelledby="archiveName">
+            <header class="archive-head">
+              <span class="archive-mark"><svg viewBox="0 0 24 24"><use href="#i-archive"></use></svg></span>
+              <div><h2 id="archiveName">压缩包</h2><p id="archiveMeta">ZIP 压缩包 · 46 MB</p></div>
+              <button class="archive-close" id="archiveClose" aria-label="关闭压缩包"><svg viewBox="0 0 24 24"><use href="#i-close"></use></svg></button>
+            </header>
+            <div class="archive-destination">
+              <span><svg viewBox="0 0 24 24"><use href="#i-folder"></use></svg>解压到</span>
+              <b id="archiveDestination">AISniper 核心 / 下载</b>
+              <span class="archive-destination-hint">同一位置 · 新建文件夹</span>
+            </div>
+            <div class="archive-file-list" id="archiveFileList"></div>
+            <div class="archive-progress" id="archiveProgress" hidden>
+              <div class="archive-progress-copy"><span id="archiveProgressLabel">正在校验归档…</span><b id="archiveProgressValue">0%</b></div>
+              <div class="archive-progress-track"><i id="archiveProgressBar"></i></div>
+            </div>
+            <footer class="archive-actions">
+              <span class="archive-total" id="archiveTotal">4 个文件 · 46 MB</span>
+              <button class="secondary-button" id="archiveCancel">取消</button>
+              <button class="primary-button" id="archiveExtract"><svg viewBox="0 0 24 24"><use href="#i-download"></use></svg><span id="archiveExtractLabel">解压全部</span></button>
+            </footer>
+          </div>
+        </div>
+      </section>
+
+      <!-- BROWSER -->
+      <section class="window browser-window" id="window-browser" data-app="browser" role="dialog" aria-label="浏览器">
+        <div class="window-bar browser-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭浏览器"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化浏览器"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放浏览器"></button>
+          </div>
+          <div class="browser-tabs" id="browserTabs" role="tablist" aria-label="标签页"></div>
+          <div class="window-bar-tools browser-window-tools">
+            <button class="icon-button" id="browserNewTabBtn" aria-label="新建标签页"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg></button>
+          </div>
+        </div>
+        <div class="browser-toolbar">
+          <div class="browser-nav" aria-label="浏览控制">
+            <button class="browser-nav-button" id="browserBackBtn" aria-label="后退" disabled><svg viewBox="0 0 24 24"><use href="#i-chevron-left"></use></svg></button>
+            <button class="browser-nav-button" id="browserForwardBtn" aria-label="前进" disabled><svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+            <button class="browser-nav-button" id="browserReloadBtn" aria-label="重新载入"><svg viewBox="0 0 24 24"><use href="#i-reload"></use></svg></button>
+            <button class="browser-nav-button" id="browserHomeBtn" aria-label="主页"><svg viewBox="0 0 24 24"><use href="#i-home"></use></svg></button>
+          </div>
+          <form class="browser-address-form" id="browserAddressForm">
+            <span class="browser-address-security" id="browserAddressSecurity" title="安全连接"><svg viewBox="0 0 24 24"><use id="browserSecurityIcon" href="#i-lock"></use></svg></span>
+            <input id="browserAddress" type="text" placeholder="搜索、输入网址或内网地址" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="地址和搜索栏">
+            <button class="browser-address-go" type="submit" aria-label="前往"><svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+          </form>
+          <div class="browser-actions">
+            <button class="browser-local-chip" id="browserLocalChip" type="button" title="打开内网门户">LOCAL</button>
+            <button class="icon-button" id="browserBookmarkBtn" aria-label="收藏此页" disabled><svg viewBox="0 0 24 24"><use href="#i-star"></use></svg></button>
+            <button class="icon-button" id="browserExternalBtn" aria-label="在系统浏览器中打开" title="若页面空白，可在系统浏览器中完整打开"><svg viewBox="0 0 24 24"><use href="#i-external"></use></svg></button>
+          </div>
+        </div>
+        <div class="browser-progress" id="browserProgress" aria-hidden="true"><i></i></div>
+        <div class="browser-body">
+          <aside class="browser-sidebar" id="browserSidebar">
+            <div class="browser-sidebar-scroll">
+              <div class="browser-sidebar-brand"><span class="browser-sidebar-mark"><svg viewBox="0 0 64 64"><use href="#app-browser"></use></svg></span><div><b>NETWORK</b><small>AISNIPER BROWSER</small></div></div>
+              <nav class="browser-side-nav" aria-label="浏览器边栏">
+                <button data-browser-side="home"><svg viewBox="0 0 24 24"><use href="#i-home"></use></svg><span>新标签页</span></button>
+                <button data-browser-side="portal"><svg viewBox="0 0 24 24"><use href="#i-globe"></use></svg><span>内网门户</span><i>LOCAL</i></button>
+                <button data-browser-side="history"><svg viewBox="0 0 24 24"><use href="#i-clock"></use></svg><span>历史记录</span></button>
+                <button data-browser-side="bookmarks"><svg viewBox="0 0 24 24"><use href="#i-star"></use></svg><span>收藏夹</span></button>
+              </nav>
+              <div class="browser-side-group">
+                <div class="browser-side-label"><span>内网设备</span><i>3</i></div>
+                <button class="browser-device-link" data-browser-url="http://192.168.1.1" data-browser-label="RouterOS 路由器后台">
+                  <span class="browser-device-icon router"><svg viewBox="0 0 24 24"><use href="#i-wifi"></use></svg></span>
+                  <span><b>RouterOS</b><small>192.168.1.1</small></span><i></i>
+                </button>
+                <button class="browser-device-link" data-browser-url="http://192.168.1.20" data-browser-label="AISniper Vault NAS">
+                  <span class="browser-device-icon nas"><svg viewBox="0 0 24 24"><use href="#i-server"></use></svg></span>
+                  <span><b>AISniper Vault</b><small>192.168.1.20 · NAS</small></span><i></i>
+                </button>
+                <button class="browser-device-link" data-browser-url="http://aisniper.local" data-browser-label="AISniper 内网门户">
+                  <span class="browser-device-icon portal"><svg viewBox="0 0 24 24"><use href="#i-globe"></use></svg></span>
+                  <span><b>Intranet Portal</b><small>aisniper.local</small></span><i></i>
+                </button>
+              </div>
+              <div class="browser-side-group">
+                <div class="browser-side-label"><span>最近访问</span><i id="browserRecentCount">0</i></div>
+                <div class="browser-recents" id="browserRecents"></div>
+              </div>
+            </div>
+            <div class="browser-side-foot"><i></i><span>以太网</span><b>192.168.1.42</b></div>
+          </aside>
+          <div class="browser-main">
+            <div class="browser-start-page" id="browserStartPage">
+              <div class="browser-start-inner">
+                <div class="browser-start-hero">
+                  <div class="browser-start-mark"><svg viewBox="0 0 64 64"><use href="#app-browser"></use></svg></div>
+                  <div class="browser-start-eyebrow">AISNIPER NETWORK BROWSER · 26.4</div>
+                  <h1>从外网到内网，<br><span>一个地址栏就够。</span></h1>
+                  <p>搜索网页，或输入 192.168.1.1 访问这台设备的路由器后台。</p>
+                  <form class="browser-home-search" id="browserHomeSearch">
+                    <svg viewBox="0 0 24 24"><use href="#i-search"></use></svg>
+                    <input id="browserHomeInput" type="text" placeholder="搜索、输入网址或内网地址" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="搜索网络或输入网址">
+                    <button class="browser-engine-chip" id="browserEngineChip" type="button" aria-label="切换搜索引擎，当前 Google">Google ⇄</button>
+                    <button type="submit">前往</button>
+                  </form>
+                </div>
+                <section class="browser-local-section">
+                  <div class="browser-start-section-head"><div><span>LOCAL NETWORK</span><b>内网服务</b></div><small>3 台设备在线 · 192.168.1.0/24</small></div>
+                  <div class="browser-local-grid">
+                    <button class="browser-local-card" data-browser-url="http://192.168.1.1" data-browser-label="RouterOS 路由器后台">
+                      <span class="browser-local-art router"><i></i><i></i><i></i></span>
+                      <span class="browser-local-copy"><small>192.168.1.1</small><b>RouterOS</b><em>路由器后台 · 登录后管理 Wi-Fi、DHCP、防火墙与设备</em></span>
+                      <span class="browser-local-action">打开 <svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></span>
+                    </button>
+                    <button class="browser-local-card" data-browser-url="http://192.168.1.20" data-browser-label="AISniper Vault NAS">
+                      <span class="browser-local-art nas"><i></i><i></i><i></i></span>
+                      <span class="browser-local-copy"><small>192.168.1.20</small><b>AISniper Vault</b><em>NAS 文件库 · 存储池、共享、媒体与备份</em></span>
+                      <span class="browser-local-action">打开 <svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></span>
+                    </button>
+                    <button class="browser-local-card" data-browser-url="http://aisniper.local" data-browser-label="AISniper 内网门户">
+                      <span class="browser-local-art portal"><i></i><i></i><i></i></span>
+                      <span class="browser-local-copy"><small>aisniper.local</small><b>Intranet Portal</b><em>家庭网络入口 · 设备状态、公告与快捷服务</em></span>
+                      <span class="browser-local-action">打开 <svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></span>
+                    </button>
+                  </div>
+                </section>
+                <div class="browser-start-columns">
+                  <section class="browser-start-panel">
+                    <div class="browser-start-section-head"><div><span>OPEN WEB</span><b>网络快捷入口</b></div><small>外部站点</small></div>
+                    <div class="browser-quick-links" id="browserQuickLinks" aria-label="常用网站">
+                      <button data-browser-url="https://zh.wikipedia.org" data-browser-label="维基百科">
+                        <span class="quick-tile quick-wiki">维</span><b>维基百科</b><small>自由的百科全书</small>
+                      </button>
+                      <button data-browser-url="https://www.openstreetmap.org" data-browser-label="OpenStreetMap">
+                        <span class="quick-tile quick-map">图</span><b>开放地图</b><small>OpenStreetMap</small>
+                      </button>
+                      <button data-browser-url="https://news.ycombinator.com" data-browser-label="Hacker News">
+                        <span class="quick-tile quick-hn">H</span><b>技术新闻</b><small>Hacker News</small>
+                      </button>
+                      <button data-browser-url="https://threejs.org" data-browser-label="Three.js">
+                        <span class="quick-tile quick-three">3</span><b>Three.js</b><small>3D 图形引擎</small>
+                      </button>
+                      <button data-browser-url="https://developer.mozilla.org/zh-CN/" data-browser-label="MDN 文档" data-browser-external="true" title="MDN 禁止网页嵌入，将在系统浏览器中打开">
+                        <span class="quick-tile quick-mdn">文</span><b>MDN 文档</b><small>Web 开发参考</small><span class="quick-external">↗</span>
+                      </button>
+                      <button data-browser-url="https://github.com" data-browser-label="GitHub" data-browser-external="true" title="GitHub 禁止网页嵌入，将在系统浏览器中打开">
+                        <span class="quick-tile quick-github">G</span><b>GitHub</b><small>代码与协作</small><span class="quick-external">↗</span>
+                      </button>
+                    </div>
+                  </section>
+                  <section class="browser-start-panel browser-bookmarks-panel" id="browserBookmarksPanel" hidden>
+                    <div class="browser-start-section-head"><div><span>SAVED</span><b>收藏夹</b></div><small>Quick access</small></div>
+                    <div class="browser-bookmarks-list" id="browserBookmarksList"></div>
+                  </section>
+                </div>
+                <div class="browser-embed-note">
+                  <svg viewBox="0 0 24 24"><use href="#i-info"></use></svg>
+                  <span>部分外部网站会拒绝被网页内嵌显示；内网页面由 AISniperOS 本地渲染。输入 192.168.1.1 可以进入这台设备的路由器后台，所有设置仅在本机模拟。</span>
+                </div>
+              </div>
+            </div>
+            <div class="browser-internal-page" id="browserInternalPage" hidden></div>
+            <div class="browser-frames" id="browserFrames"></div>
+          </div>
+        </div>
+        <div class="browser-statusbar">
+          <div class="browser-status-left"><i id="browserStatusDot"></i><span id="browserStatus" aria-live="polite">新标签页 · 输入网址开始</span></div>
+          <div class="browser-status-right"><span id="browserSecurityLabel">内嵌浏览</span><button id="browserStatusExternal" title="在真实浏览器标签页中完整访问此网站">在系统浏览器中打开 <svg viewBox="0 0 24 24"><use href="#i-external"></use></svg></button></div>
+        </div>
+      </section>
+
+      <!-- AI AGENT -->
+      <section class="window agent-window" id="window-agent" data-app="agent" role="dialog" aria-label="AISniper 智能体">
+        <div class="window-bar agent-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭智能体"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化智能体"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放智能体"></button>
+          </div>
+          <div class="window-title agent-window-title"><span class="agent-live-dot"></span>智能体 <span>// SENTRY</span></div>
+          <div class="window-bar-tools">
+            <button class="icon-button" id="agentNewChatBtn" aria-label="新建对话"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg></button>
+          </div>
+        </div>
+        <div class="agent-layout">
+          <aside class="agent-sidebar">
+            <div class="agent-brand">
+              <span class="agent-brand-orb"><svg viewBox="0 0 64 64"><use href="#app-agent"></use></svg></span>
+              <div><b>SENTRY</b><span>神经任务代理</span></div>
+            </div>
+            <button class="agent-new-chat" id="agentNewChatSide"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg>新建任务</button>
+            <div class="agent-sidebar-label">最近</div>
+            <div class="agent-history" id="agentHistory">
+              <button class="agent-history-item is-active"><span>系统巡检与优化</span><small>今天</small></button>
+              <button class="agent-history-item"><span>部署宝塔面板</span><small>今天</small></button>
+              <button class="agent-history-item"><span>整理下载文件夹</span><small>昨天</small></button>
+            </div>
+            <div class="agent-core-card">
+              <div class="agent-core-head"><span class="agent-core-orb"></span><b>本地神经核心</b><i></i></div>
+              <p>Sentry-4 · 8.4B 参数</p>
+              <div class="agent-core-meter"><i></i></div>
+              <div class="agent-core-meta"><span>GPU 12%</span><span>延迟 38 ms</span></div>
+            </div>
+          </aside>
+          <div class="agent-main">
+            <header class="agent-topbar">
+              <div><span class="agent-model-dot"></span><b>AISniper 智能体</b><small>Sentry-4 · 本机推理</small></div>
+              <div class="agent-top-actions"><button class="agent-pill" id="agentContextBtn"><svg viewBox="0 0 24 24"><use href="#i-shield"></use></svg>上下文安全</button><button class="icon-button" id="agentMoreBtn" aria-label="更多智能体操作"><svg viewBox="0 0 24 24"><use href="#i-sliders"></use></svg></button></div>
+            </header>
+            <div class="agent-conversation" id="agentConversation" aria-live="polite">
+              <div class="agent-welcome" id="agentWelcome">
+                <span class="agent-welcome-orb"><svg viewBox="0 0 64 64"><use href="#app-agent"></use></svg></span>
+                <div class="agent-welcome-eyebrow">SENTRY · 在线</div>
+                <h1>今天想让系统<br><em>完成什么？</em></h1>
+                <p>我可以检查系统状态、部署模拟服务、整理文件，或直接为你打开应用。</p>
+                <div class="agent-suggestions" id="agentSuggestions">
+                  <button data-agent-prompt="检查系统状态并给出优化建议"><span><svg viewBox="0 0 24 24"><use href="#i-health"></use></svg></span><b>检查系统状态</b><small>CPU、内存与健康度诊断</small></button>
+                  <button data-agent-prompt="部署宝塔面板"><span><svg viewBox="0 0 24 24"><use href="#i-server"></use></svg></span><b>部署宝塔面板</b><small>创建演示服务器与面板</small></button>
+                  <button data-agent-prompt="打开深空信号"><span><svg viewBox="0 0 64 64"><use href="#app-game"></use></svg></span><b>启动深空信号</b><small>进入轨道截击界面</small></button>
+                  <button data-agent-prompt="整理下载文件夹"><span><svg viewBox="0 0 24 24"><use href="#i-archive"></use></svg></span><b>整理下载文件夹</b><small>归档下载与安装文件</small></button>
+                </div>
+              </div>
+            </div>
+            <form class="agent-composer" id="agentForm">
+              <div class="agent-composer-inner">
+                <button type="button" class="agent-attach" id="agentAttachBtn" aria-label="附加系统上下文"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg></button>
+                <textarea id="agentInput" rows="1" placeholder="告诉智能体你想完成的任务…" aria-label="给智能体发送消息"></textarea>
+                <button type="submit" class="agent-send" id="agentSendBtn" aria-label="发送"><svg viewBox="0 0 24 24"><use href="#i-arrow-up"></use></svg></button>
+              </div>
+              <div class="agent-composer-foot"><span><i class="keycap">↵</i> 发送 · <i class="keycap">⇧↵</i> 换行</span><span>SENTRY 只在本机运行</span></div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- MESSAGES -->
+      <section class="window messages-window" id="window-messages" data-app="messages" role="dialog" aria-label="信息">
+        <div class="window-bar messages-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭信息"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化信息"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放信息"></button>
+          </div>
+          <div class="window-title">信息</div>
+          <div class="window-bar-tools"><button class="icon-button" id="messagesNewBtn" aria-label="新建信息"><svg viewBox="0 0 24 24"><use href="#i-pen"></use></svg></button></div>
+        </div>
+        <div class="messages-layout">
+          <aside class="messages-sidebar">
+            <div class="messages-profile"><span class="messages-avatar">S</span><div><b>Sniper</b><span>iMessage · 在线</span></div><button aria-label="账户"><svg viewBox="0 0 24 24"><use href="#i-chevron-down"></use></svg></button></div>
+            <label class="messages-search"><svg viewBox="0 0 24 24"><use href="#i-search"></use></svg><input id="messagesSearch" type="search" placeholder="搜索对话" aria-label="搜索对话"></label>
+            <div class="messages-section-label">置顶对话</div>
+            <div class="messages-thread-list" id="messagesThreadList"></div>
+            <div class="messages-sidebar-foot"><span class="messages-sync-dot"></span> 已通过以太网同步</div>
+          </aside>
+          <div class="messages-main">
+            <header class="messages-thread-head">
+              <span class="messages-thread-avatar" id="messagesThreadAvatar">M</span>
+              <div><b id="messagesThreadName">Mira Chen</b><span id="messagesThreadStatus">在线 · Aperture 工作室</span></div>
+              <div class="messages-thread-actions">
+                <button id="messagesCallBtn" data-call-type="voice" aria-label="语音通话" title="语音通话"><svg viewBox="0 0 24 24"><use href="#i-sound"></use></svg></button>
+                <button id="messagesVideoBtn" data-call-type="video" aria-label="视频通话" title="视频通话"><svg viewBox="0 0 24 24"><use href="#i-video"></use></svg></button>
+                <button id="messagesInfoBtn" aria-label="对话详情" title="对话详情"><svg viewBox="0 0 24 24"><use href="#i-info"></use></svg></button>
+              </div>
+            </header>
+            <div class="messages-thread" id="messagesThread" aria-live="polite"></div>
+            <form class="messages-composer" id="messagesComposer">
+              <button type="button" class="messages-attach" id="messagesAttachBtn" aria-label="添加附件"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg></button>
+              <input id="messagesInput" type="text" placeholder="输入信息…" autocomplete="off" aria-label="输入信息">
+              <button type="submit" class="messages-send" id="messagesSendBtn" aria-label="发送"><svg viewBox="0 0 24 24"><use href="#i-arrow-up"></use></svg></button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- OPS CONSOLE -->
+      <section class="window ops-window" id="window-ops" data-app="ops" role="dialog" aria-label="运维台">
+        <div class="window-bar ops-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭运维台"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化运维台"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放运维台"></button>
+          </div>
+          <div class="window-title ops-window-title"><span class="ops-title-light"></span>运维台 <span>// AISNIPER CLOUD</span></div>
+          <div class="window-bar-tools">
+            <button class="icon-button" id="opsTerminalBtn" aria-label="打开终端"><svg viewBox="0 0 24 24"><use href="#app-terminal"></use></svg></button>
+            <button class="icon-button" id="opsRefreshBtn" aria-label="刷新运维数据"><svg viewBox="0 0 24 24"><use href="#i-reload"></use></svg></button>
+          </div>
+        </div>
+        <div class="ops-shell" id="opsShell">
+          <aside class="ops-rail">
+            <div class="ops-brand"><span class="ops-brand-mark">BT</span><div><b>宝塔面板</b><span>Linux · 9.2.0</span></div></div>
+            <nav class="ops-nav" id="opsNav" aria-label="运维导航">
+              <button class="ops-nav-item is-active" data-ops-view="overview"><svg viewBox="0 0 24 24"><use href="#i-grid"></use></svg><span>概览</span></button>
+              <button class="ops-nav-item" data-ops-view="sites"><svg viewBox="0 0 24 24"><use href="#i-globe"></use></svg><span>网站</span><i>3</i></button>
+              <button class="ops-nav-item" data-ops-view="containers"><svg viewBox="0 0 24 24"><use href="#i-box"></use></svg><span>容器</span><i id="opsContainerCount">0</i></button>
+              <button class="ops-nav-item" data-ops-view="databases"><svg viewBox="0 0 24 24"><use href="#i-server"></use></svg><span>数据库</span></button>
+              <button class="ops-nav-item" data-ops-view="files"><svg viewBox="0 0 24 24"><use href="#i-folder"></use></svg><span>文件</span></button>
+              <button class="ops-nav-item" data-ops-view="logs"><svg viewBox="0 0 24 24"><use href="#i-list"></use></svg><span>日志</span></button>
+              <button class="ops-nav-item" data-ops-view="security"><svg viewBox="0 0 24 24"><use href="#i-shield"></use></svg><span>安全</span></button>
+            </nav>
+            <div class="ops-rail-foot"><span class="ops-node-status"><i></i>节点在线</span><small>Meridian-01 · 10.0.4.18</small></div>
+          </aside>
+          <div class="ops-main">
+            <header class="ops-topbar">
+              <div class="ops-breadcrumb"><span>服务器</span><b id="opsBreadcrumb">概览</b></div>
+              <div class="ops-top-actions"><span class="ops-fake-url"><svg viewBox="0 0 24 24"><use href="#i-lock"></use></svg>panel.aisniper.local:8888</span><span class="ops-user-chip"><i>S</i>sniper</span><button class="icon-button" id="opsTopSettingsBtn" aria-label="面板设置"><svg viewBox="0 0 24 24"><use href="#i-sliders"></use></svg></button></div>
+            </header>
+            <div class="ops-content" id="opsContent"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEAM -->
+      <section class="window steam-window" id="window-steam" data-app="steam" role="dialog" aria-label="Steam">
+        <div class="window-bar steam-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭 Steam"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化 Steam"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放 Steam"></button>
+          </div>
+          <div class="window-title steam-window-title"><svg viewBox="0 0 64 64"><use href="#app-steam"></use></svg>Steam</div>
+          <div class="window-bar-tools"><span class="steam-title-chip">已登录 · Sniper</span></div>
+        </div>
+        <div class="steam-root" id="steamRoot"></div>
+      </section>
+
+      <!-- UNITY -->
+      <section class="window unity-window" id="window-unity" data-app="unity" role="dialog" aria-label="AISniper Unity">
+        <div class="window-bar unity-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭 AISniper Unity"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化 AISniper Unity"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放 AISniper Unity"></button>
+          </div>
+          <div class="window-title unity-window-title"><svg viewBox="0 0 64 64"><use href="#app-unity"></use></svg>AISniper Unity <span>// LOCAL EDITOR</span></div>
+          <div class="window-bar-tools"><span class="unity-title-chip">AISniper Runner · Scene 01</span></div>
+        </div>
+        <div class="unity-root" id="unityRoot"></div>
+      </section>
+
+      <!-- CS2 -->
+      <section class="window steam-game-window cs2-window" id="window-cs2" data-app="cs2" role="dialog" aria-label="Counter-Strike 2">
+        <div class="window-bar steam-game-bar cs2-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭 Counter-Strike 2"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化 Counter-Strike 2"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放 Counter-Strike 2"></button>
+          </div>
+          <div class="window-title">Counter-Strike 2</div>
+          <div class="window-bar-tools"><span class="steam-running-chip"><i></i>演示比赛</span></div>
+        </div>
+        <div class="cs2-root" id="cs2Root"></div>
+      </section>
+
+      <!-- VRCHAT -->
+      <section class="window steam-game-window vrchat-window" id="window-vrchat" data-app="vrchat" role="dialog" aria-label="VRChat">
+        <div class="window-bar steam-game-bar vrchat-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭 VRChat"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化 VRChat"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放 VRChat"></button>
+          </div>
+          <div class="window-title">VRChat</div>
+          <div class="window-bar-tools"><span class="steam-running-chip vrchat-chip"><i></i>社交世界</span></div>
+        </div>
+        <div class="vrchat-root" id="vrchatRoot"></div>
+      </section>
+
+      <!-- STEAM MINI GAME -->
+      <section class="window steam-game-window steam-demo-window" id="window-steamdemo" data-app="steamdemo" role="dialog" aria-label="Steam 游戏">
+        <div class="window-bar steam-game-bar steamdemo-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭 Steam 游戏"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化 Steam 游戏"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放 Steam 游戏"></button>
+          </div>
+          <div class="window-title" id="steamDemoWindowTitle">Steam 游戏</div>
+          <div class="window-bar-tools"><span class="steam-running-chip"><i></i>Steam 演示游戏</span></div>
+        </div>
+        <div class="steam-demo-root" id="steamDemoRoot"></div>
+      </section>
+
+      <!-- STEAMVR -->
+      <section class="window steam-utility-window steamvr-window" id="window-steamvr" data-app="steamvr" role="dialog" aria-label="SteamVR">
+        <div class="window-bar steam-utility-bar steamvr-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭 SteamVR"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化 SteamVR"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放 SteamVR"></button>
+          </div>
+          <div class="window-title">SteamVR</div>
+          <div class="window-bar-tools"><span class="steam-running-chip"><i></i>VR 运行时</span></div>
+        </div>
+        <div class="steamvr-root" id="steamvrRoot"></div>
+      </section>
+
+      <!-- OVR TOOLKIT -->
+      <section class="window steam-utility-window ovrtk-window" id="window-ovrtk" data-app="ovrtk" role="dialog" aria-label="OVR Toolkit">
+        <div class="window-bar steam-utility-bar ovrtk-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭 OVR Toolkit"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化 OVR Toolkit"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放 OVR Toolkit"></button>
+          </div>
+          <div class="window-title">OVR Toolkit</div>
+          <div class="window-bar-tools"><span class="steam-running-chip"><i></i>叠加层工具</span></div>
+        </div>
+        <div class="ovrtk-root" id="ovrtkRoot"></div>
+      </section>
+
+      <!-- SLIMEVR -->
+      <section class="window steam-utility-window slimevr-window" id="window-slimevr" data-app="slimevr" role="dialog" aria-label="SlimeVR">
+        <div class="window-bar steam-utility-bar slimevr-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭 SlimeVR"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化 SlimeVR"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放 SlimeVR"></button>
+          </div>
+          <div class="window-title">SlimeVR</div>
+          <div class="window-bar-tools"><span class="steam-running-chip"><i></i>全身追踪</span></div>
+        </div>
+        <div class="slimevr-root" id="slimevrRoot"></div>
+      </section>
+
+      <!-- CALCULATOR -->
+      <section class="window calculator-window" id="window-calculator" data-app="calculator" role="dialog" aria-label="计算器">
+        <div class="window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭计算器"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化计算器"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放计算器"></button>
+          </div>
+          <div class="window-title">计算器</div>
+          <div class="window-bar-tools">
+            <button class="icon-button" id="calcHistoryToggle" aria-label="计算历史"><svg viewBox="0 0 24 24"><use href="#i-clock"></use></svg></button>
+          </div>
+        </div>
+        <div class="calc-display">
+          <div class="calc-expression" id="calcExpression">&nbsp;</div>
+          <div class="calc-result" id="calcResult" aria-live="polite">0</div>
+        </div>
+        <div class="calc-keys" id="calcKeys">
+          <button class="calc-key key-function" data-calc="clear">AC</button>
+          <button class="calc-key key-function" data-calc="sign">+/−</button>
+          <button class="calc-key key-function" data-calc="percent">%</button>
+          <button class="calc-key key-operator" data-calc="operator" data-value="/">÷</button>
+          <button class="calc-key" data-calc="digit" data-value="7">7</button>
+          <button class="calc-key" data-calc="digit" data-value="8">8</button>
+          <button class="calc-key" data-calc="digit" data-value="9">9</button>
+          <button class="calc-key key-operator" data-calc="operator" data-value="*">×</button>
+          <button class="calc-key" data-calc="digit" data-value="4">4</button>
+          <button class="calc-key" data-calc="digit" data-value="5">5</button>
+          <button class="calc-key" data-calc="digit" data-value="6">6</button>
+          <button class="calc-key key-operator" data-calc="operator" data-value="-">−</button>
+          <button class="calc-key" data-calc="digit" data-value="1">1</button>
+          <button class="calc-key" data-calc="digit" data-value="2">2</button>
+          <button class="calc-key" data-calc="digit" data-value="3">3</button>
+          <button class="calc-key key-operator" data-calc="operator" data-value="+">+</button>
+          <button class="calc-key key-zero" data-calc="digit" data-value="0">0</button>
+          <button class="calc-key" data-calc="decimal">.</button>
+          <button class="calc-key key-equals" data-calc="equals">=</button>
+        </div>
+        <div class="calc-history" id="calcHistory" hidden>
+          <div class="calc-history-head"><span>历史记录</span><button id="clearCalcHistory">清除</button></div>
+          <div class="calc-history-list" id="calcHistoryList"><p class="calc-history-empty">计算记录将显示在这里。</p></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="window settings-window" id="window-settings" data-app="settings" role="dialog" aria-label="系统设置">
+        <div class="window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭系统设置"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化系统设置"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放系统设置"></button>
+          </div>
+          <div class="window-title">系统设置</div>
+          <div class="window-bar-tools"></div>
+        </div>
+        <div class="settings-layout">
+          <aside class="settings-sidebar">
+            <label class="settings-search">
+              <svg viewBox="0 0 24 24"><use href="#i-search"></use></svg>
+              <input id="settingsSearch" type="search" placeholder="搜索设置" aria-label="搜索设置">
+            </label>
+              <div class="settings-account">
+              <div class="account-avatar"><svg viewBox="0 0 24 24"><use href="#i-mark"></use></svg></div>
+              <div><b>Sniper</b><span>AISniperOS 账户</span></div>
+              <button id="settingsAccountBtn" aria-label="账户详情"><svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+            </div>
+            <nav class="settings-nav" id="settingsNav" aria-label="设置类别">
+              <div class="settings-group-label">个人</div>
+              <button class="settings-nav-item" data-panel="appearance"><span class="settings-icon si-appearance"><svg viewBox="0 0 24 24"><use href="#i-palette"></use></svg></span><span>外观</span></button>
+              <button class="settings-nav-item" data-panel="wallpaper"><span class="settings-icon si-wallpaper"><svg viewBox="0 0 24 24"><use href="#i-image"></use></svg></span><span>墙纸</span></button>
+              <button class="settings-nav-item" data-panel="dock"><span class="settings-icon si-dock"><svg viewBox="0 0 24 24"><use href="#i-desktop"></use></svg></span><span>桌面与程序坞</span></button>
+              <button class="settings-nav-item" data-panel="notifications"><span class="settings-icon si-notifications"><svg viewBox="0 0 24 24"><use href="#i-bell"></use></svg></span><span>通知</span></button>
+              <button class="settings-nav-item" data-panel="focus"><span class="settings-icon si-focus"><svg viewBox="0 0 24 24"><use href="#i-moon"></use></svg></span><span>专注模式</span></button>
+              <div class="settings-group-label">网络</div>
+              <button class="settings-nav-item" data-panel="wifi" data-settings-keywords="Wi-Fi wifi 无线 局域网 以太网 有线 网络"><span class="settings-icon si-network"><svg viewBox="0 0 24 24"><use href="#i-ethernet"></use></svg></span><span>网络</span><i class="nav-status-dot" id="settingsWifiDot"></i></button>
+              <div class="settings-group-label">账户与系统</div>
+              <button class="settings-nav-item" data-panel="users"><span class="settings-icon si-users"><svg viewBox="0 0 24 24"><use href="#i-user"></use></svg></span><span>用户与账户</span></button>
+              <button class="settings-nav-item" data-panel="displays"><span class="settings-icon si-display"><svg viewBox="0 0 24 24"><use href="#i-display"></use></svg></span><span>显示器</span></button>
+              <button class="settings-nav-item" data-panel="sound"><span class="settings-icon si-sound"><svg viewBox="0 0 24 24"><use href="#i-speaker"></use></svg></span><span>声音</span></button>
+              <button class="settings-nav-item" data-panel="datetime"><span class="settings-icon si-datetime"><svg viewBox="0 0 24 24"><use href="#i-clock"></use></svg></span><span>日期与时间</span></button>
+              <button class="settings-nav-item" data-panel="privacy"><span class="settings-icon si-privacy"><svg viewBox="0 0 24 24"><use href="#i-shield"></use></svg></span><span>隐私与安全</span></button>
+              <button class="settings-nav-item" data-panel="updates"><span class="settings-icon si-updates"><svg viewBox="0 0 24 24"><use href="#i-reload"></use></svg></span><span>软件更新</span></button>
+              <button class="settings-nav-item" data-panel="health"><span class="settings-icon si-health"><svg viewBox="0 0 24 24"><use href="#i-health"></use></svg></span><span>系统健康度</span></button>
+              <button class="settings-nav-item" data-panel="about"><span class="settings-icon si-about"><svg viewBox="0 0 24 24"><use href="#i-info"></use></svg></span><span>关于本机</span></button>
+            </nav>
+            <p class="settings-search-empty" id="settingsSearchEmpty" hidden>未找到匹配设置。</p>
+          </aside>
+          <div class="settings-content" id="settingsContent">
+            <!-- Appearance -->
+            <section class="settings-panel" data-panel-content="appearance">
+              <div class="settings-panel-head"><h1>外观</h1><p>选择 AISniperOS 在所有应用中的显示方式。</p></div>
+              <div class="theme-choices" role="group" aria-label="系统外观">
+                <button class="theme-choice" data-theme-choice="light">
+                  <span class="theme-preview theme-preview-light"><i></i><b></b><em></em></span>
+                  <span class="theme-choice-label">浅色</span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="theme-choice" data-theme-choice="dark">
+                  <span class="theme-preview theme-preview-dark"><i></i><b></b><em></em></span>
+                  <span class="theme-choice-label">深色</span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="theme-choice" data-theme-choice="auto">
+                  <span class="theme-preview theme-preview-auto"><i></i><b></b><em></em></span>
+                  <span class="theme-choice-label">自动</span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+              </div>
+              <div class="settings-card">
+                <div class="setting-row setting-row-stack">
+                  <div class="setting-copy"><b>强调色</b><span>用于选中项、控件与焦点。</span></div>
+                  <div class="accent-swatches" role="group" aria-label="强调色">
+                    <button class="accent-swatch swatch-solar is-selected" data-accent-choice="solar" aria-label="暖阳"><span></span></button>
+                    <button class="accent-swatch swatch-signal" data-accent-choice="signal" aria-label="信号"><span></span></button>
+                    <button class="accent-swatch swatch-iris" data-accent-choice="iris" aria-label="鸢尾"><span></span></button>
+                    <button class="accent-swatch swatch-ember" data-accent-choice="ember" aria-label="余烬"><span></span></button>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>液态玻璃</b><span>半透明材质，呈现深度与光感。</span></div>
+                  <button class="switch is-on" data-setting-toggle="glass" role="switch" aria-checked="true" aria-label="液态玻璃"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>减弱动态效果</b><span>限制界面与墙纸的动态幅度。</span></div>
+                  <button class="switch" data-setting-toggle="reduceMotion" role="switch" aria-checked="false" aria-label="减弱动态效果"><span></span></button>
+                </div>
+              </div>
+              <div class="accent-note"><span class="accent-preview-line"></span><p>强调色将贯穿访达、终端、小组件与飞行电脑。</p></div>
+            </section>
+
+            <!-- Wallpaper -->
+            <section class="settings-panel" data-panel-content="wallpaper" hidden>
+              <div class="settings-panel-head"><h1>墙纸</h1><p>为接下来的工作，留一片更安静的地平线。</p></div>
+              <div class="wallpaper-grid" role="group" aria-label="墙纸">
+                <button class="wallpaper-choice" data-wallpaper-choice="meridian">
+                  <span class="wallpaper-thumb thumb-meridian"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>子午线</b><span>高山黄昏 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="ember">
+                  <span class="wallpaper-thumb thumb-ember"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>余烬旷野</b><span>日晕薄雾 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+                <button class="wallpaper-choice" data-wallpaper-choice="glacier">
+                  <span class="wallpaper-thumb thumb-glacier"><i class="thumb-orb"></i><i class="thumb-ridge"></i></span>
+                  <span class="wallpaper-choice-meta"><b>冰川空气</b><span>极地光线 · 动态</span></span>
+                  <span class="choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></span>
+                </button>
+              </div>
+              <div class="settings-card compact-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>动态墙纸</b><span>缓慢的极光漂移与大气流动。</span></div>
+                  <button class="switch is-on" data-setting-toggle="animateWallpaper" role="switch" aria-checked="true" aria-label="动态墙纸"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>显示桌面小组件</b><span>天气与日程，一眼可见。</span></div>
+                  <button class="switch is-on" data-setting-toggle="widgets" role="switch" aria-checked="true" aria-label="显示桌面小组件"><span></span></button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Desktop & Dock -->
+            <section class="settings-panel" data-panel-content="dock" hidden>
+              <div class="settings-panel-head"><h1>桌面与程序坞</h1><p>调整你每天工作的界面。</p></div>
+              <div class="settings-card">
+                <div class="setting-row setting-row-stack">
+                  <div class="setting-copy"><b>程序坞大小</b><span id="dockSizeValue">62 px</span></div>
+                  <input class="range-control" id="dockSizeRange" type="range" min="46" max="74" value="62" step="1" aria-label="程序坞大小">
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>放大效果</b><span>指针经过时，图标会轻轻浮起。</span></div>
+                  <button class="switch is-on" data-setting-toggle="magnification" role="switch" aria-checked="true" aria-label="程序坞放大效果"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>自动隐藏程序坞</b><span>将指针移到底部边缘可重新显示。</span></div>
+                  <button class="switch" data-setting-toggle="dockAutoHide" role="switch" aria-checked="false" aria-label="自动隐藏程序坞"><span></span></button>
+                </div>
+              </div>
+              <div class="settings-card compact-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>显示打开应用的指示点</b><span>在运行中的应用下方显示一个小圆点。</span></div>
+                  <button class="switch is-on" data-setting-toggle="dockIndicators" role="switch" aria-checked="true" aria-label="显示应用指示点"><span></span></button>
+                </div>
+              </div>
+              <div class="dock-preview-area" aria-hidden="true">
+                <div class="dock-preview"><span class="dock-preview-icon"><svg viewBox="0 0 64 64"><use href="#app-finder"></use></svg></span><span class="dock-preview-icon"><svg viewBox="0 0 64 64"><use href="#app-calculator"></use></svg></span><span class="dock-preview-icon"><svg viewBox="0 0 64 64"><use href="#app-settings"></use></svg></span></div>
+              </div>
+            </section>
+
+            <!-- Network -->
+            <section class="settings-panel" data-panel-content="wifi" hidden>
+              <div class="settings-panel-head"><h1>网络</h1><p>有线连接优先。Wi-Fi 作为可选的无线链路随时待命。</p><span class="live-badge"><i></i>在线</span></div>
+              <div class="wired-network-card">
+                <div class="wired-card-head">
+                  <span class="wired-icon"><svg viewBox="0 0 24 24"><use href="#i-ethernet"></use></svg></span>
+                  <div><b>以太网</b><span>内建千兆以太网 · DHCP</span></div>
+                  <span class="wired-state"><i></i>已连接</span>
+                </div>
+                <div class="wired-link-row">
+                  <div><span>链路速度</span><b>1000 Mbps</b></div>
+                  <div><span>双工</span><b>全双工</b></div>
+                  <div><span>延迟</span><b>0.8 ms</b></div>
+                </div>
+                <div class="wired-detail-grid">
+                  <div><span>IP 地址</span><b>192.168.1.24</b></div>
+                  <div><span>路由器</span><b>子午线网关</b></div>
+                  <div><span>DNS</span><b>1.1.1.1 · 8.8.8.8</b></div>
+                  <div><span>硬件地址</span><b>A4:83:E7:19:26:04</b></div>
+                </div>
+              </div>
+              <div class="settings-subhead-row"><p class="settings-subhead">Wi-Fi</p><span class="optional-badge">可选</span></div>
+              <div class="settings-card">
+                <div class="setting-row">
+                  <div class="setting-copy settings-wifi-row"><span class="wifi-badge"><svg viewBox="0 0 24 24"><use href="#i-wifi"></use></svg></span><span><b>无线局域网</b><span id="settingsWifiState">已连接到 AISniper-5G</span></span></div>
+                  <button class="switch is-on" data-setting-toggle="wifi" role="switch" aria-checked="true" aria-label="Wi-Fi"><span></span></button>
+                </div>
+              </div>
+              <p class="settings-subhead">已知无线网络</p>
+              <div class="settings-card network-card" id="settingsNetworkList"></div>
+              <div class="settings-card compact-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>询问是否加入网络</b><span>当已知无线网络可用时通知我。</span></div>
+                  <button class="switch is-on" data-setting-toggle="askNetworks" role="switch" aria-checked="true" aria-label="询问是否加入网络"><span></span></button>
+                </div>
+              </div>
+              <div class="wifi-detail"><div><span>无线 IP</span><b>192.168.1.64</b></div><div><span>接入点</span><b>子午线 6E</b></div><div><span>安全性</span><b>WPA3</b></div></div>
+              <p class="settings-footnote">有线网络始终优先于 Wi-Fi。关闭无线局域网不会影响以太网连接。</p>
+            </section>
+
+            <!-- Notifications -->
+            <section class="settings-panel" data-panel-content="notifications" hidden>
+              <div class="settings-panel-head"><h1>通知</h1><p>只让真正重要的信号抵达你。</p></div>
+              <div class="settings-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>显示通知横幅</b><span>在右上角显示来自应用与系统的提醒。</span></div>
+                  <button class="switch is-on" data-setting-toggle="notifications" role="switch" aria-checked="true" aria-label="显示通知横幅"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>通知声音</b><span>提醒抵达时播放一声轻微的信号音。</span></div>
+                  <button class="switch is-on" data-setting-toggle="notificationSounds" role="switch" aria-checked="true" aria-label="通知声音"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>程序坞图标标记</b><span>在消息应用上显示未读数量。</span></div>
+                  <button class="switch is-on" data-setting-toggle="notificationBadges" role="switch" aria-checked="true" aria-label="程序坞图标标记"><span></span></button>
+                </div>
+              </div>
+              <p class="settings-subhead">通知预览</p>
+              <div class="notification-preview-stack">
+                <div class="notification-preview"><span class="notification-preview-icon"><svg viewBox="0 0 64 64"><use href="#app-messages"></use></svg></span><div><b>信息</b><span>Mira：轨道窗口已经确认，14:00 见。</span><small>现在</small></div></div>
+                <div class="notification-preview"><span class="notification-preview-icon agent"><svg viewBox="0 0 64 64"><use href="#app-agent"></use></svg></span><div><b>智能体</b><span>巡检完成：核心服务全部在线。</span><small>2 分钟前</small></div></div>
+              </div>
+              <p class="settings-footnote">专注模式开启时，通知将自动静默，并在专注结束后汇总。</p>
+            </section>
+
+            <!-- Focus -->
+            <section class="settings-panel" data-panel-content="focus" hidden>
+              <div class="settings-panel-head"><h1>专注模式</h1><p>把世界的音量调低，只留下当前任务。</p></div>
+              <div class="focus-choice-grid" role="group" aria-label="专注模式">
+                <button class="focus-choice" data-focus-mode="off">
+                  <span class="focus-choice-orb off"><svg viewBox="0 0 24 24"><use href="#i-sun"></use></svg></span>
+                  <b>关闭</b><span>允许所有通知与声音。</span>
+                  <i class="focus-choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></i>
+                </button>
+                <button class="focus-choice" data-focus-mode="quiet">
+                  <span class="focus-choice-orb quiet"><svg viewBox="0 0 24 24"><use href="#i-moon"></use></svg></span>
+                  <b>静默专注</b><span>静默横幅，保留关键提醒。</span>
+                  <i class="focus-choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></i>
+                </button>
+                <button class="focus-choice" data-focus-mode="orbit">
+                  <span class="focus-choice-orb orbit"><svg viewBox="0 0 24 24"><use href="#icon-orbit-logo"></use></svg></span>
+                  <b>轨道模式</b><span>深度专注，暂停所有打断。</span>
+                  <i class="focus-choice-check"><svg viewBox="0 0 24 24"><use href="#i-check"></use></svg></i>
+                </button>
+              </div>
+              <div class="focus-summary-card">
+                <span class="focus-summary-orb"></span>
+                <div><span class="eyebrow">当前状态</span><h2 id="focusSummaryTitle">关闭</h2><p id="focusSummaryCopy">通知与界面声音正常抵达。</p></div>
+                <div class="focus-summary-meta"><b id="focusSummaryTime">—</b><span>下次切换</span></div>
+              </div>
+              <div class="settings-card compact-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>专注时降低界面动效</b><span>减少背景漂移与玻璃高光。</span></div>
+                  <button class="switch" data-setting-toggle="focusReduceMotion" role="switch" aria-checked="false" aria-label="专注时降低界面动效"><span></span></button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Users & Accounts -->
+            <section class="settings-panel" data-panel-content="users" hidden>
+              <div class="settings-panel-head"><h1>用户与账户</h1><p>个人工作区、登录方式与本机权限。</p></div>
+              <div class="account-hero-card">
+                <div class="account-hero-avatar"><svg viewBox="0 0 64 64"><use href="#icon-orbit-logo"></use></svg><i></i></div>
+                <div class="account-hero-copy"><span class="eyebrow">当前用户</span><h2>Sniper</h2><p>sniper@aisniper.local</p><span class="account-role-pill">管理员 · 本机账户</span></div>
+                <button class="secondary-button" id="lockNowBtn"><svg viewBox="0 0 24 24"><use href="#i-lock"></use></svg>锁定屏幕</button>
+              </div>
+              <div class="settings-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>自动登录</b><span>启动时跳过登录窗口，直接进入桌面。</span></div>
+                  <button class="switch" data-setting-toggle="autoLogin" role="switch" aria-checked="false" aria-label="自动登录"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>显示登录密码提示</b><span>在登录界面显示演示账户的密码提示。</span></div>
+                  <button class="switch is-on" data-setting-toggle="showLoginHint" role="switch" aria-checked="true" aria-label="显示登录密码提示"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>登录后恢复窗口</b><span>重新进入系统时保留上次打开的窗口。</span></div>
+                  <button class="switch is-on" data-setting-toggle="restoreWindows" role="switch" aria-checked="true" aria-label="登录后恢复窗口"><span></span></button>
+                </div>
+              </div>
+              <div class="account-facts">
+                <div><span>账户 ID</span><b>501</b></div>
+                <div><span>主目录</span><b>/Users/sniper</b></div>
+                <div><span>安全策略</span><b>本地密码 · 文件保险箱</b></div>
+              </div>
+              <p class="settings-footnote">这是一个本地账户。登录密码固定为 <code>aisniper</code>，不会发送到任何服务器。</p>
+            </section>
+
+            <!-- Date & Time -->
+            <section class="settings-panel" data-panel-content="datetime" hidden>
+              <div class="settings-panel-head"><h1>日期与时间</h1><p>让每一秒都与山脊保持同步。</p></div>
+              <div class="date-time-hero">
+                <div><span class="eyebrow">本机时间</span><b id="settingsClockPreview">21:41</b><p id="settingsDatePreview">2026年11月13日 星期五</p></div>
+                <span class="date-time-zone">CST · UTC+08:00<br><small>亚洲 / 上海</small></span>
+              </div>
+              <div class="settings-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>24 小时制</b><span>在菜单栏与锁屏中使用 24 小时时钟。</span></div>
+                  <button class="switch is-on" data-setting-toggle="clock24" role="switch" aria-checked="true" aria-label="24 小时制"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>在菜单栏显示日期</b><span>在时钟左侧显示月日与星期。</span></div>
+                  <button class="switch is-on" data-setting-toggle="showMenuDate" role="switch" aria-checked="true" aria-label="在菜单栏显示日期"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>自动设置时间</b><span>通过 AISniper 时间服务校准。</span></div>
+                  <button class="switch is-on" data-setting-toggle="autoTime" role="switch" aria-checked="true" aria-label="自动设置时间"><span></span></button>
+                </div>
+              </div>
+              <div class="settings-card compact-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>时间同步</b><span>上次校准：刚刚 · 延迟 12 ms</span></div>
+                  <button class="secondary-button compact" id="syncTimeBtn"><svg viewBox="0 0 24 24"><use href="#i-reload"></use></svg>立即校准</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Privacy -->
+            <section class="settings-panel" data-panel-content="privacy" hidden>
+              <div class="settings-panel-head"><h1>隐私与安全</h1><p>你的信号只属于你。</p></div>
+              <div class="privacy-shield-card">
+                <span class="privacy-shield-icon"><svg viewBox="0 0 24 24"><use href="#i-shield"></use></svg></span>
+                <div><span class="eyebrow">本机保护中</span><h2>所有数据留在设备上。</h2><p>浏览器、消息与运维数据均在本机运行，不会上传到外部服务器。</p></div>
+              </div>
+              <p class="settings-subhead">应用访问</p>
+              <div class="settings-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>定位服务</b><span>允许天气与日历使用大致位置。</span></div>
+                  <button class="switch is-on" data-setting-toggle="locationServices" role="switch" aria-checked="true" aria-label="定位服务"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>相机</b><span>允许智能体与视频应用访问相机。</span></div>
+                  <button class="switch is-on" data-setting-toggle="cameraAccess" role="switch" aria-checked="true" aria-label="相机访问"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>麦克风</b><span>允许语音输入与通话使用麦克风。</span></div>
+                  <button class="switch is-on" data-setting-toggle="micAccess" role="switch" aria-checked="true" aria-label="麦克风访问"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>使用分析</b><span>向 AISniper 发送匿名性能数据。</span></div>
+                  <button class="switch" data-setting-toggle="analytics" role="switch" aria-checked="false" aria-label="使用分析"><span></span></button>
+                </div>
+              </div>
+              <p class="settings-subhead">安全</p>
+              <div class="settings-card compact-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>文件保险箱</b><span>登录后自动解锁本机加密卷。</span></div>
+                  <span class="setting-static-badge success"><i></i>已解锁</span>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>防火墙</b><span>阻止未授权的传入连接。</span></div>
+                  <button class="switch is-on" data-setting-toggle="firewall" role="switch" aria-checked="true" aria-label="防火墙"><span></span></button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Software Update -->
+            <section class="settings-panel" data-panel-content="updates" hidden>
+              <div class="settings-panel-head"><h1>软件更新</h1><p>保持系统锐利，但不打扰。</p></div>
+              <div class="update-hero-card">
+                <div class="update-mark"><svg viewBox="0 0 64 64"><use href="#icon-orbit-logo"></use></svg></div>
+                <div><span class="eyebrow">AISniperOS 26.1.4</span><h2>天鹰座</h2><p>当前版本已是最新，所有核心组件均通过签名校验。</p></div>
+                <span class="setting-static-badge success"><i></i>最新</span>
+              </div>
+              <div class="settings-card">
+                <div class="setting-row">
+                  <div class="setting-copy"><b>自动检查更新</b><span>在空闲时检查稳定版本。</span></div>
+                  <button class="switch is-on" data-setting-toggle="autoUpdates" role="switch" aria-checked="true" aria-label="自动检查更新"><span></span></button>
+                </div>
+                <div class="setting-row setting-row-stack">
+                  <div class="setting-copy"><b>更新通道</b><span>选择接收系统更新的节奏。</span></div>
+                  <div class="update-channel-row" role="group" aria-label="更新通道">
+                    <button class="update-channel is-selected" data-update-channel="stable">稳定版</button>
+                    <button class="update-channel" data-update-channel="beta">天鹰座测试版</button>
+                  </div>
+                </div>
+              </div>
+              <div class="update-actions-row">
+                <button class="primary-button" id="checkUpdatesPanelBtn"><svg viewBox="0 0 24 24"><use href="#i-reload"></use></svg>检查更新</button>
+                <span>上次检查：今天 21:37</span>
+              </div>
+              <p class="settings-footnote">系统更新由本地更新服务校验，不会修改任何已有文件。</p>
+            </section>
+
+            <!-- Displays -->
+            <section class="settings-panel" data-panel-content="displays" hidden>
+              <div class="settings-panel-head"><h1>显示器</h1><p>内置视网膜显示屏 · 3024 × 1964</p></div>
+              <div class="display-hero">
+                <div class="display-bezel"><div class="display-screen"><span>AISNIPER</span><i class="display-horizon"></i></div><span class="display-notch"></span></div>
+                <div class="display-reflection"></div>
+              </div>
+              <div class="settings-card">
+                <div class="setting-row setting-row-stack">
+                  <div class="setting-copy"><b>亮度</b><span id="brightnessValue">100%</span></div>
+                  <input class="range-control" id="brightnessRange" type="range" min="40" max="100" value="100" step="1" aria-label="亮度">
+                </div>
+              </div>
+              <div class="resolution-row"><span>分辨率</span><b>显示器默认设置</b></div>
+            </section>
+
+            <!-- Sound -->
+            <section class="settings-panel" data-panel-content="sound" hidden>
+              <div class="settings-panel-head"><h1>声音</h1><p>克制而有回应。</p></div>
+              <div class="settings-card">
+                <div class="setting-row setting-row-stack">
+                  <div class="setting-copy"><b>输出音量</b><span id="soundVolumeValue">65%</span></div>
+                  <div class="volume-control"><button class="mini-icon-button" id="volumeTestBtn" aria-label="测试声音"><svg viewBox="0 0 24 24"><use href="#i-sound"></use></svg></button><input class="range-control" id="soundVolumeRange" type="range" min="0" max="100" value="65" step="1" aria-label="输出音量"></div>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-copy"><b>界面音效</b><span>为操作与提醒提供轻柔反馈。</span></div>
+                  <button class="switch is-on" data-setting-toggle="interfaceSounds" role="switch" aria-checked="true" aria-label="界面音效"><span></span></button>
+                </div>
+              </div>
+              <p class="settings-subhead">提醒音</p>
+              <div class="alert-sounds" role="group" aria-label="提醒音">
+                <button class="alert-sound is-selected" data-alert-sound="Signal">信号 <span></span></button>
+                <button class="alert-sound" data-alert-sound="Ridge">山脊 <span></span></button>
+                <button class="alert-sound" data-alert-sound="Pulse">脉冲 <span></span></button>
+              </div>
+              <p class="settings-footnote">音量同样作用于《深空信号》。游戏暂停时完全静音。</p>
+            </section>
+
+            <!-- Health -->
+            <section class="settings-panel" data-panel-content="health" hidden>
+              <div class="settings-panel-head"><h1>系统健康度</h1><p>来自 AISniper 核心的实时遥测。</p><span class="live-badge"><i></i>实时</span></div>
+              <div class="health-hero">
+                <div class="health-ring-wrap">
+                  <svg viewBox="0 0 160 160" class="health-ring">
+                    <circle cx="80" cy="80" r="64" class="health-ring-track"></circle>
+                    <circle cx="80" cy="80" r="64" class="health-ring-value" id="settingsHealthRing"></circle>
+                  </svg>
+                  <div class="health-ring-score"><b id="settingsHealthScore">98</b><span>优秀</span></div>
+                </div>
+                <div class="health-summary"><span class="eyebrow">AISniper 核心</span><h2>所有系统稳定。</h2><p>温度平稳，神经调度器处于最佳状态。无需任何操作。</p><div class="health-meta"><span><i class="status-dot"></i>所有服务在线</span><span>运行时间 <b id="settingsUptime">02:14:08</b></span></div></div>
+              </div>
+              <div class="health-metrics">
+                <div class="metric-card"><div class="metric-head"><span>CPU</span><b id="settingsCpu">18%</b></div><div class="metric-track"><i id="settingsCpuBar"></i></div><small>调度器 · 正常</small></div>
+                <div class="metric-card"><div class="metric-head"><span>内存</span><b id="settingsMem">42%</b></div><div class="metric-track"><i id="settingsMemBar"></i></div><small>10.8 GB / 24 GB</small></div>
+                <div class="metric-card"><div class="metric-head"><span>GPU</span><b id="settingsGpu">12%</b></div><div class="metric-track"><i id="settingsGpuBar"></i></div><small>空闲 · 2.4 GHz</small></div>
+                <div class="metric-card"><div class="metric-head"><span>温度</span><b>36°C</b></div><div class="metric-track thermal"><i></i></div><small>凉爽 · 无风扇</small></div>
+              </div>
+              <div class="health-actions"><button class="primary-button" id="runDiagnosticsBtn"><svg viewBox="0 0 24 24"><use href="#i-health"></use></svg>运行诊断</button><span>上次检查：刚刚</span></div>
+            </section>
+
+            <!-- About -->
+            <section class="settings-panel" data-panel-content="about" hidden>
+              <div class="about-hero">
+                <div class="about-mark"><svg viewBox="0 0 64 64"><use href="#icon-orbit-logo"></use></svg></div>
+                <h1>AISniper<span>OS</span></h1>
+                <p>专注，凝练。</p>
+                <span class="about-version">版本 26.1.4 · 天鹰座 · 简体中文</span>
+              </div>
+              <div class="about-specs">
+                <div><span>处理器</span><b>AISniper M1 · 神经核心</b></div>
+                <div><span>内存</span><b>24 GB 统一内存</b></div>
+                <div><span>显示屏</span><b>液态视网膜 · 3024 × 1964</b></div>
+                <div><span>序列号</span><b>ASN-7741-MERIDIAN</b></div>
+              </div>
+              <div class="about-note"><p>一个为精确思考与深夜轨道而生的浏览器原生操作系统。三维飞行系统由 Three.js 驱动。</p><button class="secondary-button" id="checkUpdatesBtn">检查更新</button></div>
+              <p class="about-legal">AISniperOS 是一个虚构的桌面体验，为浏览器而作。所有信号都留在本机。</p>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- TERMINAL -->
+      <section class="window terminal-window" id="window-terminal" data-app="terminal" role="dialog" aria-label="终端">
+        <div class="window-bar dark-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭终端"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化终端"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放终端"></button>
+          </div>
+          <div class="window-title">Sniper — zsh — 96×28</div>
+          <div class="window-bar-tools"><span class="terminal-badge">zsh</span></div>
+        </div>
+        <div class="terminal-body" id="terminalBody">
+          <div class="terminal-output" id="terminalOutput" aria-live="polite"></div>
+          <div class="terminal-input-line" id="terminalInputLine">
+            <span class="terminal-prompt" id="terminalPrompt">visitor@aisniper ~</span>
+            <span class="terminal-percent">%</span>
+            <input class="terminal-input" id="terminalInput" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="终端命令">
+            <span class="terminal-caret" aria-hidden="true"></span>
+          </div>
+        </div>
+        <div class="terminal-footer"><span>⏎ 执行</span><span>↑ 历史</span><span>⌘K 清屏</span><span class="terminal-footer-right">AISniper zsh 1.0</span></div>
+      </section>
+
+      <!-- GAME -->
+      <section class="window game-window" id="window-game" data-app="game" role="dialog" aria-label="深空信号 太空射击游戏">
+        <div class="window-bar game-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭深空信号"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化深空信号"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放深空信号"></button>
+          </div>
+          <div class="window-title game-title"><span class="game-title-dot"></span>深空信号 <span class="game-title-sub">// 轨道截击</span></div>
+          <div class="window-bar-tools">
+            <button class="icon-button game-tool" id="gameSoundBtn" aria-label="静音游戏音频"><svg viewBox="0 0 24 24"><use href="#i-sound"></use></svg></button>
+            <button class="icon-button game-tool" id="gameExpandBtn" aria-label="展开游戏窗口"><svg viewBox="0 0 24 24"><use href="#i-expand"></use></svg></button>
+          </div>
+        </div>
+        <div class="game-stage" id="gameStage">
+          <canvas id="gameCanvas" aria-label="深空信号 3D 游戏画布"></canvas>
+          <div class="game-vignette"></div>
+          <div class="game-scanlines"></div>
+          <div class="game-hud" id="gameHud" aria-hidden="true">
+            <div class="hud-top">
+              <div class="hud-block hud-score"><span class="hud-label">得分</span><span class="hud-value" id="hudScore">000000</span><span class="hud-multiplier" id="hudMultiplier">×1.0</span></div>
+              <div class="hud-wave"><span class="hud-label">波次</span><span class="hud-wave-number" id="hudWave">01</span></div>
+              <div class="hud-block hud-shield-block"><div class="hud-shield-head"><span class="hud-label">护盾</span><span id="hudShieldText">100</span></div><div class="hud-shield-bar"><i id="hudShield"></i></div></div>
+            </div>
+            <div class="game-reticle" id="gameReticle">
+              <span class="reticle-ring"></span><span class="reticle-tick rt-top"></span><span class="reticle-tick rt-right"></span><span class="reticle-tick rt-bottom"></span><span class="reticle-tick rt-left"></span><span class="reticle-dot"></span><span class="reticle-label" id="reticleLabel">锁定</span>
+            </div>
+            <div class="hud-bottom">
+              <div class="weapon-status"><span class="hud-label">脉冲驱动</span><div class="weapon-bar"><i id="hudHeat"></i></div><span class="weapon-hint">按住射击</span></div>
+              <div class="hud-center-hint" id="hudHint">移动瞄准 · 点击射击</div>
+              <div class="threat-status"><span class="hud-label">威胁</span><span id="hudThreats">00</span><i class="threat-pip"></i></div>
+            </div>
+            <button class="hud-pause-button" id="hudPauseBtn" aria-label="暂停游戏"><svg viewBox="0 0 24 24"><use href="#i-pause"></use></svg></button>
+          </div>
+          <div class="game-overlay" id="gameOverlay">
+            <div class="game-start">
+              <div class="game-eyebrow"><span></span>AISNIPER 轨道作战部<span></span></div>
+              <h1>深空<i>信号</i></h1>
+              <p class="game-premise">敌群正穿越子午线星门。驾驶截击机，守住战线，只留下光。</p>
+              <div class="game-controls">
+                <span><i class="keycap">鼠标</i> 驾驶与瞄准</span>
+                <span><i class="keycap">左键</i> 脉冲射击</span>
+                <span><i class="keycap">P</i> 暂停</span>
+              </div>
+              <button class="launch-button" id="gameStartBtn"><span>启动任务</span><svg viewBox="0 0 24 24"><use href="#i-play"></use></svg></button>
+              <div class="game-best">个人最佳 <b id="gameBest">000000</b></div>
+            </div>
+            <div class="game-gameover" id="gameGameOver" hidden>
+              <div class="game-eyebrow"><span></span>信号中断<span></span></div>
+              <h2>舰体完整性 <i>归零。</i></h2>
+              <p>星门仍在，你的记录仍在。</p>
+              <div class="game-result-grid"><div><span>得分</span><b id="gameFinalScore">000000</b></div><div><span>波次</span><b id="gameFinalWave">01</b></div><div><span>最佳</span><b id="gameFinalBest">000000</b></div></div>
+              <button class="launch-button" id="gameRestartBtn"><span>再次出击</span><svg viewBox="0 0 24 24"><use href="#i-play"></use></svg></button>
+            </div>
+          </div>
+          <div class="game-pause-screen" id="gamePauseScreen" hidden>
+            <span class="eyebrow">飞行已暂停</span>
+            <h2>信号暂停。</h2>
+            <button class="launch-button small" id="gameResumeBtn"><span>继续</span><svg viewBox="0 0 24 24"><use href="#i-play"></use></svg></button>
+            <p>按 <b>P</b> 或点击继续，返回深空。</p>
+          </div>
+          <div class="game-webgl-error" id="gameWebglError" hidden><h2>3D 引擎不可用</h2><p>深空信号需要 WebGL。请在浏览器中开启硬件加速，然后重新启动游戏。</p></div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- DOCK -->
+    <div class="dock-hotzone" id="dockHotzone" aria-hidden="true"></div>
+    <div class="dock-shell" id="dockShell">
+      <div class="dock" role="toolbar" aria-label="程序坞">
+        <button class="dock-item app-launcher" data-launch="finder" aria-label="打开访达">
+          <span class="dock-label">访达</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-finder"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher" data-launch="browser" aria-label="打开浏览器">
+          <span class="dock-label">浏览器</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-browser"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher" data-launch="messages" aria-label="打开信息">
+          <span class="dock-label">信息</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-messages"></use></svg><span class="dock-badge" id="messagesDockBadge">2</span></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher agent-launcher" data-launch="agent" aria-label="打开 AISniper 智能体">
+          <span class="dock-label">智能体</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-agent"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher" data-launch="calculator" aria-label="打开计算器">
+          <span class="dock-label">计算器</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-calculator"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher" data-launch="settings" aria-label="打开系统设置">
+          <span class="dock-label">系统设置</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-settings"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher" data-launch="terminal" aria-label="打开终端">
+          <span class="dock-label">终端</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-terminal"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher" data-launch="ops" aria-label="打开运维台">
+          <span class="dock-label">运维台</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-ops"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher steam-launcher" data-launch="steam" aria-label="打开 Steam">
+          <span class="dock-label">Steam</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-steam"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher unity-launcher" data-launch="unity" aria-label="打开 AISniper Unity">
+          <span class="dock-label">Unity</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-unity"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher game-launcher" data-launch="game" aria-label="打开深空信号太空射击游戏">
+          <span class="dock-label">深空信号</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-game"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <div class="dock-separator" aria-hidden="true"></div>
+        <button class="dock-item app-launcher trash-launcher" data-launch="trash" aria-label="打开废纸篓">
+          <span class="dock-label">废纸篓</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-trash"></use></svg></span><span class="dock-dot"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- POPOVERS -->
+    <section class="popover wifi-popover network-popover" id="popover-wifi" data-popover="wifi" role="dialog" aria-label="网络" aria-hidden="true">
+      <div class="popover-head network-popover-head">
+        <div><h2>网络</h2><p id="wifiPopoverSubtitle">以太网已连接 · 1000 Mbps</p></div>
+        <span class="live-badge"><i></i>有线</span>
+      </div>
+      <div class="current-network ethernet-current" id="currentNetworkCard">
+        <span class="network-glyph"><svg viewBox="0 0 24 24"><use href="#i-ethernet"></use></svg></span>
+        <div><b>有线网络</b><span>子午线网关 · DHCP · 1 Gbps</span></div>
+        <span class="network-state">已连接</span>
+      </div>
+      <div class="network-wifi-section">
+        <div class="network-section-head">
+          <div><h3>Wi-Fi</h3><span id="wifiPopoverStatus">可选 · 已连接 AISniper-5G</span></div>
+          <button class="switch is-on" data-setting-toggle="wifi" role="switch" aria-checked="true" aria-label="Wi-Fi"><span></span></button>
+        </div>
+        <p class="popover-label">已知无线网络</p>
+        <div class="network-list" id="wifiNetworkList"></div>
+      </div>
+      <button class="popover-row-button" id="wifiSettingsLink">网络设置 <svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+    </section>
+
+    <section class="popover health-popover" id="popover-health" data-popover="health" role="dialog" aria-label="系统健康度" aria-hidden="true">
+      <div class="popover-head">
+        <div><h2>系统健康度</h2><p>一切尽在掌控。</p></div>
+        <span class="live-badge"><i></i>实时</span>
+      </div>
+      <div class="health-score-row">
+        <div class="mini-health-ring">
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="41" class="health-ring-track"></circle>
+            <circle cx="50" cy="50" r="41" class="health-ring-value" id="popoverHealthRing"></circle>
+          </svg>
+          <span><b id="popoverHealthScore">98</b><small>健康</small></span>
+        </div>
+        <div class="health-score-copy"><span class="eyebrow">AISniper M1</span><h3>所有系统稳定。</h3><p>温度平稳，内存洁净，3 项服务检查通过。</p></div>
+      </div>
+      <div class="health-spark-grid">
+        <div class="health-spark-card"><div><span>CPU</span><b id="popoverCpu">18%</b></div><svg viewBox="0 0 120 38" preserveAspectRatio="none"><path class="spark-fill" id="cpuSparkFill"></path><path class="spark-line" id="cpuSparkLine"></path></svg></div>
+        <div class="health-spark-card"><div><span>内存</span><b id="popoverMem">42%</b></div><svg viewBox="0 0 120 38" preserveAspectRatio="none"><path class="spark-fill" id="memSparkFill"></path><path class="spark-line" id="memSparkLine"></path></svg></div>
+      </div>
+      <div class="health-mini-rows">
+        <div><span>电池</span><b>86% · 9 小时 42 分</b></div>
+        <div><span>温度</span><b class="success-text">凉爽 · 36°</b></div>
+        <div><span>网络</span><b class="success-text">以太网 · 1 Gbps</b></div>
+      </div>
+      <button class="popover-row-button" id="healthSettingsLink">打开系统健康度 <svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+    </section>
+
+    <section class="popover calendar-popover" id="popover-calendar" data-popover="calendar" role="dialog" aria-label="日历" aria-hidden="true">
+      <div class="popover-head calendar-head"><div><p class="calendar-big-day" id="calendarBigDay">13</p><h2 id="calendarHeading">11月13日 星期五</h2></div><div class="calendar-nav"><button class="icon-button" id="calendarPrev" aria-label="上个月"><svg viewBox="0 0 24 24"><use href="#i-chevron-left"></use></svg></button><button class="icon-button" id="calendarNext" aria-label="下个月"><svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button><button class="icon-button" id="calendarTodayBtn" aria-label="回到今天"><svg viewBox="0 0 24 24"><use href="#i-clock"></use></svg></button></div></div>
+      <div class="calendar-month-label"><span id="calendarMonthLabel">2026年11月</span><span>周一 — 周日</span></div>
+      <div class="calendar-grid-head"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div class="calendar-events">
+        <div class="calendar-events-head"><span>今日</span><span id="calendarDayLabel">11月13日</span></div>
+        <div class="calendar-event"><span class="agenda-bar amber"></span><div><b>设计评审</b><small>09:30 – 10:15 · Aperture 工作室</small></div></div>
+        <div class="calendar-event"><span class="agenda-bar teal"></span><div><b>轨道试飞</b><small>14:00 – 14:45 · 深空信号</small></div></div>
+      </div>
+    </section>
+
+    <section class="popover control-popover" id="popover-control" data-popover="control" role="dialog" aria-label="控制中心" aria-hidden="true">
+      <div class="control-grid">
+        <button class="control-network-banner" id="controlNetworkBtn" aria-label="打开网络状态">
+          <span class="control-network-icon"><svg viewBox="0 0 24 24"><use href="#i-ethernet"></use></svg></span>
+          <span><b>有线网络</b><small>以太网 · 已连接 · 1000 Mbps</small></span>
+          <i class="control-network-pulse"></i>
+        </button>
+        <button class="control-tile wide" data-setting-toggle="wifi" data-control-wifi>
+          <span class="control-tile-icon"><svg viewBox="0 0 24 24"><use href="#i-wifi"></use></svg></span>
+          <span><b>Wi-Fi</b><small id="controlWifiLabel">AISniper-5G</small></span>
+          <i class="tile-state"></i>
+        </button>
+        <button class="control-tile theme-tile" id="controlThemeBtn">
+          <span class="control-tile-icon" id="controlThemeIcon"><svg viewBox="0 0 24 24"><use href="#i-moon"></use></svg></span>
+          <span><b>外观</b><small id="controlThemeLabel">深色</small></span>
+        </button>
+        <div class="control-tile-set">
+          <button class="control-mini" data-setting-toggle="magnification" aria-label="程序坞放大效果"><svg viewBox="0 0 24 24"><use href="#i-expand"></use></svg><small>放大</small></button>
+          <button class="control-mini" data-setting-toggle="interfaceSounds" aria-label="界面音效"><svg viewBox="0 0 24 24"><use href="#i-sound"></use></svg><small>音效</small></button>
+          <button class="control-mini" id="controlSpotlightBtn" aria-label="聚焦搜索"><svg viewBox="0 0 24 24"><use href="#i-search"></use></svg><small>搜索</small></button>
+          <button class="control-mini" id="controlSleepBtn" aria-label="睡眠"><svg viewBox="0 0 24 24"><use href="#i-moon"></use></svg><small>睡眠</small></button>
+        </div>
+        <div class="control-slider-card">
+          <div class="control-slider-head"><span><svg viewBox="0 0 24 24"><use href="#i-sun"></use></svg>显示屏</span><b id="controlBrightnessValue">100%</b></div>
+          <input class="range-control" id="controlBrightness" type="range" min="40" max="100" value="100" step="1" aria-label="显示亮度">
+        </div>
+        <div class="control-slider-card">
+          <div class="control-slider-head"><span><svg viewBox="0 0 24 24"><use href="#i-sound"></use></svg>声音</span><b id="controlVolumeValue">65%</b></div>
+          <input class="range-control" id="controlVolume" type="range" min="0" max="100" value="65" step="1" aria-label="系统音量">
+        </div>
+      </div>
+      <button class="popover-row-button" id="openSettingsFromControl">系统设置 <svg viewBox="0 0 24 24"><use href="#i-chevron-right"></use></svg></button>
+    </section>
+
+    <div class="brightness-veil" id="brightnessVeil" aria-hidden="true"></div>
+
+    <!-- SPOTLIGHT -->
+    <div class="spotlight-layer" id="spotlightLayer" aria-hidden="true">
+      <div class="spotlight-backdrop" id="spotlightBackdrop"></div>
+      <section class="spotlight" role="dialog" aria-modal="true" aria-label="聚焦搜索">
+        <div class="spotlight-input-wrap">
+          <svg viewBox="0 0 24 24"><use href="#i-search"></use></svg>
+          <input id="spotlightInput" type="text" placeholder="搜索应用、设置与操作" autocomplete="off" spellcheck="false" aria-label="聚焦搜索">
+          <span class="spotlight-esc">esc</span>
+        </div>
+        <div class="spotlight-results" id="spotlightResults"></div>
+        <div class="spotlight-footer"><span><i class="keycap">↑</i><i class="keycap">↓</i> 导航</span><span><i class="keycap">↵</i> 打开</span><span class="spotlight-footer-brand">AISniper 聚焦</span></div>
+      </section>
+    </div>
+
+    <!-- SLEEP -->
+    <div class="sleep-screen" id="sleepScreen" aria-hidden="true">
+      <div class="sleep-time" id="sleepTime">21:41</div>
+      <div class="sleep-date" id="sleepDate">11月13日 星期五</div>
+      <button class="sleep-wake" id="sleepWakeBtn">点击唤醒 <span></span></button>
+      <div class="sleep-mark"><svg viewBox="0 0 64 64"><use href="#icon-orbit-logo"></use></svg></div>
+    </div>
+
+    <div class="os-dialog-layer" id="osDialogLayer" aria-hidden="true">
+      <div class="os-dialog-backdrop" data-dialog-dismiss></div>
+      <section class="os-dialog" role="dialog" aria-modal="true" aria-labelledby="osDialogTitle" aria-describedby="osDialogMessage">
+        <div class="os-dialog-head">
+          <span class="os-dialog-icon"><svg viewBox="0 0 24 24"><use id="osDialogIconUse" href="#i-file"></use></svg></span>
+          <div><h2 id="osDialogTitle">重命名</h2><p id="osDialogMessage">输入新的名称。</p></div>
+        </div>
+        <label class="os-dialog-field" id="osDialogFieldWrap"><span id="osDialogFieldLabel">名称</span><input id="osDialogInput" type="text" autocomplete="off" spellcheck="false"></label>
+        <div class="os-dialog-info" id="osDialogInfo" hidden></div>
+        <div class="os-dialog-actions"><button class="secondary-button" id="osDialogCancel">取消</button><button class="primary-button" id="osDialogConfirm">确定</button></div>
+      </section>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <div class="desktop-context-menu" id="desktopContextMenu" role="menu" aria-hidden="true">
+      <button data-context="wallpaper">更换墙纸…</button>
+      <button data-context="widgets">显示 / 隐藏小组件</button>
+      <div class="context-divider"></div>
+      <button data-context="settings">系统设置…</button>
+      <button data-context="spotlight">聚焦搜索 <span>⌘K</span></button>
+    </div>
+  </div>
+
+  <script src="vendor/three.min.js"></script>
+  <script src="js/game.js?v=26.4"></script>
+  <script src="js/browser.js?v=26.4"></script>
+  <script src="js/agent.js?v=26.4"></script>
+  <script src="js/messages.js?v=26.4"></script>
+  <script src="js/ops.js?v=26.4"></script>
+  <script src="js/steamgames.js?v=26.4"></script>
+  <script src="js/steammini.js?v=26.5.38"></script>
+  <script src="js/unity.js?v=26.4"></script>
+  <script src="js/steam.js?v=26.4.29"></script>
+  <script src="js/os.js?v=26.4.3"></script>
+</body>
+</html>

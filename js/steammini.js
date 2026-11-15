@@ -1,0 +1,20437 @@
+/* ==========================================================================
+   AISniperOS — Steam local playable demos
+   Eight small Canvas 2D games, Destiny orbit activities and Division containment.
+   ========================================================================== */
+
+(() => {
+  'use strict';
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const lerp = (a, b, amount) => a + (b - a) * amount;
+  const rand = (min, max) => min + Math.random() * (max - min);
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+  const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+  const escapeHTML = (value) => String(value).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+
+  const META = {
+    alyx: {
+      title: 'Half-Life: Alyx',
+      cn: '重力手套：封锁区',
+      studio: 'Valve · City 17 训练舱',
+      kicker: 'VALVE',
+      word: 'HALF-LIFE',
+      sub: 'ALYX · GRAVITY RANGE',
+      accent: '#ffb14e',
+      accent2: '#67d6ff',
+      tags: ['第一人称靶场', '60 秒挑战', '连击计分'],
+      objective: '在 60 秒内击落 20 架联合军侦察机',
+      description: '联合军的侦察无人机正在扫描训练舱。用重力手套把它们从空中拽下来，同时躲开它们的反击火力。',
+      controls: [['鼠标', '移动准星'], ['左键', '引力脉冲'], ['R', '更换电池'], ['空格', '重力爆发']],
+      scoreLabel: '得分',
+      startToast: '重力手套已校准。留意无人机的红色蓄能射线。'
+    },
+    dota2: {
+      title: 'Dota 2',
+      cn: '中路守卫',
+      studio: 'Valve · 天辉与夜魇',
+      kicker: 'VALVE',
+      word: 'DOTA 2',
+      sub: 'MID LANE · ANCIENT DEFENSE',
+      accent: '#e7b15c',
+      accent2: '#71d6a5',
+      tags: ['中路攻防', '兵线对推', '防御塔'],
+      objective: '带领兵线推进，摧毁夜魇的远古遗迹',
+      description: '一座遗迹，一条中路。你与天辉小兵共同推进，在敌方塔防与兵线之间寻找机会；己方遗迹同样会遭到攻击。',
+      controls: [['WASD', '移动英雄'], ['左键', '攻击近敌'], ['Q', '冰霜新星'], ['E', '回春术']],
+      scoreLabel: '金币',
+      startToast: '兵线已经出发。先清理前来推塔的夜魇小兵。'
+    },
+    deadlock: {
+      title: 'Deadlock',
+      cn: '巷道交火',
+      studio: 'Valve · 蒸汽街区 7 号封锁区',
+      kicker: 'VALVE',
+      word: 'DEADLOCK',
+      sub: 'ALLEY SIEGE · 3 WAVES',
+      accent: '#e9a15a',
+      accent2: '#51c7bc',
+      tags: ['俯视角射击', '掩体弹道', '三波遭遇'],
+      objective: '穿过蒸汽街区，清除三波封锁部队',
+      description: '封锁区的黄铜管道正喷着白汽。利用掩体接近敌人，用脉冲冲击撕开他们的阵型。',
+      controls: [['WASD', '移动'], ['鼠标', '瞄准'], ['左键', '射击'], ['Shift', '冲刺'], ['E', '脉冲冲击']],
+      scoreLabel: '得分',
+      startToast: '封锁区入口已打开。三波敌人正在靠近。'
+    },
+    rust: {
+      title: 'Rust',
+      cn: '第一夜',
+      studio: 'Facepunch · 荒岛 04 号区域',
+      kicker: 'FACE PUNCH',
+      word: 'RUST',
+      sub: 'FIRST NIGHT · SURVIVE',
+      accent: '#d9a15f',
+      accent2: '#8fd07a',
+      tags: ['资源采集', '篝火生存', '昼夜循环'],
+      objective: '收集木材与石料，点燃篝火并撑到黎明',
+      description: '你只有一块石头和一把火把。白天属于采集，夜晚属于野兽。在天黑前造好篝火，然后守住它。',
+      controls: [['WASD', '移动'], ['E', '采集资源'], ['F', '放置篝火'], ['左键', '挥击']],
+      scoreLabel: '生存',
+      startToast: '先找一棵树。按 E 采集木材和石料。'
+    },
+    eldenring: {
+      title: 'ELDEN RING',
+      cn: '褪色者试炼',
+      studio: 'FromSoftware · 黄金雾门',
+      kicker: 'FROMSOFTWARE',
+      word: 'ELDEN',
+      sub: 'RING · MARGIT',
+      accent: '#e7ca76',
+      accent2: '#a68e54',
+      tags: ['首领决斗', '翻滚闪避', '第二阶段'],
+      objective: '击败守在黄金雾门前的恶兆守卫',
+      description: '雾门之后，黄金树的光被巨斧切开。读懂每一次抬手，在落点之外翻滚，再把剑刃送进破绽。',
+      controls: [['WASD', '移动'], ['鼠标', '朝向'], ['左键', '挥剑'], ['Shift', '翻滚'], ['E', '圣杯瓶']],
+      scoreLabel: '试炼',
+      startToast: '恶兆守卫举起了巨斧。翻滚有无敌帧。'
+    },
+    cyberpunk: {
+      title: 'Cyberpunk 2077',
+      cn: '撬开 ICE',
+      studio: 'CD Projekt Red · 荒坂本地子网',
+      kicker: 'CD PROJEKT RED',
+      word: 'CYBERPUNK',
+      sub: '2077 · BREACH PROTOCOL',
+      accent: '#f5d84a',
+      accent2: '#53e6ff',
+      tags: ['代码矩阵', '序列破解', '缓冲区'],
+      objective: '在信号缓冲区写满前完成全部序列',
+      description: '接入荒坂的子网，从代码矩阵中提取有效序列。每一次选择都会锁定下一行或下一列；想清楚再落子。',
+      controls: [['鼠标', '选择代码'], ['目标', '完成三组序列'], ['缓冲区', '共 8 格'], ['Esc', '中断连接']],
+      scoreLabel: '破解',
+      startToast: 'ICE 已响应。先从第一行选择一枚代码。'
+    },
+    destiny2: {
+      title: 'Destiny 2',
+      cn: '猩红战争',
+      studio: 'Bungie · 最后的城市',
+      kicker: 'BUNGIE',
+      word: 'DESTINY 2',
+      sub: 'THE DIRECTOR · DESTINATIONS & STORIES',
+      accent: '#e8c26a',
+      accent2: '#e65b4c',
+      tags: ['Director 星图', '13 个目的地', '10 DLC · 技能分支'],
+      objective: '在 Director 星图点击星球，进入对应剧情线',
+      description: '红色军团撕开了最后的城市的天际线。光能被夺走之后，一名守护者仍然可以向旗舰走去。',
+      controls: [['WASD', '移动'], ['左键', '射击'], ['1/2/3', '切换武器'], ['R', '换弹'], ['Q', '手雷'], ['C', '近战'], ['V', '职业技能'], ['F', '超能'], ['E', '拾取'], ['F1', '装备栏']],
+      scoreLabel: '击杀',
+      startLabel: '进入 Director',
+      chapters: ['归乡', '火花', '1AU', '选择', '猩红终局'],
+      startToast: 'Director 已连接。点击星球，阅读目的地并选择剧情节点。'
+    },
+    division: {
+      title: "Tom Clancy's The Division",
+      cn: '全境封锁',
+      studio: 'Ubisoft · 曼哈顿封锁区',
+      kicker: 'UBISOFT',
+      word: 'THE DIVISION',
+      sub: 'AGENT ORIGINS · MANHATTAN',
+      accent: '#e3a45b',
+      accent2: '#84cde3',
+      tags: ['掩体射击', '雪夜曼哈顿', '叛变特工'],
+      objective: '清理封锁区三波敌人并击败叛变特工',
+      description: '雪落在空无一人的街道上。你是一名被唤醒的国土战略局特工，任务只有一个：让这座城市重新运转。',
+      controls: [['WASD', '移动'], ['左键', '射击'], ['R', '换弹'], ['F', '医疗包'], ['E', '自动炮塔'], ['Q', '脉冲']],
+      scoreLabel: '击杀',
+      startToast: '特工已上线。利用掩体，清理街区。'
+    }
+  };
+
+  function roundRect(ctx, x, y, w, h, radius) {
+    const r = Math.min(radius, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function fillRoundRect(ctx, x, y, w, h, radius, fill) {
+    roundRect(ctx, x, y, w, h, radius);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+
+  function glowCircle(ctx, x, y, radius, color, alpha = 0.5) {
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCrosshair(ctx, x, y, color, radius = 13, open = false) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 1.2;
+    const gap = open ? 8 : 5;
+    ctx.beginPath();
+    ctx.moveTo(x - radius, y); ctx.lineTo(x - gap, y);
+    ctx.moveTo(x + gap, y); ctx.lineTo(x + radius, y);
+    ctx.moveTo(x, y - radius); ctx.lineTo(x, y - gap);
+    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + radius);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.42;
+    ctx.beginPath();
+    ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function formatTime(seconds) {
+    const safe = Math.max(0, Math.ceil(seconds));
+    const m = Math.floor(safe / 60);
+    const s = safe % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  class FX {
+    constructor() {
+      this.parts = [];
+      this.rings = [];
+      this.floaters = [];
+    }
+
+    burst(x, y, color, count = 14, speed = 170, size = 2.4) {
+      for (let i = 0; i < count; i += 1) {
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = speed * rand(0.28, 1);
+        this.parts.push({
+          x, y, vx: Math.cos(angle) * velocity, vy: Math.sin(angle) * velocity,
+          life: rand(0.34, 0.82), max: 0.82, color, size: rand(1.2, size)
+        });
+      }
+    }
+
+    ring(x, y, color, radius = 52, life = 0.42, width = 2) {
+      this.rings.push({ x, y, color, radius, life, max: life, width });
+    }
+
+    float(x, y, text, color = '#fff', size = 14) {
+      this.floaters.push({ x, y, text, color, size, life: 0.9, max: 0.9 });
+    }
+
+    update(dt) {
+      this.parts.forEach((particle) => {
+        particle.life -= dt;
+        particle.x += particle.vx * dt;
+        particle.y += particle.vy * dt;
+        particle.vx *= 0.96;
+        particle.vy = particle.vy * 0.96 + 42 * dt;
+      });
+      this.rings.forEach((ring) => { ring.life -= dt; });
+      this.floaters.forEach((floater) => { floater.life -= dt; floater.y -= 26 * dt; });
+      this.parts = this.parts.filter((particle) => particle.life > 0);
+      this.rings = this.rings.filter((ring) => ring.life > 0);
+      this.floaters = this.floaters.filter((floater) => floater.life > 0);
+    }
+
+    draw(ctx) {
+      this.parts.forEach((particle) => {
+        const alpha = clamp(particle.life / particle.max, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      this.rings.forEach((ring) => {
+        const progress = 1 - ring.life / ring.max;
+        ctx.save();
+        ctx.globalAlpha = (1 - progress) * 0.82;
+        ctx.strokeStyle = ring.color;
+        ctx.lineWidth = ring.width;
+        ctx.beginPath();
+        ctx.arc(ring.x, ring.y, ring.radius * (0.36 + progress * 0.9), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.floaters.forEach((floater) => {
+        const alpha = clamp(floater.life / floater.max, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = floater.color;
+        ctx.font = `600 ${floater.size}px "Segoe UI", "PingFang SC", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0,0,0,.5)';
+        ctx.shadowBlur = 6;
+        ctx.fillText(floater.text, floater.x, floater.y);
+        ctx.restore();
+      });
+    }
+  }
+
+  class DestinyAudio {
+    constructor() {
+      this.ctx = null;
+      this.master = null;
+      this.noiseBuffer = null;
+      this.reverb = null;
+      this.lastShot = 0;
+      this.lastHit = 0;
+      this.enabled = true;
+      try {
+        this.enabled = localStorage.getItem('aisniper.destiny.audio') !== 'off';
+      } catch (error) {
+        this.enabled = true;
+      }
+    }
+
+    ensure() {
+      if (!this.enabled || typeof window === 'undefined') return false;
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) return false;
+      try {
+        if (!this.ctx) {
+          this.ctx = new Ctor();
+          this.master = this.ctx.createGain();
+          this.master.gain.value = 0.3;
+          const compressor = this.ctx.createDynamicsCompressor();
+          compressor.threshold.value = -20;
+          compressor.knee.value = 18;
+          compressor.ratio.value = 4.5;
+          if (compressor.attack) compressor.attack.value = 0.003;
+          if (compressor.release) compressor.release.value = 0.22;
+          this.master.connect(compressor);
+          compressor.connect(this.ctx.destination);
+          this.reverb = null;
+          try {
+            const convolver = this.ctx.createConvolver();
+            convolver.buffer = this.makeImpulse(0.24, 2.6);
+            const returnGain = this.ctx.createGain();
+            returnGain.gain.value = 0.22;
+            convolver.connect(returnGain);
+            returnGain.connect(compressor);
+            this.reverb = convolver;
+          } catch (error) {
+            this.reverb = null;
+          }
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    makeImpulse(duration = 0.24, decay = 2.6) {
+      if (!this.ctx) return null;
+      const rate = this.ctx.sampleRate || 44100;
+      const length = Math.max(1, Math.floor(rate * duration));
+      const buffer = this.ctx.createBuffer(2, length, rate);
+      for (let channel = 0; channel < 2; channel += 1) {
+        const data = buffer.getChannelData(channel);
+        let previous = 0;
+        for (let i = 0; i < length; i += 1) {
+          const progress = i / length;
+          const white = Math.random() * 2 - 1;
+          previous = previous * 0.7 + white * 0.3;
+          data[i] = previous * Math.pow(1 - progress, decay) * (i < length * 0.008 ? 0.32 : 1);
+        }
+      }
+      return buffer;
+    }
+
+    route(gain, pan = 0, reverb = 0) {
+      if (!this.ctx || !gain) return;
+      let output = gain;
+      const offset = Math.max(-1, Math.min(1, pan || 0));
+      if (offset && typeof this.ctx.createStereoPanner === 'function') {
+        const panner = this.ctx.createStereoPanner();
+        panner.pan.value = offset;
+        gain.connect(panner);
+        output = panner;
+      }
+      output.connect(this.master);
+      if (reverb > 0 && this.reverb) {
+        const send = this.ctx.createGain();
+        send.gain.value = reverb;
+        gain.connect(send);
+        send.connect(this.reverb);
+      }
+    }
+
+    toggle() {
+      this.enabled = !this.enabled;
+      try { localStorage.setItem('aisniper.destiny.audio', this.enabled ? 'on' : 'off'); } catch (error) { /* ignore */ }
+      if (this.enabled) this.ensure();
+      return this.enabled;
+    }
+
+    tone(freq, duration, options = {}) {
+      if (!this.ensure()) return;
+      const now = this.ctx.currentTime;
+      const start = now + (options.delay || 0);
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = options.type || 'sine';
+      osc.frequency.setValueAtTime(Math.max(20, freq), start);
+      if (options.slide) osc.frequency.exponentialRampToValueAtTime(Math.max(20, options.slide), start + duration);
+      if (options.detune) osc.detune.value = options.detune;
+      const volume = options.volume ?? 0.05;
+      const attack = Math.max(0.001, options.attack ?? 0.006);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(volume, start + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.connect(gain);
+      this.route(gain, options.pan, options.reverb);
+      osc.start(start);
+      osc.stop(start + duration + 0.02);
+    }
+
+    noise(duration, options = {}) {
+      if (!this.ensure()) return;
+      if (!this.noiseBuffer) {
+        const length = Math.floor(this.ctx.sampleRate * 1.6);
+        this.noiseBuffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+        const data = this.noiseBuffer.getChannelData(0);
+        for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
+      }
+      const now = this.ctx.currentTime;
+      const start = now + (options.delay || 0);
+      const source = this.ctx.createBufferSource();
+      source.buffer = this.noiseBuffer;
+      if (options.rate) source.playbackRate.value = options.rate;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = options.filterType || 'bandpass';
+      const filterFreq = options.filter || 900;
+      filter.frequency.setValueAtTime(filterFreq, start);
+      if (options.filterEnd) {
+        filter.frequency.exponentialRampToValueAtTime(Math.max(30, options.filterEnd), start + duration);
+      }
+      filter.Q.value = options.q ?? 0.8;
+      const gain = this.ctx.createGain();
+      const attack = Math.max(0.001, options.attack ?? 0.004);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(options.volume ?? 0.08, start + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      source.connect(filter);
+      filter.connect(gain);
+      this.route(gain, options.pan, options.reverb);
+      source.start(start, options.offset ?? (duration < 0.45 ? Math.random() * 0.3 : 0));
+      source.stop(start + duration + 0.02);
+    }
+
+    nowMs() {
+      return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    }
+
+    weapon(spec) {
+      if (!this.enabled) return;
+      const now = this.nowMs();
+      if (now - this.lastShot < 32) return;
+      this.lastShot = now;
+      const profiles = {
+        auto: {
+          crack: { dur: 0.011, vol: 0.016, freq: 5200 },
+          air: { dur: 0.052, vol: 0.025, from: 2200, to: 700, q: 1.2 },
+          body: { dur: 0.065, from: 170, to: 74, type: 'triangle', vol: 0.03 },
+          sub: { dur: 0.085, from: 58, to: 40, vol: 0.014 },
+          click: { dur: 0.01, freq: 1600, vol: 0.005, delay: 0.012 },
+          reverb: 0.055
+        },
+        scout: {
+          crack: { dur: 0.014, vol: 0.022, freq: 5600 },
+          air: { dur: 0.085, vol: 0.03, from: 1800, to: 560, q: 0.9 },
+          body: { dur: 0.11, from: 140, to: 58, type: 'triangle', vol: 0.036 },
+          sub: { dur: 0.14, from: 54, to: 36, vol: 0.018 },
+          click: { dur: 0.014, freq: 1100, vol: 0.006, delay: 0.025 },
+          reverb: 0.1
+        },
+        pulse: {
+          pulses: 3, pulseGap: 0.034,
+          crack: { dur: 0.009, vol: 0.014, freq: 5000 },
+          air: { dur: 0.04, vol: 0.02, from: 2400, to: 1000, q: 1.3 },
+          body: { dur: 0.05, from: 185, to: 88, type: 'square', vol: 0.022 },
+          click: { dur: 0.008, freq: 1900, vol: 0.004, delay: 0.008 },
+          reverb: 0.04
+        },
+        handcannon: {
+          crack: { dur: 0.018, vol: 0.03, freq: 4800 },
+          air: { dur: 0.105, vol: 0.042, from: 800, to: 260, q: 0.8 },
+          body: { dur: 0.17, from: 112, to: 48, type: 'sawtooth', vol: 0.046 },
+          sub: { dur: 0.22, from: 48, to: 29, vol: 0.028 },
+          click: { dur: 0.018, freq: 700, vol: 0.008, delay: 0.03 },
+          reverb: 0.16
+        },
+        sidearm: {
+          crack: { dur: 0.008, vol: 0.016, freq: 6000 },
+          air: { dur: 0.035, vol: 0.022, from: 2600, to: 1100, q: 1.4 },
+          body: { dur: 0.045, from: 260, to: 118, type: 'square', vol: 0.026 },
+          click: { dur: 0.006, freq: 2100, vol: 0.004, delay: 0.006 },
+          reverb: 0.035
+        },
+        smg: {
+          crack: { dur: 0.006, vol: 0.011, freq: 6500 },
+          air: { dur: 0.026, vol: 0.018, from: 2800, to: 1200, q: 1.5 },
+          body: { dur: 0.03, from: 240, to: 130, type: 'square', vol: 0.02 },
+          click: { dur: 0.004, freq: 2400, vol: 0.003, delay: 0.004 },
+          reverb: 0.025
+        },
+        bow: {
+          air: { dur: 0.1, vol: 0.015, from: 1200, to: 350, q: 0.6 },
+          body: { dur: 0.1, from: 260, to: 150, type: 'triangle', vol: 0.018 },
+          string: { dur: 0.16, from: 520, to: 300, vol: 0.026 },
+          reverb: 0.08
+        },
+        grenade: {
+          crack: { dur: 0.01, vol: 0.018, freq: 3000 },
+          air: { dur: 0.08, vol: 0.045, from: 650, to: 220, q: 0.7 },
+          body: { dur: 0.13, from: 118, to: 58, type: 'triangle', vol: 0.045 },
+          sub: { dur: 0.18, from: 52, to: 32, vol: 0.022 },
+          click: { dur: 0.02, freq: 500, vol: 0.007, delay: 0.025 },
+          reverb: 0.14
+        },
+        fusion: {
+          crack: { dur: 0.012, vol: 0.02, freq: 5200 },
+          air: { dur: 0.075, vol: 0.025, from: 2800, to: 900, q: 1.1 },
+          body: { dur: 0.13, from: 760, to: 190, type: 'sawtooth', vol: 0.032 },
+          reverb: 0.1
+        },
+        micro: {
+          crack: { dur: 0.008, vol: 0.014, freq: 3600 },
+          air: { dur: 0.06, vol: 0.035, from: 950, to: 300, q: 0.8 },
+          body: { dur: 0.11, from: 145, to: 65, type: 'triangle', vol: 0.036 },
+          reverb: 0.1
+        },
+        wave: {
+          crack: { dur: 0.01, vol: 0.016, freq: 3200 },
+          air: { dur: 0.075, vol: 0.04, from: 780, to: 260, q: 0.7 },
+          body: { dur: 0.12, from: 125, to: 55, type: 'triangle', vol: 0.04 },
+          sub: { dur: 0.13, from: 55, to: 34, vol: 0.016 },
+          reverb: 0.12
+        },
+        rocket: {
+          crack: { dur: 0.02, vol: 0.028, freq: 3400 },
+          air: { dur: 0.3, vol: 0.075, from: 480, to: 120, q: 0.5 },
+          body: { dur: 0.28, from: 78, to: 34, type: 'sawtooth', vol: 0.04 },
+          sub: { dur: 0.36, from: 42, to: 22, vol: 0.04 },
+          tail: { dur: 0.24, vol: 0.045, from: 520, to: 180, delay: 0.08 },
+          reverb: 0.2
+        },
+        heavygl: {
+          crack: { dur: 0.016, vol: 0.025, freq: 3600 },
+          air: { dur: 0.16, vol: 0.06, from: 380, to: 130, q: 0.6 },
+          body: { dur: 0.2, from: 92, to: 42, type: 'sawtooth', vol: 0.045 },
+          sub: { dur: 0.24, from: 48, to: 28, vol: 0.026 },
+          reverb: 0.17
+        },
+        linear: {
+          crack: { dur: 0.012, vol: 0.022, freq: 6000 },
+          air: { dur: 0.09, vol: 0.03, from: 3400, to: 1000, q: 1.2 },
+          body: { dur: 0.12, from: 1400, to: 320, type: 'sine', vol: 0.043 },
+          click: { dur: 0.014, freq: 2600, vol: 0.004, delay: 0.02 },
+          reverb: 0.12
+        },
+        machinegun: {
+          crack: { dur: 0.011, vol: 0.02, freq: 4600 },
+          air: { dur: 0.065, vol: 0.035, from: 1600, to: 500, q: 1 },
+          body: { dur: 0.085, from: 112, to: 50, type: 'sawtooth', vol: 0.036 },
+          sub: { dur: 0.1, from: 55, to: 34, vol: 0.018 },
+          click: { dur: 0.007, freq: 1400, vol: 0.005, delay: 0.012 },
+          reverb: 0.08
+        },
+        heavybow: {
+          crack: { dur: 0.01, vol: 0.018, freq: 5000 },
+          air: { dur: 0.18, vol: 0.028, from: 800, to: 220, q: 0.6 },
+          body: { dur: 0.16, from: 340, to: 170, type: 'triangle', vol: 0.03 },
+          string: { dur: 0.2, from: 680, to: 380, vol: 0.03 },
+          reverb: 0.15
+        }
+      };
+      profiles.gl = profiles.grenade;
+      profiles.microgl = profiles.micro;
+      profiles.wavegl = profiles.wave;
+      profiles.kinetic = profiles.auto;
+      profiles.primary = profiles.auto;
+      profiles.energy = profiles.pulse;
+      profiles.power = profiles.rocket;
+      const profile = profiles[spec?.id] || profiles[spec?.slot] || profiles.auto;
+      const pan = (Math.random() - 0.5) * 0.14;
+      const pulses = profile.pulses || 1;
+      for (let pulse = 0; pulse < pulses; pulse += 1) {
+        const delay = pulse * (profile.pulseGap || 0.034);
+        const detune = 1 + (Math.random() - 0.5) * 0.05;
+        if (profile.crack) {
+          this.noise(profile.crack.dur, {
+            filterType: 'highpass', filter: profile.crack.freq, q: 0.7,
+            volume: profile.crack.vol, attack: 0.001, delay, pan,
+            reverb: profile.reverb * 0.18
+          });
+        }
+        if (profile.air) {
+          this.noise(profile.air.dur, {
+            filterType: 'bandpass', filter: profile.air.from * detune, filterEnd: profile.air.to * detune,
+            q: profile.air.q, volume: profile.air.vol, attack: 0.002, delay, pan,
+            reverb: profile.reverb
+          });
+        }
+        this.tone(profile.body.from * detune, profile.body.dur, {
+          type: profile.body.type, volume: profile.body.vol, slide: profile.body.to * detune,
+          attack: 0.002, delay, pan, reverb: profile.reverb * 0.65
+        });
+        if (profile.sub) {
+          this.tone(profile.sub.from, profile.sub.dur, {
+            type: 'sine', volume: profile.sub.vol, slide: profile.sub.to,
+            delay, pan, reverb: profile.reverb * 0.3
+          });
+        }
+        if (profile.string) {
+          this.tone(profile.string.from * detune, profile.string.dur, {
+            type: 'triangle', volume: profile.string.vol, slide: profile.string.to * detune,
+            delay, pan, reverb: profile.reverb
+          });
+        }
+        if (profile.click) {
+          this.tone(profile.click.freq * detune, profile.click.dur, {
+            type: 'square', volume: profile.click.vol, delay: delay + profile.click.delay,
+            attack: 0.001, pan
+          });
+        }
+        if (profile.tail) {
+          this.noise(profile.tail.dur, {
+            filterType: 'lowpass', filter: profile.tail.from, filterEnd: profile.tail.to, q: 0.5,
+            volume: profile.tail.vol, delay: delay + profile.tail.delay, pan,
+            reverb: profile.reverb
+          });
+        }
+      }
+    }
+
+    hit(elite = false, pan = 0) {
+      if (!this.enabled) return;
+      const now = this.nowMs();
+      if (now - this.lastHit < 42) return;
+      this.lastHit = now;
+      this.noise(0.018, {
+        filterType: 'highpass', filter: elite ? 3400 : 4600, q: 0.7,
+        volume: elite ? 0.016 : 0.011, attack: 0.001, pan, reverb: 0.02
+      });
+      this.tone(elite ? 128 : 172, 0.055, {
+        type: 'triangle', volume: elite ? 0.022 : 0.014, slide: elite ? 82 : 118,
+        attack: 0.002, pan, reverb: 0.035
+      });
+      this.noise(0.03, {
+        filterType: 'bandpass', filter: elite ? 1050 : 1900, q: 2.4,
+        volume: elite ? 0.014 : 0.008, attack: 0.001, delay: 0.002, pan, reverb: 0.05
+      });
+      if (elite) {
+        this.tone(920, 0.13, {
+          type: 'sine', volume: 0.012, slide: 650, delay: 0.01, pan, reverb: 0.16
+        });
+      }
+      this.tone(elite ? 520 : 760, 0.02, {
+        type: 'square', volume: 0.004, attack: 0.001, pan
+      });
+    }
+
+    play(name) {
+      if (!this.enabled) return;
+      switch (name) {
+        case 'kill':
+          this.tone(260, 0.07, { type: 'triangle', volume: 0.025, slide: 150 });
+          this.noise(0.045, { volume: 0.025, filter: 800 });
+          break;
+        case 'eliteKill':
+          this.tone(180, 0.14, { type: 'sawtooth', volume: 0.04, slide: 90 });
+          this.noise(0.1, { volume: 0.05, filter: 600 });
+          break;
+        case 'reload':
+          this.noise(0.06, { volume: 0.04, filter: 1400 });
+          this.tone(520, 0.05, { type: 'square', volume: 0.02, delay: 0.07 });
+          break;
+        case 'grenade':
+          this.tone(420, 0.18, { type: 'sine', volume: 0.05, slide: 180 });
+          break;
+        case 'explosion':
+          this.noise(0.34, { volume: 0.13, filter: 260, q: 0.6 });
+          this.tone(70, 0.34, { type: 'sawtooth', volume: 0.075, slide: 36 });
+          break;
+        case 'melee':
+          this.noise(0.07, { volume: 0.05, filter: 900, q: 0.9 });
+          this.tone(180, 0.08, { type: 'triangle', volume: 0.02, slide: 90 });
+          break;
+        case 'super':
+          this.tone(220, 0.35, { type: 'sawtooth', volume: 0.045, slide: 620 });
+          this.tone(330, 0.42, { type: 'sine', volume: 0.035, slide: 880, delay: 0.04 });
+          break;
+        case 'golden':
+          this.tone(880, 0.18, { type: 'sine', volume: 0.08, slide: 220 });
+          this.noise(0.14, { volume: 0.08, filter: 2200, q: 0.8 });
+          break;
+        case 'class':
+          this.tone(260, 0.12, { type: 'triangle', volume: 0.04, slide: 420 });
+          break;
+        case 'loot':
+          this.tone(740, 0.08, { type: 'sine', volume: 0.04 });
+          this.tone(1100, 0.11, { type: 'sine', volume: 0.035, delay: 0.08 });
+          break;
+        case 'ammo':
+          this.tone(420, 0.055, { type: 'square', volume: 0.028 });
+          this.tone(620, 0.07, { type: 'square', volume: 0.025, delay: 0.05 });
+          break;
+        case 'damage':
+          this.tone(120, 0.16, { type: 'sawtooth', volume: 0.055, slide: 70 });
+          this.noise(0.1, { volume: 0.04, filter: 500 });
+          break;
+        case 'death':
+          this.tone(174, 0.95, { type: 'sine', volume: 0.055, slide: 62 });
+          this.tone(261, 1.1, { type: 'triangle', volume: 0.035, slide: 92, delay: 0.05 });
+          this.noise(1.0, { volume: 0.055, filter: 330, q: 0.65, delay: 0.08 });
+          break;
+        case 'revive':
+          this.tone(330, 0.2, { type: 'sine', volume: 0.04, slide: 620 });
+          this.tone(660, 0.32, { type: 'sine', volume: 0.035, slide: 990, delay: 0.12 });
+          break;
+        case 'shield':
+          this.tone(900, 0.1, { type: 'triangle', volume: 0.035, slide: 420 });
+          break;
+        case 'transcendenceReady':
+          this.tone(520, 0.18, { type: 'sine', volume: 0.04 });
+          this.tone(780, 0.22, { type: 'sine', volume: 0.04, delay: 0.12 });
+          this.tone(1040, 0.28, { type: 'sine', volume: 0.035, delay: 0.24 });
+          break;
+        case 'transcendence':
+          this.tone(330, 0.5, { type: 'sine', volume: 0.05, slide: 660 });
+          this.tone(495, 0.6, { type: 'triangle', volume: 0.04, slide: 990, delay: 0.04 });
+          this.noise(0.5, { volume: 0.035, filter: 1500, q: 0.7 });
+          break;
+        case 'transcendenceEnd':
+          this.tone(660, 0.35, { type: 'sine', volume: 0.04, slide: 220 });
+          break;
+        case 'objective':
+          this.tone(600, 0.1, { type: 'sine', volume: 0.04 });
+          this.tone(900, 0.2, { type: 'sine', volume: 0.04, delay: 0.1 });
+          break;
+        case 'raidStage':
+          this.tone(110, 0.4, { type: 'sawtooth', volume: 0.035, slide: 150 });
+          this.tone(220, 0.5, { type: 'sine', volume: 0.025, delay: 0.1 });
+          break;
+        case 'bossCharge':
+          this.tone(82, 0.34, { type: 'sawtooth', volume: 0.038, slide: 190, reverb: 0.1 });
+          this.noise(0.3, { filter: 240, q: 0.6, volume: 0.035, attack: 0.04, reverb: 0.08 });
+          break;
+        case 'bossShot':
+          this.tone(64, 0.22, { type: 'sawtooth', volume: 0.04, slide: 38, reverb: 0.14 });
+          this.noise(0.16, { filter: 360, q: 0.6, volume: 0.035, reverb: 0.08 });
+          break;
+        case 'bossDown':
+          this.noise(0.6, { volume: 0.16, filter: 220, q: 0.5 });
+          this.tone(70, 0.65, { type: 'sawtooth', volume: 0.09, slide: 30 });
+          break;
+        case 'victory':
+          [440, 554, 660, 880].forEach((freq, index) => this.tone(freq, 0.35, { type: 'sine', volume: 0.045, delay: index * 0.11 }));
+          break;
+        case 'defeat':
+          [330, 262, 196].forEach((freq, index) => this.tone(freq, 0.35, { type: 'triangle', volume: 0.04, delay: index * 0.14 }));
+          break;
+        case 'ui':
+          this.tone(620, 0.045, { type: 'square', volume: 0.018 });
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  class MiniGameBase {
+    constructor(manager) {
+      this.manager = manager;
+      this.time = 0;
+      this.ended = false;
+      this.score = 0;
+      this.w = manager.width || 960;
+      this.h = manager.height || 560;
+      this.hud = {
+        objective: manager.meta.objective,
+        sub: '',
+        score: '0',
+        scoreLabel: manager.meta.scoreLabel,
+        status: '',
+        health: 1,
+        healthLabel: '',
+        progress: 0
+      };
+      this.fx = new FX();
+      this.shake = 0;
+    }
+
+    start() {}
+
+    setHud(patch) {
+      Object.assign(this.hud, patch);
+    }
+
+    toast(text, tone = '') {
+      this.manager.toast(text, tone);
+    }
+
+    finish(options) {
+      if (this.ended) return;
+      this.ended = true;
+      this.manager.finish(options);
+    }
+
+    update(dt, w, h) {
+      this.time += dt;
+      this.w = w;
+      this.h = h;
+      this.fx.update(dt);
+      this.shake = Math.max(0, this.shake - dt * 14);
+    }
+
+    draw(ctx, w, h) {
+      this.fx.draw(ctx);
+    }
+
+    pointerMove() {}
+    pointerDown() {}
+    pointerUp() {}
+    keyDown() {}
+    keyUp() {}
+  }
+
+  class SteamMiniGame {
+    constructor(root, host = {}) {
+      this.root = root;
+      this.host = host;
+      this.win = document.getElementById('window-steamdemo');
+      this.titleEl = document.getElementById('steamDemoWindowTitle');
+      this.activeId = null;
+      this.meta = META.alyx;
+      this.instance = null;
+      this.mode = 'menu';
+      this.keys = new Set();
+      this.mouse = { x: 0, y: 0, down: false };
+      this.width = 960;
+      this.height = 560;
+      this.toastTimer = null;
+      this.lastFrame = 0;
+      this.hudSignature = '';
+      this.loadedGames = new Set();
+      this.loadingTimer = null;
+      this.loadingFinishTimer = null;
+      this.loadingGameId = null;
+      this.build();
+      this.bind();
+      this.loop();
+    }
+
+    build() {
+      this.root.innerHTML = `
+        <div class="sgm-shell" data-sgm-game="alyx">
+          <canvas class="sgm-canvas" tabindex="0" aria-label="Steam 本地演示画布"></canvas>
+          <section class="sgm-loading" data-sgm-loading hidden>
+            <div class="sgm-loading-bg" data-sgm-loading-bg></div>
+            <div class="sgm-loading-scan"></div>
+            <div class="sgm-loading-grid"></div>
+            <div class="sgm-loading-panel">
+              <div class="sgm-loading-emblem"><span data-sgm-loading-mark>D2</span><i></i><i></i><i></i></div>
+              <span class="sgm-loading-kicker"><i></i>STEAM · LOCAL INSTALL</span>
+              <h2 data-sgm-loading-title>正在准备</h2>
+              <p data-sgm-loading-sub>正在读取本地游戏清单与着色器缓存。</p>
+              <div class="sgm-loading-track"><i data-sgm-loading-bar></i></div>
+              <div class="sgm-loading-meta"><b data-sgm-loading-percent>0%</b><span data-sgm-loading-stage>正在校验本地文件…</span></div>
+              <div class="sgm-loading-foot"><span>所有资源都在本机解包</span><button type="button" data-sgm-action="skip-loading">跳过</button></div>
+            </div>
+            <div class="sgm-loading-side"><span>LOCAL RUNTIME</span><b>Canvas 2D</b><small>AISniperOS 26.4</small></div>
+            <div class="sgm-d2-loading" data-sgm-d2-loading hidden>
+              <div class="sgm-d2-stars"></div>
+              <div class="sgm-d2-emblem" aria-hidden="true">
+                <svg viewBox="0 0 100 100">
+                  <g fill="currentColor">
+                    <path d="M50 50 C46 31 31 17 13 20 C25 29 35 38 50 50 Z"/>
+                    <path transform="rotate(120 50 50)" d="M50 50 C46 31 31 17 13 20 C25 29 35 38 50 50 Z"/>
+                    <path transform="rotate(240 50 50)" d="M50 50 C46 31 31 17 13 20 C25 29 35 38 50 50 Z"/>
+                  </g>
+                  <circle cx="50" cy="50" r="4.5" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="sgm-d2-brand"><span>BUNGIE</span><b>DESTINY 2</b><i>LOCAL RUNTIME · 最后的城市</i></div>
+              <div class="sgm-d2-status"><span data-sgm-d2-stage>正在连接命运 2 服务…</span><b data-sgm-d2-percent>0%</b></div>
+              <div class="sgm-d2-track"><i data-sgm-d2-bar></i></div>
+              <p class="sgm-d2-tip" data-sgm-d2-tip>提示：光等会随装备提升，新掉落总是高于当前光等。</p>
+              <button type="button" class="sgm-d2-skip" data-sgm-action="skip-loading">跳过加载</button>
+            </div>
+          </section>
+          <div class="sgm-hud" hidden>
+            <div class="sgm-hud-top">
+              <div class="sgm-objective-card">
+                <span class="sgm-live"><i></i>LOCAL DEMO</span>
+                <b data-sgm-objective>目标</b>
+                <small data-sgm-sub></small>
+                <div class="sgm-progress"><i data-sgm-progress></i></div>
+              </div>
+              <div class="sgm-score-card"><span data-sgm-score>0</span><small data-sgm-score-label>SCORE</small></div>
+              <div class="sgm-vitals-card">
+                <div><span>状态</span><b data-sgm-status>就绪</b></div>
+                <div class="sgm-health"><i data-sgm-health></i></div>
+                <small data-sgm-health-label></small>
+              </div>
+            </div>
+            <div class="sgm-hud-bottom">
+              <span data-sgm-controls></span>
+              <button class="sgm-hud-pause" data-sgm-action="pause" type="button" aria-label="暂停游戏">
+                <svg viewBox="0 0 24 24"><use href="#i-pause"></use></svg><span>暂停</span>
+              </button>
+            </div>
+          </div>
+          <section class="sgm-overlay sgm-menu" data-sgm-menu></section>
+          <section class="sgm-overlay sgm-pause" data-sgm-pause hidden>
+            <div class="sgm-panel">
+              <span class="sgm-eyebrow">PAUSED · LOCAL DEMO</span>
+              <h2>信号暂停。</h2>
+              <p>当前进度已经保留。继续后回到刚才的位置。</p>
+              <div class="sgm-panel-actions">
+                <button class="sgm-btn primary" data-sgm-action="resume" type="button">继续游戏</button>
+                <button class="sgm-btn ghost" data-sgm-action="menu" type="button">返回标题</button>
+                <button class="sgm-btn quiet" data-sgm-action="library" type="button">返回 Steam 库</button>
+              </div>
+              <small>按 Esc 或 P 也可以继续</small>
+            </div>
+          </section>
+          <section class="sgm-overlay sgm-result" data-sgm-result hidden>
+            <div class="sgm-result-card">
+              <span class="sgm-eyebrow" data-sgm-result-kicker>DEMO COMPLETE</span>
+              <h2 data-sgm-result-title>演示结束</h2>
+              <p data-sgm-result-desc></p>
+              <div class="sgm-result-stats" data-sgm-result-stats></div>
+              <div class="sgm-panel-actions">
+                <button class="sgm-btn primary" data-sgm-action="replay" type="button">再玩一次</button>
+                <button class="sgm-btn ghost" data-sgm-action="menu" type="button">返回标题</button>
+                <button class="sgm-btn quiet" data-sgm-action="library" type="button">返回 Steam 库</button>
+              </div>
+            </div>
+          </section>
+          <div class="sgm-toast" hidden></div>
+        </div>`;
+      this.shell = $('.sgm-shell', this.root);
+      this.canvas = $('.sgm-canvas', this.root);
+      this.ctx = this.canvas.getContext('2d');
+      this.loadingEl = $('[data-sgm-loading]', this.root);
+      this.loadingBg = $('[data-sgm-loading-bg]', this.root);
+      this.loadingMark = $('[data-sgm-loading-mark]', this.root);
+      this.loadingTitle = $('[data-sgm-loading-title]', this.root);
+      this.loadingSub = $('[data-sgm-loading-sub]', this.root);
+      this.loadingBar = $('[data-sgm-loading-bar]', this.root);
+      this.loadingPercent = $('[data-sgm-loading-percent]', this.root);
+      this.loadingStage = $('[data-sgm-loading-stage]', this.root);
+      this.d2Loading = $('[data-sgm-d2-loading]', this.root);
+      this.d2Bar = $('[data-sgm-d2-bar]', this.root);
+      this.d2Percent = $('[data-sgm-d2-percent]', this.root);
+      this.d2Stage = $('[data-sgm-d2-stage]', this.root);
+      this.d2Tip = $('[data-sgm-d2-tip]', this.root);
+      this.hud = $('.sgm-hud', this.root);
+      this.menu = $('[data-sgm-menu]', this.root);
+      this.pauseOverlay = $('[data-sgm-pause]', this.root);
+      this.resultOverlay = $('[data-sgm-result]', this.root);
+      this.toastEl = $('.sgm-toast', this.root);
+      this.objectiveEl = $('[data-sgm-objective]', this.root);
+      this.subEl = $('[data-sgm-sub]', this.root);
+      this.progressEl = $('[data-sgm-progress]', this.root);
+      this.scoreEl = $('[data-sgm-score]', this.root);
+      this.scoreLabelEl = $('[data-sgm-score-label]', this.root);
+      this.statusEl = $('[data-sgm-status]', this.root);
+      this.healthEl = $('[data-sgm-health]', this.root);
+      this.healthLabelEl = $('[data-sgm-health-label]', this.root);
+      this.controlsEl = $('[data-sgm-controls]', this.root);
+    }
+
+    bind() {
+      this.root.addEventListener('click', (event) => {
+        const action = event.target.closest('[data-sgm-action]');
+        if (!action) return;
+        event.preventDefault();
+        const name = action.dataset.sgmAction;
+        if (name === 'start' || name === 'replay') this.start();
+        else if (name === 'resume') this.resume();
+        else if (name === 'pause') this.pause();
+        else if (name === 'menu') this.goMenu();
+        else if (name === 'skip-loading') this.finishLoading();
+        else if (name === 'library') this.host.onExit?.();
+      });
+      this.canvas.addEventListener('pointermove', (event) => this.onPointerMove(event));
+      this.canvas.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0 || this.mode !== 'playing') return;
+        event.preventDefault();
+        this.mouse.down = true;
+        this.updatePointer(event);
+        this.canvas.focus({ preventScroll: true });
+        this.instance?.pointerDown?.(this.mouse.x, this.mouse.y);
+      });
+      this.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+      window.addEventListener('pointerup', () => {
+        if (!this.mouse.down) return;
+        this.mouse.down = false;
+        this.instance?.pointerUp?.(this.mouse.x, this.mouse.y);
+      });
+      document.addEventListener('keydown', (event) => this.onKeyDown(event));
+      document.addEventListener('keyup', (event) => {
+        this.keys.delete(event.code);
+        if (this.mode === 'playing') this.instance?.keyUp?.(event.code, event);
+      });
+      window.addEventListener('blur', () => {
+        this.keys.clear();
+        this.mouse.down = false;
+      });
+    }
+
+    get activeWindow() {
+      return Boolean(this.win && this.win.classList.contains('is-open') && !this.win.classList.contains('is-minimizing'));
+    }
+
+    get focusedWindow() {
+      return Boolean(this.activeWindow && this.win.classList.contains('is-active'));
+    }
+
+    onKeyDown(event) {
+      if (!this.focusedWindow) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      if (document.body.classList.contains('is-locked') || document.querySelector('.sleep-screen.is-visible')) return;
+      if (event.code === 'F1') {
+        event.preventDefault();
+        if (this.mode === 'playing') {
+          this.keys.clear();
+          this.instance?.keyDown?.(event.code, event);
+        }
+        return;
+      }
+      if (event.code === 'Escape') {
+        if (this.mode === 'playing' && this.instance?.inventoryOpen) {
+          event.preventDefault();
+          this.instance.keyDown?.(event.code, event);
+          return;
+        }
+        event.preventDefault();
+        if (this.mode === 'playing') this.pause();
+        else if (this.mode === 'paused') this.resume();
+        return;
+      }
+      if (this.mode !== 'playing') return;
+      if (event.code === 'KeyP') {
+        event.preventDefault();
+        this.pause();
+        return;
+      }
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyC', 'KeyF', 'KeyR', 'KeyV', 'Digit1', 'Digit2', 'Digit3', 'ShiftLeft', 'ShiftRight', 'Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.code)) {
+        event.preventDefault();
+      }
+      if (this.keys.has(event.code) && !['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight'].includes(event.code)) return;
+      this.keys.add(event.code);
+      this.instance?.keyDown?.(event.code, event);
+    }
+
+    updatePointer(event) {
+      const rect = this.canvas.getBoundingClientRect();
+      this.mouse.x = event.clientX - rect.left;
+      this.mouse.y = event.clientY - rect.top;
+    }
+
+    onPointerMove(event) {
+      this.updatePointer(event);
+      if (this.mode === 'playing') this.instance?.pointerMove?.(this.mouse.x, this.mouse.y);
+    }
+
+    open(gameId) {
+      const id = META[gameId] ? gameId : 'alyx';
+      if (this.mode === 'loading' && this.loadingGameId === id) return;
+      const same = this.activeId === id && this.instance;
+      this.activeId = id;
+      this.meta = META[id];
+      this.updateShell();
+      if (same) {
+        if (this.mode === 'paused') this.pauseOverlay.hidden = false;
+        else if (this.mode === 'over') this.resultOverlay.hidden = false;
+      } else if (this.loadedGames.has(id)) {
+        this.loadingEl.hidden = true;
+        if (id === 'destiny2') {
+          this.start();
+        } else {
+          this.goMenu(false);
+          this.renderMenu();
+        }
+      } else {
+        this.showLoading(id);
+      }
+      this.canvas.focus({ preventScroll: true });
+    }
+
+    showLoading(id) {
+      if (this.loadingTimer) clearInterval(this.loadingTimer);
+      if (this.loadingFinishTimer) clearTimeout(this.loadingFinishTimer);
+      this.loadingTimer = null;
+      this.loadingFinishTimer = null;
+      this.mode = 'loading';
+      this.instance = null;
+      this.loadingGameId = id;
+      this.keys.clear();
+      this.mouse.down = false;
+      this.menu.hidden = true;
+      this.hud.hidden = true;
+      this.pauseOverlay.hidden = true;
+      this.resultOverlay.hidden = true;
+      this.loadingEl.hidden = false;
+      const isDestiny = id === 'destiny2';
+      this.loadingEl.classList.toggle('is-destiny', isDestiny);
+      this.d2Loading.hidden = !isDestiny;
+      if (isDestiny) {
+        this.d2Bar.style.width = '0%';
+        this.d2Percent.textContent = '0%';
+        this.d2Stage.textContent = '正在连接命运 2 服务…';
+        const tips = [
+          '提示：光等会随装备提升，新掉落总是高于当前光等。',
+          '提示：按 1 / 2 / 3 切换动能、能量和威能武器。',
+          '提示：F1 打开角色、技能与背包。',
+          '提示：棱镜可以自由组合其他副职业的技能。'
+        ];
+        this.d2Tip.textContent = tips[Math.floor(Math.random() * tips.length)];
+      }
+      this.loadingBg.className = `sgm-loading-bg sgm-art-${id}`;
+      const marks = { alyx: 'HL', dota2: 'D2', deadlock: 'DL', rust: 'RU', eldenring: 'ER', cyberpunk: 'CP', destiny2: 'D2', division: 'TD' };
+      this.loadingMark.textContent = marks[id] || 'SG';
+      this.loadingTitle.textContent = this.meta.title;
+      this.loadingSub.textContent = `${this.meta.cn} · 正在读取本地安装清单与资源缓存。`;
+      const stages = [
+        '正在校验本地文件与安装清单…',
+        '正在解压低模资源与关卡数据…',
+        '正在编译 Canvas 着色与粒子缓存…',
+        '正在同步 Steam Cloud 本地存档…',
+        '正在唤醒游戏运行时…'
+      ];
+      const d2Stages = [
+        '正在连接命运 2 服务…',
+        '正在读取守护者档案…',
+        '正在载入目的地与活动…',
+        '正在同步光等与装备…',
+        '即将进入最后的城市…'
+      ];
+      let progress = 0;
+      const update = () => {
+        this.loadingBar.style.width = `${progress}%`;
+        this.loadingPercent.textContent = `${Math.floor(progress)}%`;
+        this.loadingStage.textContent = stages[Math.min(stages.length - 1, Math.floor(progress / 22))];
+        if (isDestiny) {
+          this.d2Bar.style.width = `${progress}%`;
+          this.d2Percent.textContent = `${Math.floor(progress)}%`;
+          this.d2Stage.textContent = d2Stages[Math.min(d2Stages.length - 1, Math.floor(progress / 22))];
+        }
+      };
+      update();
+      this.loadingTimer = setInterval(() => {
+        progress = Math.min(100, progress + 1.9 + Math.random() * 3);
+        update();
+        if (progress >= 100) {
+          clearInterval(this.loadingTimer);
+          this.loadingTimer = null;
+          this.loadingFinishTimer = setTimeout(() => this.finishLoading(), 340);
+        }
+      }, 96);
+    }
+
+    finishLoading() {
+      if (this.mode !== 'loading') return;
+      if (this.loadingTimer) clearInterval(this.loadingTimer);
+      if (this.loadingFinishTimer) clearTimeout(this.loadingFinishTimer);
+      this.loadingTimer = null;
+      this.loadingFinishTimer = null;
+      const finishedId = this.loadingGameId;
+      if (finishedId) this.loadedGames.add(finishedId);
+      this.loadingEl.hidden = true;
+      this.loadingEl.classList.remove('is-destiny');
+      this.d2Loading.hidden = true;
+      this.loadingGameId = null;
+      if (finishedId === 'destiny2') {
+        this.start();
+        return;
+      }
+      this.mode = 'menu';
+      this.renderMenu();
+      this.menu.hidden = false;
+      this.hud.hidden = true;
+      this.canvas.focus({ preventScroll: true });
+    }
+
+    updateShell() {
+      const meta = this.meta;
+      this.shell.dataset.sgmGame = this.activeId;
+      this.shell.style.setProperty('--sgm-accent', meta.accent);
+      this.shell.style.setProperty('--sgm-accent-2', meta.accent2);
+      this.canvas.setAttribute('aria-label', `${meta.title} · ${meta.cn} 游戏画布`);
+      this.titleEl.textContent = `${meta.title} · ${meta.cn}`;
+      if (this.win) this.win.setAttribute('aria-label', `${meta.title} 本地演示`);
+      this.controlsEl.textContent = meta.controls.map(([key, label]) => `${key} ${label}`).join('  ·  ');
+    }
+
+    renderMenu() {
+      const meta = this.meta;
+      this.menu.innerHTML = `
+        <div class="sgm-menu-visual sgm-art-${this.activeId}">
+          <div class="sgm-art-grid"></div>
+          <div class="sgm-art-orb"></div>
+          <div class="sgm-art-scan"></div>
+          <div class="sgm-art-word"><span>${escapeHTML(meta.kicker)}</span><b>${escapeHTML(meta.word)}</b><i>${escapeHTML(meta.sub)}</i></div>
+          <div class="sgm-art-tags">${meta.tags.map((tag) => `<span>${escapeHTML(tag)}</span>`).join('')}</div>
+          <div class="sgm-art-stamp"><svg viewBox="0 0 64 64"><use href="#app-steam"></use></svg><span>LOCAL PLAYABLE DEMO</span></div>
+        </div>
+        <div class="sgm-menu-info">
+          <span class="sgm-eyebrow"><i></i>STEAM · 已安装 · 本地演示</span>
+          <h1>${escapeHTML(meta.title)}</h1>
+          <p class="sgm-menu-cn">${escapeHTML(meta.cn)}<span>${escapeHTML(meta.studio)}</span></p>
+          <div class="sgm-objective-line"><span>本局目标</span><b>${escapeHTML(meta.objective)}</b></div>
+          <p class="sgm-menu-desc">${escapeHTML(meta.description)}</p>
+          <div class="sgm-control-grid">${meta.controls.map(([key, label]) => `<span><i>${escapeHTML(key)}</i><b>${escapeHTML(label)}</b></span>`).join('')}</div>
+          ${meta.chapters ? `<div class="sgm-campaign-strip">${meta.chapters.map((chapter, index) => `<span${index === 0 ? ' class="is-active"' : ''}><i>${index + 1}</i>${escapeHTML(chapter)}</span>`).join('')}</div>` : ''}
+          <div class="sgm-menu-actions">
+            <button class="sgm-btn primary" data-sgm-action="start" type="button"><span>${escapeHTML(meta.startLabel || '进入游戏')}</span><svg viewBox="0 0 24 24"><use href="#i-play"></use></svg></button>
+            <button class="sgm-btn ghost" data-sgm-action="library" type="button">返回 Steam 库</button>
+          </div>
+          <div class="sgm-menu-foot"><span>完全离线 · Canvas 2D 演示</span><span>Esc 暂停</span></div>
+        </div>`;
+    }
+
+    dimensions() {
+      const width = Math.max(2, this.canvas.clientWidth || this.root.clientWidth || 960);
+      const height = Math.max(2, this.canvas.clientHeight || this.root.clientHeight || 560);
+      return { width, height };
+    }
+
+    resize() {
+      const { width, height } = this.dimensions();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.width = width;
+      this.height = height;
+      const pixelWidth = Math.round(width * dpr);
+      const pixelHeight = Math.round(height * dpr);
+      if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
+        this.canvas.width = pixelWidth;
+        this.canvas.height = pixelHeight;
+      }
+      this.dpr = dpr;
+    }
+
+    start() {
+      if (!this.activeId) return;
+      this.mode = 'playing';
+      this.menu.hidden = true;
+      this.pauseOverlay.hidden = true;
+      this.resultOverlay.hidden = true;
+      this.hud.hidden = this.activeId === 'destiny2';
+      this.keys.clear();
+      this.hudSignature = '';
+      this.instance = createGame(this.activeId, this);
+      this.instance.start();
+      this.resize();
+      this.toast(this.meta.startToast);
+      this.canvas.focus({ preventScroll: true });
+    }
+
+    pause() {
+      if (this.mode !== 'playing') return;
+      this.mode = 'paused';
+      this.keys.clear();
+      this.mouse.down = false;
+      this.pauseOverlay.hidden = false;
+      this.instance?.onPause?.();
+    }
+
+    resume() {
+      if (this.mode !== 'paused') return;
+      this.mode = 'playing';
+      this.pauseOverlay.hidden = true;
+      this.keys.clear();
+      this.lastFrame = performance.now();
+      this.canvas.focus({ preventScroll: true });
+      this.instance?.onResume?.();
+    }
+
+    goMenu(show = true) {
+      if (this.loadingTimer) clearInterval(this.loadingTimer);
+      if (this.loadingFinishTimer) clearTimeout(this.loadingFinishTimer);
+      this.loadingTimer = null;
+      this.loadingFinishTimer = null;
+      if (this.loadingEl) this.loadingEl.hidden = true;
+      this.mode = 'menu';
+      this.instance = null;
+      this.loadingGameId = null;
+      this.keys.clear();
+      this.mouse.down = false;
+      this.hud.hidden = true;
+      this.pauseOverlay.hidden = true;
+      this.resultOverlay.hidden = true;
+      if (show) this.renderMenu();
+      this.menu.hidden = false;
+      this.hudSignature = '';
+    }
+
+    reset() {
+      this.goMenu();
+    }
+
+    finish(result) {
+      if (this.mode !== 'playing') return;
+      this.mode = 'over';
+      this.keys.clear();
+      this.mouse.down = false;
+      const stats = result.stats || [];
+      $('[data-sgm-result-kicker]', this.resultOverlay).textContent = result.win ? 'DEMO COMPLETE · 试炼完成' : 'SIGNAL LOST · 演示结束';
+      $('[data-sgm-result-title]', this.resultOverlay).textContent = result.title || (result.win ? '目标完成。' : '本次演示结束。');
+      $('[data-sgm-result-desc]', this.resultOverlay).textContent = result.desc || '';
+      $('[data-sgm-result-stats]', this.resultOverlay).innerHTML = stats.map((stat) => `<div><span>${escapeHTML(stat.label)}</span><b>${escapeHTML(stat.value)}</b></div>`).join('');
+      this.resultOverlay.hidden = false;
+      this.resultOverlay.classList.toggle('is-win', Boolean(result.win));
+      this.resultOverlay.classList.toggle('is-loss', !result.win);
+    }
+
+    toast(message, tone = '') {
+      if (!this.toastEl) return;
+      this.toastEl.textContent = message;
+      this.toastEl.className = `sgm-toast${tone ? ` is-${tone}` : ''}`;
+      this.toastEl.hidden = false;
+      clearTimeout(this.toastTimer);
+      this.toastTimer = setTimeout(() => { this.toastEl.hidden = true; }, 2600);
+    }
+
+    syncHUD() {
+      if (!this.instance) return;
+      if (this.activeId === 'destiny2') {
+        this.hud.hidden = true;
+        return;
+      }
+      const hud = this.instance.hud;
+      const signature = `${hud.objective}|${hud.sub}|${hud.score}|${hud.scoreLabel}|${hud.status}|${hud.health}|${hud.healthLabel}|${hud.progress}`;
+      if (signature === this.hudSignature) return;
+      this.hudSignature = signature;
+      this.objectiveEl.textContent = hud.objective || '';
+      this.subEl.textContent = hud.sub || '';
+      this.scoreEl.textContent = String(hud.score ?? '0');
+      this.scoreLabelEl.textContent = hud.scoreLabel || this.meta.scoreLabel;
+      this.statusEl.textContent = hud.status || '';
+      this.healthEl.style.width = `${clamp(Number(hud.health ?? 1), 0, 1) * 100}%`;
+      this.healthEl.classList.toggle('is-low', Number(hud.health ?? 1) < 0.28);
+      this.healthLabelEl.textContent = hud.healthLabel || '';
+      this.progressEl.style.width = `${clamp(Number(hud.progress ?? 0), 0, 1) * 100}%`;
+    }
+
+    loop() {
+      const frame = (now) => {
+        this.raf = requestAnimationFrame(frame);
+        if (!this.activeWindow) {
+          if (this.mode === 'playing') this.pause();
+          return;
+        }
+        if (this.mode === 'playing' && !this.focusedWindow) {
+          this.pause();
+          return;
+        }
+        if (!this.instance) return;
+        this.resize();
+        if (!this.lastFrame) this.lastFrame = now;
+        const dt = Math.min(0.045, Math.max(0.001, (now - this.lastFrame) / 1000));
+        this.lastFrame = now;
+        const { width, height } = { width: this.width, height: this.height };
+        if (this.mode === 'playing') this.instance.update(dt, width, height);
+        const ctx = this.ctx;
+        ctx.setTransform(this.dpr || 1, 0, 0, this.dpr || 1, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+        ctx.save();
+        this.instance.draw(ctx, width, height);
+        ctx.restore();
+        this.syncHUD();
+      };
+      this.raf = requestAnimationFrame(frame);
+    }
+  }
+
+  function createGame(id, manager) {
+    if (id === 'alyx') return new AlyxRange(manager);
+    if (id === 'dota2') return new DotaMid(manager);
+    if (id === 'deadlock') return new DeadlockArena(manager);
+    if (id === 'rust') return new RustNight(manager);
+    if (id === 'eldenring') return new EldenDuel(manager);
+    if (id === 'cyberpunk') return new CyberpunkBreach(manager);
+    if (id === 'destiny2') return new Destiny2RedWar(manager);
+    if (id === 'division') return new DivisionAgent(manager);
+    return new AlyxRange(manager);
+  }
+
+  /* ==========================================================================
+     Half-Life: Alyx — Gravity Glove range
+     ========================================================================== */
+
+  class AlyxRange extends MiniGameBase {
+    constructor(manager) {
+      super(manager);
+      this.duration = 60;
+      this.goal = 20;
+      this.timeLeft = this.duration;
+      this.ammo = 8;
+      this.maxAmmo = 8;
+      this.reload = 0;
+      this.health = 100;
+      this.combo = 1;
+      this.comboTimer = 0;
+      this.kills = 0;
+      this.burstCooldown = 0;
+      this.targets = [];
+      this.projectiles = [];
+      this.beams = [];
+      this.flash = 0;
+      this.start();
+    }
+
+    start() {
+      this.timeLeft = this.duration;
+      this.ammo = this.maxAmmo;
+      this.reload = 0;
+      this.health = 100;
+      this.combo = 1;
+      this.comboTimer = 0;
+      this.kills = 0;
+      this.burstCooldown = 0;
+      this.targets = [];
+      this.projectiles = [];
+      this.beams = [];
+      this.flash = 0;
+      for (let i = 0; i < 5; i += 1) this.spawnTarget();
+      this.updateHUD();
+    }
+
+    spawnTarget() {
+      const size = rand(17, 27);
+      this.targets.push({
+        x: rand(0.12, 0.88),
+        y: rand(0.18, 0.61),
+        vx: rand(-0.035, 0.035),
+        vy: rand(-0.018, 0.02),
+        size,
+        phase: rand(0, Math.PI * 2),
+        fireTimer: rand(2.4, 5.4),
+        charge: 0,
+        hit: false
+      });
+    }
+
+    currentTarget() {
+      let nearest = null;
+      let best = 24;
+      this.targets.forEach((target) => {
+        const screenDistance = dist(this.manager.mouse.x, this.manager.mouse.y, target.x * this.w, target.y * this.h);
+        if (screenDistance < target.size + 18 && screenDistance < best + target.size) {
+          best = screenDistance - target.size;
+          nearest = target;
+        }
+      });
+      return nearest;
+    }
+
+    reloadBattery() {
+      if (this.reload > 0 || this.ammo >= this.maxAmmo) return;
+      this.reload = 1.05;
+      this.toast('正在更换重力手套电池…');
+    }
+
+    fire() {
+      if (this.reload > 0) return;
+      if (this.ammo <= 0) { this.reloadBattery(); return; }
+      this.ammo -= 1;
+      const mouseX = this.manager.mouse.x;
+      const mouseY = this.manager.mouse.y;
+      const target = this.currentTarget();
+      this.beams.push({ x1: this.w * 0.5, y1: this.h * 0.96, x2: mouseX, y2: mouseY, life: 0.16, hit: Boolean(target) });
+      if (target) {
+        this.destroyTarget(target);
+      } else {
+        this.combo = 1;
+        this.comboTimer = 0;
+      }
+      this.fx.ring(mouseX, mouseY, target ? '#ffc36d' : 'rgba(117,211,255,.7)', 30, 0.24, 1);
+      if (this.ammo <= 0) this.reloadBattery();
+      this.updateHUD();
+    }
+
+    destroyTarget(target, bonus = false) {
+      if (target.hit) return;
+      target.hit = true;
+      this.targets = this.targets.filter((entry) => entry !== target);
+      this.kills += 1;
+      this.score += (bonus ? 170 : 100) * this.combo;
+      this.combo = Math.min(9, this.combo + 1);
+      this.comboTimer = 1.9;
+      const x = target.x * this.w;
+      const y = target.y * this.h;
+      this.fx.burst(x, y, '#ffbb62', 18, 220, 3);
+      this.fx.ring(x, y, '#ffd18c', 48, 0.38, 1.5);
+      this.fx.float(x, y - 12, `+${(bonus ? 170 : 100) * (this.combo - 1)}`, '#ffdd93', 13);
+      this.spawnTarget();
+      if (this.kills >= this.goal) {
+        this.finish({
+          win: true,
+          title: '重力手套校准完成。',
+          desc: '联合军的侦察编队已经撤离训练舱。Alyx 的数据被写入了本地记录。',
+          stats: [
+            { label: '击落', value: `${this.kills} / ${this.goal}` },
+            { label: '得分', value: String(this.score) },
+            { label: '最高连击', value: `×${this.combo}` },
+            { label: '剩余时间', value: `${Math.ceil(this.timeLeft)} 秒` }
+          ]
+        });
+      }
+    }
+
+    gravityBurst() {
+      if (this.burstCooldown > 0) {
+        this.toast(`重力爆发冷却中 · ${this.burstCooldown.toFixed(1)} 秒`);
+        return;
+      }
+      const mouseX = this.manager.mouse.x;
+      const mouseY = this.manager.mouse.y;
+      this.burstCooldown = 8;
+      this.fx.ring(mouseX, mouseY, '#70dcff', 190, 0.6, 3);
+      this.fx.ring(mouseX, mouseY, '#ffbf67', 96, 0.5, 2);
+      this.shake = 7;
+      const hitTargets = this.targets.filter((target) => dist(target.x * this.w, target.y * this.h, mouseX, mouseY) < 195);
+      if (!hitTargets.length) {
+        this.toast('爆发范围内没有目标。');
+        this.updateHUD();
+        return;
+      }
+      hitTargets.forEach((target) => {
+        if (!target.hit && !this.ended) this.destroyTarget(target, true);
+      });
+      this.toast(`重力爆发捕获 ${hitTargets.length} 架侦察机`);
+      this.updateHUD();
+    }
+
+    keyDown(code) {
+      if (code === 'KeyR') this.reloadBattery();
+      if (code === 'Space') this.gravityBurst();
+    }
+
+    pointerDown() {
+      this.fire();
+    }
+
+    update(dt, w, h) {
+      super.update(dt, w, h);
+      this.viewW = w;
+      this.viewH = h;
+      if (this.screen === 'play' && this.currentMode === 'raid') {
+        this.w = w * this.raidWorldScale;
+        this.h = h * this.raidWorldScale;
+      } else {
+        this.w = w;
+        this.h = h;
+      }
+      if (this.ended) return;
+      this.timeLeft -= dt;
+      this.reload = Math.max(0, this.reload - dt);
+      if (this.reload === 0 && this.ammo <= 0) this.ammo = this.maxAmmo;
+      this.burstCooldown = Math.max(0, this.burstCooldown - dt);
+      this.comboTimer -= dt;
+      if (this.comboTimer <= 0) this.combo = 1;
+      this.flash = Math.max(0, this.flash - dt * 3.2);
+      if (this.targets.length < 5) this.spawnTarget();
+      this.targets.forEach((target) => {
+        target.x += target.vx * dt;
+        target.y += target.vy * dt;
+        if (target.x < 0.08 || target.x > 0.92) { target.vx *= -1; target.x = clamp(target.x, 0.08, 0.92); }
+        if (target.y < 0.14 || target.y > 0.68) { target.vy *= -1; target.y = clamp(target.y, 0.14, 0.68); }
+        target.fireTimer -= dt;
+        if (target.fireTimer <= 0 && target.charge <= 0) {
+          target.charge = 0.62;
+          target.fireTimer = rand(4.2, 7.2);
+        }
+        if (target.charge > 0) {
+          target.charge -= dt;
+          if (target.charge <= 0) this.fireDroneShot(target);
+        }
+      });
+      this.projectiles.forEach((projectile) => {
+        projectile.x += projectile.vx * dt;
+        projectile.y += projectile.vy * dt;
+        projectile.life -= dt;
+        if (dist(projectile.x, projectile.y, w * 0.5, h * 0.93) < 26) {
+          projectile.life = 0;
+          this.health = Math.max(0, this.health - 8);
+          this.flash = 1;
+          this.shake = 8;
+          this.fx.burst(projectile.x, projectile.y, '#ff6045', 12, 150, 2.4);
+        }
+      });
+      this.projectiles = this.projectiles.filter((projectile) => projectile.life > 0 && projectile.y > -20);
+      this.beams.forEach((beam) => { beam.life -= dt; });
+      this.beams = this.beams.filter((beam) => beam.life > 0);
+      this.updateHUD();
+      if (this.health <= 0) {
+        this.finish({
+          win: false,
+          title: '手套电量耗尽。',
+          desc: '联合军的反击火力覆盖了训练舱。重新校准后可以再试一次。',
+          stats: [
+            { label: '击落', value: `${this.kills} / ${this.goal}` },
+            { label: '得分', value: String(this.score) },
+            { label: '最高连击', value: `×${this.combo}` }
+          ]
+        });
+      } else if (this.timeLeft <= 0) {
+        this.finish({
+          win: false,
+          title: '训练时间结束。',
+          desc: this.kills >= this.goal ? '目标已完成，只是慢了一点点。' : '联合军的侦察编队完成了扫描。再试一次，提高连击效率。',
+          stats: [
+            { label: '击落', value: `${this.kills} / ${this.goal}` },
+            { label: '得分', value: String(this.score) }
+          ]
+        });
+      }
+    }
+
+    fireDroneShot(target) {
+      const originX = target.x * this.w;
+      const originY = target.y * this.h;
+      const targetX = this.w * 0.5;
+      const targetY = this.h * 0.94;
+      const length = Math.hypot(targetX - originX, targetY - originY) || 1;
+      const speed = rand(145, 190);
+      this.projectiles.push({
+        x: originX,
+        y: originY,
+        vx: ((targetX - originX) / length) * speed,
+        vy: ((targetY - originY) / length) * speed,
+        life: 4.2
+      });
+      this.fx.ring(originX, originY, '#ff6a45', 22, 0.25, 1);
+    }
+
+    updateHUD() {
+      const controlStatus = this.reload > 0 ? '更换电池中' : `电池 ${this.ammo}/${this.maxAmmo}`;
+      this.setHud({
+        objective: `击落联合军侦察机 ${this.kills}/${this.goal}`,
+        sub: `剩余 ${formatTime(this.timeLeft)} · 连击 ×${this.combo}`,
+        score: String(this.score),
+        scoreLabel: '得分',
+        status: this.burstCooldown > 0 ? `${controlStatus} · 爆发 ${this.burstCooldown.toFixed(1)}s` : `${controlStatus} · 爆发就绪`,
+        health: this.health / 100,
+        healthLabel: `生命 ${Math.ceil(this.health)}`,
+        progress: this.kills / this.goal
+      });
+    }
+
+    draw(ctx, w, h) {
+      ctx.save();
+      if (this.shake > 0) ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, '#111b25');
+      sky.addColorStop(0.5, '#1d2226');
+      sky.addColorStop(1, '#090d11');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      const horizon = h * 0.56;
+      glowCircle(ctx, w * 0.5, horizon, w * 0.44, 'rgba(255,157,73,.18)', 0.8);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(112,159,187,.14)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 9; i += 1) {
+        const y = horizon + Math.pow(i / 8, 1.7) * (h - horizon);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      for (let i = -8; i <= 8; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5 + i * w * 0.02, horizon);
+        ctx.lineTo(w * 0.5 + i * w * 0.135, h);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(8,12,15,.8)';
+      ctx.fillRect(0, 0, w, h * 0.11);
+      ctx.fillStyle = 'rgba(175,119,56,.18)';
+      ctx.fillRect(0, h * 0.11 - 2, w, 1);
+      ctx.strokeStyle = 'rgba(255,176,86,.16)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(w * 0.065, h * 0.17, w * 0.18, h * 0.27);
+      ctx.strokeStyle = 'rgba(91,161,188,.12)';
+      ctx.strokeRect(w * 0.755, h * 0.18, w * 0.18, h * 0.23);
+      ctx.fillStyle = 'rgba(255,187,100,.24)';
+      ctx.font = '600 10px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('CITY 17 // COMBINE TRAINING ARRAY', w * 0.071, h * 0.145);
+      ctx.fillStyle = 'rgba(140,184,202,.2)';
+      ctx.fillText('GRAVITY GLOVE CALIBRATION', w * 0.761, h * 0.155);
+      ctx.restore();
+
+      for (let i = 0; i < 5; i += 1) {
+        const y = h * 0.09 + i * h * 0.035;
+        ctx.fillStyle = 'rgba(119,143,153,.13)';
+        ctx.fillRect(0, y, w, 1);
+      }
+
+      this.targets.forEach((target) => this.drawTarget(ctx, target, w, h));
+      this.projectiles.forEach((projectile) => {
+        glowCircle(ctx, projectile.x, projectile.y, 22, 'rgba(255,74,44,.3)', 0.8);
+        ctx.fillStyle = '#ff7a4c';
+        ctx.beginPath();
+        ctx.arc(projectile.x, projectile.y, 4.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,194,125,.5)';
+        ctx.beginPath();
+        ctx.moveTo(projectile.x - projectile.vx * 0.025, projectile.y - projectile.vy * 0.025);
+        ctx.lineTo(projectile.x, projectile.y);
+        ctx.stroke();
+      });
+
+      this.beams.forEach((beam) => {
+        ctx.save();
+        ctx.globalAlpha = clamp(beam.life / 0.16, 0, 1);
+        ctx.strokeStyle = beam.hit ? '#ffcc7c' : 'rgba(116,217,255,.65)';
+        ctx.lineWidth = beam.hit ? 2.2 : 1;
+        ctx.shadowColor = beam.hit ? '#ffac3e' : '#56ceff';
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(beam.x1, beam.y1);
+        ctx.lineTo(beam.x2, beam.y2);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      this.fx.draw(ctx);
+      this.drawGloves(ctx, w, h);
+
+      if (this.flash > 0) {
+        ctx.fillStyle = `rgba(191, 35, 21, ${this.flash * 0.24})`;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      ctx.save();
+      const timerColor = this.timeLeft < 10 ? '#ff815f' : '#e8d5b8';
+      ctx.textAlign = 'center';
+      ctx.font = '500 11px "SFMono-Regular", Consolas, monospace';
+      ctx.fillStyle = 'rgba(200,183,156,.55)';
+      ctx.fillText('RANGE CLOCK', w / 2, h * 0.14);
+      ctx.font = '600 24px "SFMono-Regular", Consolas, monospace';
+      ctx.fillStyle = timerColor;
+      ctx.fillText(formatTime(this.timeLeft), w / 2, h * 0.178);
+      if (this.combo > 1) {
+        ctx.font = '600 10px "SFMono-Regular", Consolas, monospace';
+        ctx.fillStyle = 'rgba(255,193,101,.8)';
+        ctx.fillText(`GRAVITY COMBO ×${this.combo}`, w / 2, h * 0.208);
+      }
+      ctx.restore();
+
+      const mouseX = this.manager.mouse.x;
+      const mouseY = this.manager.mouse.y;
+      drawCrosshair(ctx, mouseX, mouseY, this.reload > 0 ? '#68b6ce' : '#f2d7ab', 15, this.reload > 0);
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.font = '500 8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillStyle = 'rgba(222,207,179,.46)';
+      ctx.fillText(this.reload > 0 ? 'BATTERY SWAP' : this.ammo ? 'GRAVITY PULSE' : 'RECHARGE', mouseX, mouseY + 28);
+      ctx.restore();
+      ctx.restore();
+    }
+
+    drawTarget(ctx, target, w, h) {
+      const x = target.x * w;
+      const y = target.y * h + Math.sin(this.time * 2.2 + target.phase) * 4;
+      const size = target.size;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.sin(this.time * 1.4 + target.phase) * 0.08);
+      ctx.shadowColor = 'rgba(255,144,57,.5)';
+      ctx.shadowBlur = 15;
+      ctx.strokeStyle = 'rgba(255,174,83,.38)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 1.35, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.rotate(-Math.sin(this.time * 1.4 + target.phase) * 0.08);
+      const body = ctx.createLinearGradient(0, -size, 0, size);
+      body.addColorStop(0, '#cfd9d9');
+      body.addColorStop(0.35, '#52616a');
+      body.addColorStop(1, '#192229');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.8, -size * 0.32);
+      ctx.lineTo(-size * 0.42, -size * 0.7);
+      ctx.lineTo(size * 0.7, -size * 0.32);
+      ctx.lineTo(size * 0.9, size * 0.22);
+      ctx.lineTo(size * 0.3, size * 0.62);
+      ctx.lineTo(-size * 0.6, size * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,178,88,.46)';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(16,22,26,.9)';
+      ctx.beginPath();
+      ctx.arc(0, size * 0.02, size * 0.37, 0, Math.PI * 2);
+      ctx.fill();
+      const charge = target.charge > 0 ? 1 - target.charge / 0.62 : 0;
+      if (target.charge > 0) {
+        glowCircle(ctx, 0, 0, size * (1.1 + charge * 0.9), 'rgba(255,77,44,.45)', 0.8);
+      }
+      ctx.fillStyle = target.charge > 0 ? '#ff6e45' : '#ffb35d';
+      ctx.shadowColor = target.charge > 0 ? '#ff4c28' : '#ffab43';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(0, size * 0.02, size * 0.14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(214,226,223,.48)';
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.8, 0);
+      ctx.lineTo(-size * 1.1, -size * 0.18);
+      ctx.moveTo(size * 0.8, 0);
+      ctx.lineTo(size * 1.1, size * 0.2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,189,101,.6)';
+      ctx.fillRect(-size * 0.53, size * 0.59, size * 0.42, 1);
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillStyle = 'rgba(217,229,228,.42)';
+      ctx.textAlign = 'center';
+      ctx.fillText('SCANNER', 0, size * 0.92);
+      ctx.restore();
+    }
+
+    drawGloves(ctx, w, h) {
+      const mouseX = this.manager.mouse.x;
+      const mouseY = this.manager.mouse.y;
+      const drawGlove = (side) => {
+        const baseX = side === 'left' ? w * 0.2 : w * 0.8;
+        const baseY = h * 1.04;
+        const targetX = lerp(baseX, mouseX, 0.16);
+        const targetY = lerp(baseY, mouseY, 0.2);
+        const angle = Math.atan2(targetY - baseY, targetX - baseX);
+        ctx.save();
+        ctx.translate(baseX, baseY);
+        ctx.rotate(angle - Math.PI / 2);
+        ctx.fillStyle = 'rgba(5,9,12,.55)';
+        ctx.beginPath();
+        ctx.ellipse(0, -20, 52, 86, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#202b32';
+        ctx.beginPath();
+        ctx.moveTo(-25, 50);
+        ctx.lineTo(-32, -85);
+        ctx.lineTo(-14, -142);
+        ctx.lineTo(14, -142);
+        ctx.lineTo(32, -85);
+        ctx.lineTo(25, 50);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,166,70,.28)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#e0a359';
+        ctx.beginPath();
+        ctx.moveTo(-18, -126);
+        ctx.lineTo(-20, -158);
+        ctx.lineTo(-6, -175);
+        ctx.lineTo(8, -160);
+        ctx.lineTo(19, -174);
+        ctx.lineTo(23, -148);
+        ctx.lineTo(17, -122);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#69d9f7';
+        ctx.beginPath();
+        ctx.arc(0, -139, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      };
+      drawGlove('left');
+      drawGlove('right');
+      if (this.burstCooldown > 0) {
+        ctx.fillStyle = 'rgba(99,206,242,.12)';
+        ctx.beginPath();
+        ctx.arc(w * 0.2, h * 0.98, 60, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  /* ==========================================================================
+     Dota 2 — Mid lane defense
+     ========================================================================== */
+
+  class DotaMid extends MiniGameBase {
+    constructor(manager) {
+      super(manager);
+      this.player = {
+        x: 0.25, y: 0.74, hp: 240, maxHp: 240, mana: 100, maxMana: 100,
+        attackCd: 0, spellCd: 0, healCd: 0, dead: false, respawn: 0, facing: -1
+      };
+      this.radiantAncient = { team: 'radiant', kind: 'ancient', x: 0.115, y: 0.845, hp: 220, maxHp: 220, alive: true };
+      this.direAncient = { team: 'dire', kind: 'ancient', x: 0.885, y: 0.155, hp: 220, maxHp: 220, alive: true };
+      this.radiantTower = { team: 'radiant', kind: 'tower', x: 0.335, y: 0.7, hp: 140, maxHp: 140, alive: true, attackCd: 0 };
+      this.direTower = { team: 'dire', kind: 'tower', x: 0.665, y: 0.3, hp: 160, maxHp: 160, alive: true, attackCd: 0 };
+      this.structures = [this.radiantTower, this.direTower, this.radiantAncient, this.direAncient];
+      this.creeps = [];
+      this.beams = [];
+      this.aoes = [];
+      this.trees = [];
+      this.waveTimer = 1.4;
+      this.waveCount = 0;
+      this.gold = 0;
+      this.banner = { text: '', timer: 0 };
+      this.shake = 0;
+    }
+
+    start() {
+      this.player = {
+        x: 0.25, y: 0.74, hp: 240, maxHp: 240, mana: 100, maxMana: 100,
+        attackCd: 0, spellCd: 0, healCd: 0, dead: false, respawn: 0, facing: -1
+      };
+      this.radiantAncient = { team: 'radiant', kind: 'ancient', x: 0.115, y: 0.845, hp: 220, maxHp: 220, alive: true };
+      this.direAncient = { team: 'dire', kind: 'ancient', x: 0.885, y: 0.155, hp: 220, maxHp: 220, alive: true };
+      this.radiantTower = { team: 'radiant', kind: 'tower', x: 0.335, y: 0.7, hp: 140, maxHp: 140, alive: true, attackCd: 0 };
+      this.direTower = { team: 'dire', kind: 'tower', x: 0.665, y: 0.3, hp: 160, maxHp: 160, alive: true, attackCd: 0 };
+      this.structures = [this.radiantTower, this.direTower, this.radiantAncient, this.direAncient];
+      this.creeps = [];
+      this.beams = [];
+      this.aoes = [];
+      this.trees = Array.from({ length: 46 }, () => ({
+        x: rand(0.03, 0.97), y: rand(0.06, 0.94), size: rand(2, 6), tone: rand(0.22, 0.55)
+      })).filter((tree) => Math.abs(tree.x - (0.18 + tree.y * 0.72)) > 0.1);
+      this.waveTimer = 1.4;
+      this.waveCount = 0;
+      this.gold = 0;
+      this.banner = { text: '天辉与夜魇的兵线正在中路集结', timer: 2.4 };
+      this.shake = 0;
+      this.updateHUD();
+    }
+
+    spawnWave() {
+      this.waveCount += 1;
+      const tanky = this.waveCount % 3 === 0;
+      for (let i = 0; i < 3; i += 1) {
+        this.creeps.push({
+          team: 'radiant', x: 0.16 + i * 0.012, y: 0.79 + i * 0.017,
+          hp: tanky ? 58 : 42, maxHp: tanky ? 58 : 42, damage: tanky ? 8 : 6,
+          attackCd: rand(0.1, 0.65), speed: rand(0.045, 0.057), radius: tanky ? 0.017 : 0.013,
+          type: i === 2 ? 'ranged' : 'melee', phase: rand(0, Math.PI * 2)
+        });
+        this.creeps.push({
+          team: 'dire', x: 0.84 - i * 0.012, y: 0.21 - i * 0.017,
+          hp: tanky ? 58 : 42, maxHp: tanky ? 58 : 42, damage: tanky ? 8 : 6,
+          attackCd: rand(0.1, 0.65), speed: rand(0.045, 0.057), radius: tanky ? 0.017 : 0.013,
+          type: i === 1 ? 'ranged' : 'melee', phase: rand(0, Math.PI * 2)
+        });
+      }
+      this.banner = { text: tanky ? `第 ${this.waveCount} 波 · 攻城兵加入兵线` : `第 ${this.waveCount} 波兵线出发`, timer: 1.8 };
+    }
+
+    get metric() {
+      return Math.min(this.w, this.h);
+    }
+
+    playerScreen() {
+      return { x: this.player.x * this.w, y: this.player.y * this.h };
+    }
+
+    unitScreen(unit) {
+      return { x: unit.x * this.w, y: unit.y * this.h };
+    }
+
+    enemiesOf(team) {
+      return team === 'radiant' ? 'dire' : 'radiant';
+    }
+
+    primaryStructure(team) {
+      if (team === 'radiant') return this.direTower.alive ? this.direTower : this.direAncient;
+      return this.radiantTower.alive ? this.radiantTower : this.radiantAncient;
+    }
+
+    targetAtPointer(pointerX, pointerY) {
+      const player = this.playerScreen();
+      const maxRange = this.metric * 0.29;
+      const candidates = [];
+      this.creeps.forEach((creep) => {
+        if (creep.team !== 'dire') return;
+        const point = this.unitScreen(creep);
+        candidates.push({ unit: creep, dist: dist(pointerX, pointerY, point.x, point.y) });
+      });
+      this.structures.forEach((structure) => {
+        if (structure.team !== 'dire' || !structure.alive) return;
+        const point = this.unitScreen(structure);
+        candidates.push({ unit: structure, dist: dist(pointerX, pointerY, point.x, point.y) });
+      });
+      candidates.sort((a, b) => a.dist - b.dist);
+      const selected = candidates.find((entry) => entry.dist < this.metric * 0.06);
+      if (!selected) return null;
+      const point = this.unitScreen(selected.unit);
+      if (dist(player.x, player.y, point.x, point.y) > maxRange) {
+        this.toast('目标太远了，靠近一点。');
+        return null;
+      }
+      return selected.unit;
+    }
+
+    pointerDown(x, y) {
+      if (this.player.dead) return;
+      const target = this.targetAtPointer(x, y);
+      if (!target) {
+        this.fx.ring(x, y, 'rgba(148,224,179,.45)', 22, 0.25, 1);
+        return;
+      }
+      if (this.player.attackCd > 0) return;
+      this.player.attackCd = 0.5;
+      this.player.facing = Math.atan2(target.y - this.player.y, target.x - this.player.x);
+      this.damageUnit(target, 24, 'player');
+      const from = this.playerScreen();
+      const to = this.unitScreen(target);
+      this.beams.push({ x1: from.x + 10, y1: from.y - 10, x2: to.x, y2: to.y, life: 0.13, color: '#b9f4ff' });
+    }
+
+    castSpell() {
+      if (this.player.dead) return;
+      if (this.player.spellCd > 0) {
+        this.toast(`冰霜新星冷却中 · ${this.player.spellCd.toFixed(1)} 秒`);
+        return;
+      }
+      if (this.player.mana < 30) {
+        this.toast('法力不足。');
+        return;
+      }
+      const mouse = { x: this.manager.mouse.x, y: this.manager.mouse.y };
+      const player = this.playerScreen();
+      if (dist(mouse.x, mouse.y, player.x, player.y) > this.metric * 0.38) {
+        this.toast('施法距离不够。');
+        return;
+      }
+      this.player.mana -= 30;
+      this.player.spellCd = 4.2;
+      const radius = this.metric * 0.082;
+      this.aoes.push({ x: mouse.x, y: mouse.y, radius, life: 0.52, max: 0.52, color: '#8fe8ff' });
+      this.fx.ring(mouse.x, mouse.y, '#a5edff', radius, 0.52, 2);
+      this.creeps.filter((creep) => creep.team === 'dire').forEach((creep) => {
+        const point = this.unitScreen(creep);
+        if (dist(point.x, point.y, mouse.x, mouse.y) < radius) this.damageUnit(creep, 48, 'spell');
+      });
+      [this.direTower, this.direAncient].forEach((structure) => {
+        if (!structure.alive) return;
+        const point = this.unitScreen(structure);
+        if (dist(point.x, point.y, mouse.x, mouse.y) < radius) this.damageUnit(structure, 22, 'spell');
+      });
+    }
+
+    castHeal() {
+      if (this.player.dead) return;
+      if (this.player.healCd > 0) {
+        this.toast(`回春术冷却中 · ${this.player.healCd.toFixed(1)} 秒`);
+        return;
+      }
+      if (this.player.mana < 25) {
+        this.toast('法力不足。');
+        return;
+      }
+      this.player.mana -= 25;
+      this.player.healCd = 12;
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 68);
+      const point = this.playerScreen();
+      this.fx.ring(point.x, point.y, '#82e0a0', 56, 0.55, 2);
+      this.fx.float(point.x, point.y - 30, '+68', '#98f0ac', 14);
+      this.toast('回春术：生命恢复。');
+    }
+
+    keyDown(code) {
+      if (code === 'KeyQ') this.castSpell();
+      if (code === 'KeyE') this.castHeal();
+    }
+
+    damageUnit(unit, amount, source) {
+      if (!unit || unit.hp <= 0) return;
+      if (unit.isPlayer) {
+        this.player.hp -= amount;
+        this.shake = 5;
+        const p = this.playerScreen();
+        this.fx.burst(p.x, p.y, '#ff7d6d', 9, 120, 2);
+        if (this.player.hp <= 0) {
+          this.player.hp = 0;
+          this.player.dead = true;
+          this.player.respawn = 4.2;
+          this.banner = { text: '英雄阵亡 · 4 秒后重生', timer: 4.2 };
+        }
+        return;
+      }
+      unit.hp -= amount;
+      const point = this.unitScreen(unit);
+      this.fx.burst(point.x, point.y, source === 'spell' ? '#a5edff' : '#ffd18b', 6, 100, 1.8);
+      if (unit.hp <= 0) this.unitDefeated(unit);
+    }
+
+    unitDefeated(unit) {
+      const point = this.unitScreen(unit);
+      if (unit.kind === 'creep') {
+        unit.hp = 0;
+        this.gold += 22;
+        this.fx.ring(point.x, point.y, '#e8c077', 18, 0.3, 1);
+        this.fx.float(point.x, point.y - 8, '+22', '#f1cf82', 10);
+        return;
+      }
+      if (unit.kind === 'tower') {
+        unit.alive = false;
+        this.gold += 110;
+        this.fx.burst(point.x, point.y, '#ffd78b', 26, 210, 3);
+        this.fx.ring(point.x, point.y, '#ffe4a3', 80, 0.6, 2);
+        this.banner = { text: unit.team === 'dire' ? '夜魇中路防御塔被摧毁' : '天辉中路防御塔被摧毁', timer: 2.1 };
+        return;
+      }
+      if (unit.kind === 'ancient') {
+        unit.alive = false;
+        unit.hp = 0;
+        this.fx.burst(point.x, point.y, unit.team === 'dire' ? '#ffac69' : '#7bf0bd', 40, 280, 3.5);
+        this.shake = 12;
+        if (unit.team === 'dire') {
+          this.finish({
+            win: true,
+            title: '夜魇遗迹陷落。',
+            desc: '天辉兵线穿过了最后一道防线。中路的战斗结束了。',
+            stats: [
+              { label: '金币', value: String(this.gold) },
+              { label: '兵线波次', value: String(this.waveCount) },
+              { label: '天辉遗迹', value: `${Math.ceil(this.radiantAncient.hp)} HP` }
+            ]
+          });
+        } else {
+          this.finish({
+            win: false,
+            title: '天辉遗迹被摧毁。',
+            desc: '夜魇的攻势压过了最后一道防线。重新集结，再守一次中路。',
+            stats: [
+              { label: '金币', value: String(this.gold) },
+              { label: '兵线波次', value: String(this.waveCount) }
+            ]
+          });
+        }
+      }
+    }
+
+    update(dt, w, h) {
+      super.update(dt, w, h);
+      if (this.ended) return;
+      this.player.attackCd = Math.max(0, this.player.attackCd - dt);
+      this.player.spellCd = Math.max(0, this.player.spellCd - dt);
+      this.player.healCd = Math.max(0, this.player.healCd - dt);
+      this.player.mana = Math.min(this.player.maxMana, this.player.mana + dt * 3.2);
+      if (this.banner.timer > 0) this.banner.timer -= dt;
+
+      if (this.player.dead) {
+        this.player.respawn -= dt;
+        if (this.player.respawn <= 0) {
+          this.player.dead = false;
+          this.player.hp = this.player.maxHp;
+          this.player.mana = this.player.maxMana;
+          this.player.x = 0.25;
+          this.player.y = 0.74;
+          this.player.spellCd = 0;
+          this.player.healCd = 0;
+          this.fx.ring(this.player.x * w, this.player.y * h, '#8df1b1', 56, 0.6, 2);
+          this.toast('英雄已重生。');
+        }
+      } else {
+        let dx = 0;
+        let dy = 0;
+        if (this.manager.keys.has('KeyW')) dy -= 1;
+        if (this.manager.keys.has('KeyS')) dy += 1;
+        if (this.manager.keys.has('KeyA')) dx -= 1;
+        if (this.manager.keys.has('KeyD')) dx += 1;
+        if (dx || dy) {
+          const length = Math.hypot(dx, dy) || 1;
+          this.player.x = clamp(this.player.x + (dx / length) * 0.15 * dt, 0.035, 0.965);
+          this.player.y = clamp(this.player.y + (dy / length) * 0.15 * dt, 0.045, 0.955);
+          this.player.facing = Math.atan2(dy, dx);
+        }
+        if (dist(this.player.x, this.player.y, this.radiantAncient.x, this.radiantAncient.y) < 0.07) {
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + dt * 14);
+        }
+      }
+
+      this.waveTimer -= dt;
+      if (this.waveTimer <= 0) {
+        this.spawnWave();
+        this.waveTimer = Math.max(4.2, 6.6 - this.waveCount * 0.12);
+      }
+
+      this.updateStructures(dt);
+      this.updateCreeps(dt);
+      this.aoes.forEach((aoe) => { aoe.life -= dt; });
+      this.aoes = this.aoes.filter((aoe) => aoe.life > 0);
+      this.beams.forEach((beam) => { beam.life -= dt; });
+      this.beams = this.beams.filter((beam) => beam.life > 0);
+      this.creeps = this.creeps.filter((creep) => creep.hp > 0);
+      this.updateHUD();
+    }
+
+    updateStructures(dt) {
+      this.structures.forEach((structure) => {
+        if (!structure.alive || structure.kind !== 'tower') return;
+        structure.attackCd -= dt;
+        if (structure.attackCd > 0) return;
+        const point = this.unitScreen(structure);
+        const enemyTeam = this.enemiesOf(structure.team);
+        const targets = this.creeps.filter((creep) => creep.team === enemyTeam).map((creep) => {
+          const targetPoint = this.unitScreen(creep);
+          return { unit: creep, distance: dist(point.x, point.y, targetPoint.x, targetPoint.y) };
+        });
+        if (structure.team === 'dire' && !this.player.dead) {
+          const playerPoint = this.playerScreen();
+          targets.push({ unit: { isPlayer: true }, distance: dist(point.x, point.y, playerPoint.x, playerPoint.y) });
+        }
+        targets.sort((a, b) => a.distance - b.distance);
+        const target = targets.find((entry) => entry.distance < this.metric * 0.2);
+        if (!target) return;
+        const targetPoint = target.unit.isPlayer ? this.playerScreen() : this.unitScreen(target.unit);
+        structure.attackCd = 1.28;
+        this.beams.push({ x1: point.x, y1: point.y - 18, x2: targetPoint.x, y2: targetPoint.y, life: 0.24, color: structure.team === 'dire' ? '#ff826d' : '#73d8c4' });
+        this.fx.ring(targetPoint.x, targetPoint.y, structure.team === 'dire' ? '#ff826d' : '#73d8c4', 18, 0.2, 1);
+        if (target.unit.isPlayer) this.damageUnit(target.unit, 18, 'tower');
+        else this.damageUnit(target.unit, 24, 'tower');
+      });
+    }
+
+    updateCreeps(dt) {
+      const metric = this.metric;
+      this.creeps.forEach((creep) => {
+        if (creep.hp <= 0) return;
+        creep.attackCd = Math.max(0, creep.attackCd - dt);
+        const point = this.unitScreen(creep);
+        const enemyTeam = this.enemiesOf(creep.team);
+        const nearby = this.creeps.filter((other) => other.team === enemyTeam && other.hp > 0).map((other) => ({
+          unit: other, distance: dist(point.x, point.y, other.x * this.w, other.y * this.h)
+        })).sort((a, b) => a.distance - b.distance)[0];
+        if (creep.team === 'dire' && !this.player.dead) {
+          const playerPoint = this.playerScreen();
+          const playerDistance = dist(point.x, point.y, playerPoint.x, playerPoint.y);
+          if (playerDistance < metric * 0.055 && (!nearby || nearby.distance > playerDistance)) {
+            if (creep.attackCd <= 0) {
+              creep.attackCd = 0.95;
+              this.damageUnit({ isPlayer: true }, creep.damage, 'creep');
+            }
+            return;
+          }
+        }
+        if (nearby && nearby.distance < metric * 0.052) {
+          if (creep.attackCd <= 0) {
+            creep.attackCd = 0.95;
+            this.damageUnit(nearby.unit, creep.damage, 'creep');
+            const enemyPoint = this.unitScreen(nearby.unit);
+            this.beams.push({ x1: point.x, y1: point.y, x2: enemyPoint.x, y2: enemyPoint.y, life: 0.09, color: creep.team === 'dire' ? '#ffab77' : '#90e3b3' });
+          }
+          return;
+        }
+        const structure = this.primaryStructure(creep.team);
+        if (!structure) return;
+        const targetPoint = this.unitScreen(structure);
+        const structureDistance = dist(point.x, point.y, targetPoint.x, targetPoint.y);
+        if (structureDistance < metric * 0.045) {
+          if (creep.attackCd <= 0) {
+            creep.attackCd = 1.08;
+            this.damageUnit(structure, creep.damage + 2, 'creep');
+            this.beams.push({ x1: point.x, y1: point.y, x2: targetPoint.x, y2: targetPoint.y, life: 0.1, color: creep.team === 'dire' ? '#ffab77' : '#90e3b3' });
+          }
+          return;
+        }
+        const angle = Math.atan2(targetPoint.y - point.y, targetPoint.x - point.x);
+        const speed = creep.speed;
+        creep.x = clamp(creep.x + Math.cos(angle) * speed * dt * (this.h / this.w), 0.02, 0.98);
+        creep.y = clamp(creep.y + Math.sin(angle) * speed * dt, 0.03, 0.97);
+      });
+    }
+
+    updateHUD() {
+      this.setHud({
+        objective: '摧毁夜魇的远古遗迹',
+        sub: `天辉遗迹 ${Math.ceil(this.radiantAncient.hp)} · 夜魇遗迹 ${Math.ceil(this.direAncient.hp)} · 第 ${Math.max(1, this.waveCount)} 波`,
+        score: String(this.gold),
+        scoreLabel: '金币',
+        status: this.player.dead ? `重生 ${this.player.respawn.toFixed(1)}s` : `Q 新星 ${this.player.spellCd > 0 ? `${this.player.spellCd.toFixed(1)}s` : '就绪'} · E 回春 ${this.player.healCd > 0 ? `${this.player.healCd.toFixed(1)}s` : '就绪'}`,
+        health: this.player.hp / this.player.maxHp,
+        healthLabel: this.player.dead ? '英雄阵亡' : `生命 ${Math.ceil(this.player.hp)} · 法力 ${Math.floor(this.player.mana)}`,
+        progress: 1 - this.direAncient.hp / this.direAncient.maxHp
+      });
+    }
+
+    draw(ctx, w, h) {
+      ctx.save();
+      if (this.shake > 0) ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
+      const ground = ctx.createRadialGradient(w * 0.48, h * 0.5, 20, w * 0.48, h * 0.5, Math.max(w, h) * 0.75);
+      ground.addColorStop(0, '#1c3327');
+      ground.addColorStop(0.58, '#14251d');
+      ground.addColorStop(1, '#09120e');
+      ctx.fillStyle = ground;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = 'rgba(73,139,122,.17)';
+      ctx.lineWidth = Math.min(w, h) * 0.085;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(w * 0.16, h * 0.8);
+      ctx.quadraticCurveTo(w * 0.5, h * 0.52, w * 0.84, h * 0.2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(182,154,94,.14)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(87,160,197,.22)';
+      ctx.lineWidth = Math.min(w, h) * 0.032;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.2, h * 0.03);
+      ctx.quadraticCurveTo(w * 0.46, h * 0.5, w * 0.98, h * 0.82);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(123,210,236,.2)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+
+      this.trees.forEach((tree) => {
+        ctx.fillStyle = `rgba(70,126,84,${tree.tone * 0.55})`;
+        ctx.beginPath();
+        ctx.arc(tree.x * w, tree.y * h, tree.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(21,43,29,.8)';
+        ctx.beginPath();
+        ctx.arc(tree.x * w + 2, tree.y * h + 2, tree.size * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      this.drawBase(ctx, w, h, this.radiantAncient, '#79e2b7', '天辉');
+      this.drawBase(ctx, w, h, this.direAncient, '#ff8c6a', '夜魇');
+      this.structures.forEach((structure) => this.drawStructure(ctx, w, h, structure));
+      this.creeps.slice().sort((a, b) => a.y - b.y).forEach((creep) => this.drawCreep(ctx, w, h, creep));
+      this.drawPlayer(ctx, w, h);
+      this.aoes.forEach((aoe) => {
+        const alpha = clamp(aoe.life / aoe.max, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.55;
+        ctx.fillStyle = aoe.color;
+        ctx.beginPath();
+        ctx.arc(aoe.x, aoe.y, aoe.radius * (1 + (1 - alpha) * 0.2), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#d5f8ff';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = alpha;
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.beams.forEach((beam) => {
+        ctx.save();
+        ctx.globalAlpha = clamp(beam.life / 0.24, 0, 1);
+        ctx.strokeStyle = beam.color;
+        ctx.lineWidth = 1.6;
+        ctx.shadowColor = beam.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(beam.x1, beam.y1);
+        ctx.lineTo(beam.x2, beam.y2);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.fx.draw(ctx);
+      this.drawMinimap(ctx, w, h);
+      if (this.banner.timer > 0) {
+        ctx.save();
+        ctx.globalAlpha = clamp(this.banner.timer / 0.5, 0, 1);
+        ctx.textAlign = 'center';
+        fillRoundRect(ctx, w * 0.5 - 155, h * 0.145, 310, 28, 4, 'rgba(12,21,16,.72)');
+        ctx.strokeStyle = 'rgba(211,172,98,.2)';
+        ctx.strokeRect(w * 0.5 - 155, h * 0.145, 310, 28);
+        ctx.fillStyle = '#d9c39b';
+        ctx.font = '500 10px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(this.banner.text, w * 0.5, h * 0.145 + 18);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    drawBase(ctx, w, h, ancient, color, label) {
+      const x = ancient.x * w;
+      const y = ancient.y * h;
+      ctx.save();
+      glowCircle(ctx, x, y, Math.min(w, h) * 0.12, color, ancient.alive ? 0.16 : 0.04);
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = ancient.alive ? 0.34 : 0.1;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(x, y, Math.min(w, h) * 0.072, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = ancient.alive ? 'rgba(25,38,30,.92)' : 'rgba(25,22,21,.9)';
+      ctx.beginPath();
+      ctx.arc(x, y, Math.min(w, h) * 0.043, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = ancient.alive ? 0.72 : 0.22;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      if (ancient.alive) {
+        glowCircle(ctx, x, y - 7, 22, color, 0.45);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x, y - Math.min(w, h) * 0.05);
+        ctx.lineTo(x + Math.min(w, h) * 0.024, y + 2);
+        ctx.lineTo(x - Math.min(w, h) * 0.024, y + 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.globalAlpha = 0.8;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = color;
+      ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(label.toUpperCase(), x, y + Math.min(w, h) * 0.077);
+      ctx.fillStyle = 'rgba(220,231,210,.45)';
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('ANCIENT', x, y + Math.min(w, h) * 0.09);
+      ctx.restore();
+      this.drawHealthBar(ctx, x, y - Math.min(w, h) * 0.062, 78, ancient.hp / ancient.maxHp, color);
+    }
+
+    drawStructure(ctx, w, h, structure) {
+      if (structure.kind === 'ancient') return;
+      const x = structure.x * w;
+      const y = structure.y * h;
+      const color = structure.team === 'radiant' ? '#7ce1b1' : '#ff8f74';
+      ctx.save();
+      if (structure.alive) {
+        glowCircle(ctx, x, y, Math.min(w, h) * 0.07, color, 0.13);
+        ctx.fillStyle = 'rgba(18,28,23,.9)';
+        ctx.beginPath();
+        ctx.arc(x, y, 13, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+        ctx.fillStyle = structure.team === 'radiant' ? '#81e1c0' : '#ff987f';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 24);
+        ctx.lineTo(x + 10, y - 4);
+        ctx.lineTo(x, y + 12);
+        ctx.lineTo(x - 10, y - 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'rgba(9,14,11,.6)';
+        ctx.beginPath();
+        ctx.arc(x, y - 4, 4, 0, Math.PI * 2);
+        ctx.fill();
+        this.drawHealthBar(ctx, x, y - 35, 48, structure.hp / structure.maxHp, color);
+      } else {
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = 'rgba(120,110,97,.5)';
+        ctx.beginPath();
+        ctx.moveTo(x - 14, y + 12);
+        ctx.lineTo(x, y - 16);
+        ctx.lineTo(x + 11, y + 10);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    drawHealthBar(ctx, x, y, width, ratio, color) {
+      ctx.save();
+      fillRoundRect(ctx, x - width / 2, y, width, 4, 2, 'rgba(0,0,0,.55)');
+      fillRoundRect(ctx, x - width / 2, y, width * clamp(ratio, 0, 1), 4, 2, color);
+      ctx.restore();
+    }
+
+    drawCreep(ctx, w, h, creep) {
+      if (creep.hp <= 0) return;
+      const x = creep.x * w;
+      const y = creep.y * h;
+      const color = creep.team === 'radiant' ? '#75d8b0' : '#ff947a';
+      const size = creep.type === 'ranged' ? 7 : 8.5;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, 4, size * 0.85, size * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = creep.team === 'radiant' ? '#2b5043' : '#5a312b';
+      ctx.beginPath();
+      ctx.arc(0, 0, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.8;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (creep.type === 'ranged') {
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(-3, -8);
+        ctx.quadraticCurveTo(0, -16, 5, -10);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(-4, -9);
+        ctx.lineTo(0, -15);
+        ctx.lineTo(4, -9);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(245,236,214,.72)';
+      ctx.fillRect(-size, size + 4, size * 2 * clamp(creep.hp / creep.maxHp, 0, 1), 2);
+      ctx.restore();
+    }
+
+    drawPlayer(ctx, w, h) {
+      const x = this.player.x * w;
+      const y = this.player.y * h;
+      if (this.player.dead) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(205,184,153,.7)';
+        ctx.font = '500 10px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(`重生 ${Math.max(0, this.player.respawn).toFixed(1)}s`, x, y);
+        ctx.restore();
+        return;
+      }
+      const mouse = { x: this.manager.mouse.x, y: this.manager.mouse.y };
+      const angle = Math.atan2(mouse.y - y, mouse.x - x);
+      ctx.save();
+      glowCircle(ctx, x, y, 45, 'rgba(116,226,190,.22)', 0.8);
+      ctx.strokeStyle = 'rgba(150,241,208,.23)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(x, y, this.metric * 0.29, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.fillStyle = 'rgba(154,242,211,.2)';
+      ctx.beginPath();
+      ctx.ellipse(0, 7, 18, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2b6253';
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#9bf2d1';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.fillStyle = '#d7fff0';
+      ctx.beginPath();
+      ctx.moveTo(-5, -12);
+      ctx.lineTo(0, -22);
+      ctx.lineTo(5, -12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(181,244,222,.6)';
+      ctx.beginPath();
+      ctx.moveTo(0, -4);
+      ctx.lineTo(0, -16);
+      ctx.stroke();
+      ctx.restore();
+      this.drawHealthBar(ctx, x, y - 31, 58, this.player.hp / this.player.maxHp, '#8cf0be');
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(199,242,223,.7)';
+      ctx.font = '500 7px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText('Sniper', x, y + 28);
+      ctx.restore();
+    }
+
+    drawMinimap(ctx, w, h) {
+      if (w < 760) return;
+      const mw = 126;
+      const mh = 96;
+      const x = w - mw - 20;
+      const y = h - mh - 20;
+      ctx.save();
+      fillRoundRect(ctx, x, y, mw, mh, 4, 'rgba(5,12,9,.58)');
+      ctx.strokeStyle = 'rgba(155,190,163,.17)';
+      ctx.strokeRect(x, y, mw, mh);
+      ctx.strokeStyle = 'rgba(105,157,138,.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + mw * 0.16, y + mh * 0.82);
+      ctx.lineTo(x + mw * 0.84, y + mh * 0.18);
+      ctx.stroke();
+      const point = (unit) => ({ x: x + unit.x * mw, y: y + unit.y * mh });
+      [this.radiantTower, this.direTower].forEach((tower) => {
+        if (!tower.alive) return;
+        const p = point(tower);
+        ctx.fillStyle = tower.team === 'radiant' ? '#7ce1b1' : '#ff8f74';
+        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+      });
+      this.creeps.forEach((creep) => {
+        const p = point(creep);
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = creep.team === 'radiant' ? '#7ce1b1' : '#ff8f74';
+        ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+      });
+      ctx.globalAlpha = 1;
+      if (!this.player.dead) {
+        const p = point(this.player);
+        ctx.fillStyle = '#dcffee';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(190,224,201,.36)';
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('MID LANE', x + 7, y + 11);
+      ctx.restore();
+    }
+  }
+
+  /* ==========================================================================
+     Deadlock — Alley siege
+     ========================================================================== */
+
+  class DeadlockArena extends MiniGameBase {
+    constructor(manager) {
+      super(manager);
+      this.player = null;
+      this.covers = [
+        { x: 0.16, y: 0.25, w: 0.12, h: 0.055 },
+        { x: 0.42, y: 0.33, w: 0.16, h: 0.046 },
+        { x: 0.72, y: 0.24, w: 0.13, h: 0.065 },
+        { x: 0.26, y: 0.52, w: 0.08, h: 0.11 },
+        { x: 0.62, y: 0.54, w: 0.14, h: 0.048 },
+        { x: 0.78, y: 0.62, w: 0.1, h: 0.055 },
+        { x: 0.43, y: 0.8, w: 0.14, h: 0.04 }
+      ];
+      this.steam = Array.from({ length: 18 }, () => ({ x: rand(0.04, 0.96), y: rand(0.06, 0.94), phase: rand(0, 6.2), size: rand(10, 34) }));
+      this.banner = { text: '', timer: 0 };
+      this.shake = 0;
+    }
+
+    start() {
+      this.player = {
+        x: 0.5, y: 0.78, hp: 100, maxHp: 100, fireCd: 0, dashCd: 0, pulseCd: 0,
+        dashTime: 0, dashX: 0, dashY: 0, invuln: 0, flash: 0
+      };
+      this.enemies = [];
+      this.playerBullets = [];
+      this.enemyBullets = [];
+      this.spawnMarkers = [];
+      this.wave = 0;
+      this.waveDelay = 1.3;
+      this.waveClearing = 0;
+      this.kills = 0;
+      this.banner = { text: '封锁区入口已打开', timer: 2 };
+      this.shake = 0;
+      this.updateHUD();
+    }
+
+    get metric() {
+      return Math.min(this.w, this.h);
+    }
+
+    playerPoint() {
+      return { x: this.player.x * this.w, y: this.player.y * this.h };
+    }
+
+    startWave() {
+      this.wave += 1;
+      this.waveClearing = 0;
+      if (this.wave > 3) {
+        this.finish({
+          win: true,
+          title: '封锁区已清除。',
+          desc: '蒸汽散去，街道重新安静下来。三波封锁部队都被击退。',
+          stats: [
+            { label: '淘汰', value: String(this.kills) },
+            { label: '得分', value: String(this.score) },
+            { label: '波次', value: '3 / 3' },
+            { label: '生命', value: `${Math.ceil(this.player.hp)}` }
+          ]
+        });
+        return;
+      }
+      const count = 3 + this.wave * 2;
+      for (let i = 0; i < count; i += 1) {
+        let x;
+        let y;
+        let tries = 0;
+        do {
+          if (Math.random() < 0.5) {
+            x = rand(0.08, 0.92);
+            y = Math.random() < 0.5 ? rand(0.08, 0.14) : rand(0.86, 0.93);
+          } else {
+            x = Math.random() < 0.5 ? rand(0.06, 0.12) : rand(0.88, 0.94);
+            y = rand(0.16, 0.78);
+          }
+          tries += 1;
+        } while (this.pointInCover(x * this.w, y * this.h) && tries < 12);
+        this.spawnMarkers.push({ x, y, timer: rand(0.45, 1.05), max: 1.05, type: i === count - 1 ? 'brute' : 'gunner' });
+      }
+      this.banner = { text: `第 ${this.wave} 波 · ${this.wave === 3 ? '封锁部队增援中' : '敌人进入街区'}`, timer: 2 };
+    }
+
+    pointInCover(x, y, padding = 0) {
+      return this.covers.some((cover) => x > cover.x * this.w - padding && x < (cover.x + cover.w) * this.w + padding && y > cover.y * this.h - padding && y < (cover.y + cover.h) * this.h + padding);
+    }
+
+    spawnEnemy(marker) {
+      const brute = marker.type === 'brute';
+      this.enemies.push({
+        x: marker.x,
+        y: marker.y,
+        hp: (brute ? 78 : 38) + this.wave * 4,
+        maxHp: (brute ? 78 : 38) + this.wave * 4,
+        radius: brute ? 18 : 13,
+        speed: brute ? rand(48, 62) : rand(62, 84),
+        fireCd: rand(0.6, 1.8),
+        meleeCd: rand(0.5, 1.3),
+        brute,
+        phase: rand(0, Math.PI * 2)
+      });
+    }
+
+    nearestEnemy(point) {
+      return this.enemies.filter((enemy) => enemy.hp > 0).map((enemy) => ({
+        enemy, distance: dist(point.x, point.y, enemy.x * this.w, enemy.y * this.h)
+      })).sort((a, b) => a.distance - b.distance);
+    }
+
+    shoot() {
+      if (!this.player || this.player.hp <= 0) return;
+      const player = this.playerPoint();
+      const angle = Math.atan2(this.manager.mouse.y - player.y, this.manager.mouse.x - player.x);
+      const speed = 760;
+      this.playerBullets.push({
+        x: player.x + Math.cos(angle) * 19,
+        y: player.y + Math.sin(angle) * 19,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1.2,
+        damage: 12
+      });
+      this.player.fireCd = 0.115;
+      this.player.flash = 0.08;
+      this.fx.burst(player.x + Math.cos(angle) * 22, player.y + Math.sin(angle) * 22, '#7df1e4', 3, 55, 1.2);
+    }
+
+    pulse() {
+      if (!this.player || this.player.dead) return;
+      if (this.player.pulseCd > 0) {
+        this.toast(`脉冲冲击冷却中 · ${this.player.pulseCd.toFixed(1)} 秒`);
+        return;
+      }
+      const player = this.playerPoint();
+      this.player.pulseCd = 5;
+      this.fx.ring(player.x, player.y, '#6cf7e7', 135, 0.55, 3);
+      this.fx.ring(player.x, player.y, '#f1b36b', 74, 0.4, 2);
+      this.shake = 7;
+      this.enemies.forEach((enemy) => {
+        const point = { x: enemy.x * this.w, y: enemy.y * this.h };
+        const distance = dist(player.x, player.y, point.x, point.y);
+        if (distance < 145) {
+          const angle = Math.atan2(point.y - player.y, point.x - player.x);
+          enemy.x = clamp(enemy.x + Math.cos(angle) * 0.035, 0.04, 0.96);
+          enemy.y = clamp(enemy.y + Math.sin(angle) * 0.035, 0.05, 0.95);
+          this.damageEnemy(enemy, 52, point.x, point.y);
+        }
+      });
+      this.toast('脉冲冲击已释放');
+    }
+
+    keyDown(code) {
+      if (code === 'ShiftLeft' || code === 'ShiftRight') {
+        if (!this.player || this.player.dashCd > 0) {
+          if (this.player) this.toast(`冲刺冷却中 · ${this.player.dashCd.toFixed(1)} 秒`);
+          return;
+        }
+        const horizontal = (this.manager.keys.has('KeyD') ? 1 : 0) - (this.manager.keys.has('KeyA') ? 1 : 0);
+        const vertical = (this.manager.keys.has('KeyS') ? 1 : 0) - (this.manager.keys.has('KeyW') ? 1 : 0);
+        let x = horizontal;
+        let y = vertical;
+        if (!x && !y) {
+          const player = this.playerPoint();
+          x = Math.cos(Math.atan2(this.manager.mouse.y - player.y, this.manager.mouse.x - player.x));
+          y = Math.sin(Math.atan2(this.manager.mouse.y - player.y, this.manager.mouse.x - player.x));
+        }
+        const length = Math.hypot(x, y) || 1;
+        this.player.dashX = x / length;
+        this.player.dashY = y / length;
+        this.player.dashTime = 0.16;
+        this.player.dashCd = 2.2;
+        this.player.invuln = Math.max(this.player.invuln, 0.28);
+        this.fx.ring(this.player.x * this.w, this.player.y * this.h, '#78f0e2', 34, 0.28, 1.5);
+      }
+      if (code === 'KeyE') this.pulse();
+    }
+
+    update(dt, w, h) {
+      super.update(dt, w, h);
+      if (this.ended || !this.player) return;
+      this.player.fireCd = Math.max(0, this.player.fireCd - dt);
+      this.player.dashCd = Math.max(0, this.player.dashCd - dt);
+      this.player.pulseCd = Math.max(0, this.player.pulseCd - dt);
+      this.player.invuln = Math.max(0, this.player.invuln - dt);
+      this.player.flash = Math.max(0, this.player.flash - dt * 5);
+      if (this.banner.timer > 0) this.banner.timer -= dt;
+
+      if (this.player.hp <= 0) {
+        this.finish({
+          win: false,
+          title: '封锁区失守。',
+          desc: '敌人的交叉火力压了过来。利用掩体和冲刺，再冲一次。',
+          stats: [
+            { label: '淘汰', value: String(this.kills) },
+            { label: '波次', value: `${Math.max(1, this.wave)} / 3` },
+            { label: '得分', value: String(this.score) }
+          ]
+        });
+        return;
+      }
+
+      if (this.player.dashTime > 0) {
+        this.player.dashTime -= dt;
+        this.player.x = clamp(this.player.x + this.player.dashX * 610 * dt / w, 0.035, 0.965);
+        this.player.y = clamp(this.player.y + this.player.dashY * 610 * dt / h, 0.05, 0.95);
+      } else {
+        let dx = 0;
+        let dy = 0;
+        if (this.manager.keys.has('KeyW')) dy -= 1;
+        if (this.manager.keys.has('KeyS')) dy += 1;
+        if (this.manager.keys.has('KeyA')) dx -= 1;
+        if (this.manager.keys.has('KeyD')) dx += 1;
+        if (dx || dy) {
+          const length = Math.hypot(dx, dy) || 1;
+          this.player.x = clamp(this.player.x + (dx / length) * 240 * dt / w, 0.035, 0.965);
+          this.player.y = clamp(this.player.y + (dy / length) * 240 * dt / h, 0.05, 0.95);
+        }
+      }
+      this.resolvePlayerCovers(w, h);
+
+      if (this.manager.mouse.down && this.player.fireCd <= 0) this.shoot();
+
+      this.spawnMarkers.forEach((marker) => { marker.timer -= dt; });
+      this.spawnMarkers.filter((marker) => marker.timer <= 0).forEach((marker) => this.spawnEnemy(marker));
+      this.spawnMarkers = this.spawnMarkers.filter((marker) => marker.timer > 0);
+
+      const playerPoint = this.playerPoint();
+      this.enemies.forEach((enemy) => {
+        if (enemy.hp <= 0) return;
+        enemy.fireCd -= dt;
+        enemy.meleeCd -= dt;
+        const point = { x: enemy.x * this.w, y: enemy.y * this.h };
+        const distance = dist(point.x, point.y, playerPoint.x, playerPoint.y);
+        const angle = Math.atan2(playerPoint.y - point.y, playerPoint.x - point.x);
+        if (distance > (enemy.brute ? 46 : 82)) {
+          enemy.x = clamp(enemy.x + Math.cos(angle) * enemy.speed * dt / w, 0.035, 0.965);
+          enemy.y = clamp(enemy.y + Math.sin(angle) * enemy.speed * dt / h, 0.05, 0.95);
+        }
+        if (distance < 43 && enemy.meleeCd <= 0) {
+          enemy.meleeCd = 1.05;
+          this.damagePlayer(enemy.brute ? 12 : 7);
+        }
+        if (distance < 390 && enemy.fireCd <= 0 && !this.pointInCover(point.x, point.y) && !this.lineBlocked(point.x, point.y, playerPoint.x, playerPoint.y)) {
+          enemy.fireCd = enemy.brute ? rand(1.5, 2.2) : rand(1.05, 1.85);
+          const bulletAngle = angle + rand(-0.055, 0.055);
+          this.enemyBullets.push({
+            x: point.x + Math.cos(bulletAngle) * 16,
+            y: point.y + Math.sin(bulletAngle) * 16,
+            vx: Math.cos(bulletAngle) * 225,
+            vy: Math.sin(bulletAngle) * 225,
+            life: 2.8,
+            damage: enemy.brute ? 11 : 7
+          });
+          this.fx.burst(point.x, point.y, '#ff9a6b', 2, 30, 1);
+        }
+      });
+
+      this.updateBullets(dt, w, h);
+
+      if (!this.enemies.length && !this.spawnMarkers.length) {
+        if (this.wave === 0) {
+          this.waveDelay -= dt;
+          if (this.waveDelay <= 0) this.startWave();
+        } else if (this.wave < 3) {
+          this.waveClearing += dt;
+          if (this.waveClearing > 1.35) {
+            this.waveClearing = 0;
+            this.startWave();
+          }
+        } else {
+          this.waveClearing += dt;
+          if (this.waveClearing > 1.1) {
+            this.finish({
+              win: true,
+              title: '封锁区已清除。',
+              desc: '蒸汽散去，街道重新安静下来。三波封锁部队都被击退。',
+              stats: [
+                { label: '淘汰', value: String(this.kills) },
+                { label: '得分', value: String(this.score) },
+                { label: '波次', value: '3 / 3' },
+                { label: '生命', value: `${Math.ceil(this.player.hp)}` }
+              ]
+            });
+          }
+        }
+      }
+      this.updateHUD();
+    }
+
+    resolvePlayerCovers(w, h) {
+      const radius = 15;
+      const p = this.playerPoint();
+      this.covers.forEach((cover) => {
+        const rx = cover.x * w;
+        const ry = cover.y * h;
+        const rw = cover.w * w;
+        const rh = cover.h * h;
+        const closestX = clamp(p.x, rx, rx + rw);
+        const closestY = clamp(p.y, ry, ry + rh);
+        const dx = p.x - closestX;
+        const dy = p.y - closestY;
+        const distance = Math.hypot(dx, dy);
+        if (distance < radius) {
+          if (distance > 0.0001) {
+            const push = radius - distance;
+            this.player.x += (dx / distance) * push / w;
+            this.player.y += (dy / distance) * push / h;
+          } else {
+            const left = Math.abs(p.x - rx);
+            const right = Math.abs(rx + rw - p.x);
+            const top = Math.abs(p.y - ry);
+            const bottom = Math.abs(ry + rh - p.y);
+            const nearest = Math.min(left, right, top, bottom);
+            if (nearest === left) this.player.x -= (radius + left) / w;
+            else if (nearest === right) this.player.x += (radius + right) / w;
+            else if (nearest === top) this.player.y -= (radius + top) / h;
+            else this.player.y += (radius + bottom) / h;
+          }
+          this.player.x = clamp(this.player.x, 0.035, 0.965);
+          this.player.y = clamp(this.player.y, 0.05, 0.95);
+        }
+      });
+    }
+
+    lineBlocked(x1, y1, x2, y2) {
+      const steps = 15;
+      for (let i = 1; i < steps; i += 1) {
+        const t = i / steps;
+        if (this.pointInCover(lerp(x1, x2, t), lerp(y1, y2, t))) return true;
+      }
+      return false;
+    }
+
+    damagePlayer(amount) {
+      if (!this.player || this.player.invuln > 0 || this.player.hp <= 0) return;
+      this.player.hp -= amount;
+      this.player.flash = 1;
+      this.shake = 5;
+      this.fx.burst(this.player.x * this.w, this.player.y * this.h, '#ff776f', 8, 90, 2);
+    }
+
+    damageEnemy(enemy, amount, x, y) {
+      if (!enemy || enemy.hp <= 0) return;
+      enemy.hp -= amount;
+      this.fx.burst(x, y, enemy.brute ? '#ffbb71' : '#ff8463', 7, 100, 2);
+      this.score += 12;
+      if (enemy.hp <= 0) {
+        this.kills += 1;
+        this.score += enemy.brute ? 140 : 70;
+        this.fx.ring(x, y, '#ffc579', 32, 0.35, 1.5);
+        this.fx.float(x, y - 8, `+${enemy.brute ? 140 : 70}`, '#ffd18a', 11);
+        this.enemies = this.enemies.filter((entry) => entry !== enemy);
+      }
+    }
+
+    updateBullets(dt, w, h) {
+      const playerPoint = this.playerPoint();
+      this.playerBullets.forEach((bullet) => {
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
+        bullet.life -= dt;
+        if (this.pointInCover(bullet.x, bullet.y)) {
+          bullet.life = 0;
+          this.fx.burst(bullet.x, bullet.y, '#bb9a6a', 4, 50, 1);
+          return;
+        }
+        const hit = this.enemies.find((enemy) => enemy.hp > 0 && dist(bullet.x, bullet.y, enemy.x * w, enemy.y * h) < enemy.radius + 2);
+        if (hit) {
+          bullet.life = 0;
+          this.damageEnemy(hit, bullet.damage, hit.x * w, hit.y * h);
+        }
+      });
+      this.playerBullets = this.playerBullets.filter((bullet) => bullet.life > 0 && bullet.x > -20 && bullet.x < w + 20 && bullet.y > -20 && bullet.y < h + 20);
+      this.enemyBullets.forEach((bullet) => {
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
+        bullet.life -= dt;
+        if (this.pointInCover(bullet.x, bullet.y)) {
+          bullet.life = 0;
+          this.fx.burst(bullet.x, bullet.y, '#d4a66e', 3, 40, 1);
+          return;
+        }
+        if (dist(bullet.x, bullet.y, playerPoint.x, playerPoint.y) < 16) {
+          bullet.life = 0;
+          this.damagePlayer(bullet.damage);
+        }
+      });
+      this.enemyBullets = this.enemyBullets.filter((bullet) => bullet.life > 0 && bullet.x > -20 && bullet.x < w + 20 && bullet.y > -20 && bullet.y < h + 20);
+    }
+
+    updateHUD() {
+      const remaining = this.enemies.length + this.spawnMarkers.length;
+      this.setHud({
+        objective: `清除封锁区 · 第 ${Math.max(1, Math.min(3, this.wave))}/3 波`,
+        sub: remaining ? `还剩 ${remaining} 名敌人 · 已淘汰 ${this.kills}` : '正在等待下一波增援',
+        score: String(this.score),
+        scoreLabel: '得分',
+        status: this.player ? `冲刺 ${this.player.dashCd > 0 ? `${this.player.dashCd.toFixed(1)}s` : '就绪'} · 脉冲 ${this.player.pulseCd > 0 ? `${this.player.pulseCd.toFixed(1)}s` : '就绪'}` : '',
+        health: this.player ? this.player.hp / this.player.maxHp : 1,
+        healthLabel: this.player ? `生命 ${Math.ceil(this.player.hp)}` : '',
+        progress: this.wave <= 3 ? (this.wave - 1 + (this.wave === 0 ? 0 : remaining ? 0.35 : 0.7)) / 3 : 1
+      });
+    }
+
+    draw(ctx, w, h) {
+      ctx.save();
+      if (this.shake > 0) ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
+      const background = ctx.createLinearGradient(0, 0, 0, h);
+      background.addColorStop(0, '#101a1a');
+      background.addColorStop(0.5, '#0a1413');
+      background.addColorStop(1, '#06100e');
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(83,122,113,.12)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 68) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 46) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(176,130,72,.15)';
+      ctx.beginPath();
+      ctx.moveTo(w * 0.08, 0);
+      ctx.lineTo(w * 0.13, h);
+      ctx.moveTo(w * 0.92, 0);
+      ctx.lineTo(w * 0.87, h);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      glowCircle(ctx, w * 0.18, h * 0.16, 140, '#ff9b63', 0.8);
+      glowCircle(ctx, w * 0.84, h * 0.2, 110, '#5cdbca', 0.8);
+      ctx.restore();
+
+      this.drawStreetDetails(ctx, w, h);
+      this.covers.forEach((cover) => this.drawCover(ctx, w, h, cover));
+
+      this.spawnMarkers.forEach((marker) => {
+        const x = marker.x * w;
+        const y = marker.y * h;
+        const pulse = 1 + Math.sin(this.time * 12) * 0.12;
+        ctx.save();
+        ctx.globalAlpha = 0.5 + Math.sin(this.time * 12) * 0.2;
+        ctx.strokeStyle = '#ff8a67';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.arc(x, y, 20 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff9f75';
+        ctx.fill();
+        ctx.restore();
+      });
+
+      this.enemies.forEach((enemy) => this.drawEnemy(ctx, w, h, enemy));
+      this.enemyBullets.forEach((bullet) => {
+        ctx.save();
+        ctx.strokeStyle = '#ff9d73';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#ff5e45';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(bullet.x, bullet.y);
+        ctx.lineTo(bullet.x - bullet.vx * 0.018, bullet.y - bullet.vy * 0.018);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.playerBullets.forEach((bullet) => {
+        ctx.save();
+        ctx.strokeStyle = '#a9fff2';
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = '#5df6e7';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(bullet.x, bullet.y);
+        ctx.lineTo(bullet.x - bullet.vx * 0.014, bullet.y - bullet.vy * 0.014);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.drawPlayer(ctx, w, h);
+      this.fx.draw(ctx);
+
+      const mouse = this.manager.mouse;
+      if (this.manager.mouse.down) {
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = '#b6fff3';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, 17, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawCrosshair(ctx, mouse.x, mouse.y, '#b6fff3', 12);
+      if (this.banner.timer > 0) {
+        ctx.save();
+        ctx.globalAlpha = clamp(this.banner.timer / 0.45, 0, 1);
+        ctx.textAlign = 'center';
+        fillRoundRect(ctx, w * 0.5 - 170, h * 0.15, 340, 30, 4, 'rgba(7,18,17,.76)');
+        ctx.strokeStyle = 'rgba(106,206,190,.2)';
+        ctx.strokeRect(w * 0.5 - 170, h * 0.15, 340, 30);
+        ctx.fillStyle = '#b9e3d9';
+        ctx.font = '600 11px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(this.banner.text, w * 0.5, h * 0.15 + 19);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    drawStreetDetails(ctx, w, h) {
+      this.steam.forEach((cloud) => {
+        const drift = Math.sin(this.time * 0.35 + cloud.phase) * 0.008;
+        const x = (cloud.x + drift) * w;
+        const y = cloud.y * h;
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, cloud.size);
+        gradient.addColorStop(0, 'rgba(179,205,192,.06)');
+        gradient.addColorStop(1, 'rgba(179,205,192,0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, cloud.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.save();
+      ctx.fillStyle = 'rgba(248,163,91,.18)';
+      ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('ALLEY 07 // SEALED', w * 0.07, h * 0.09);
+      ctx.fillStyle = 'rgba(93,211,195,.17)';
+      ctx.fillText('STEAM DISTRICT', w * 0.74, h * 0.09);
+      ctx.strokeStyle = 'rgba(228,167,92,.16)';
+      ctx.strokeRect(w * 0.07, h * 0.105, 130, 1);
+      ctx.strokeStyle = 'rgba(84,210,192,.13)';
+      ctx.strokeRect(w * 0.74, h * 0.105, 130, 1);
+      ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.1 + Math.sin(this.time * 1.2) * 0.04;
+      ctx.fillStyle = '#f2a15f';
+      ctx.beginPath();
+      ctx.arc(w * 0.08, h * 0.48, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#70e1d1';
+      ctx.beginPath();
+      ctx.arc(w * 0.93, h * 0.4, 23, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    drawCover(ctx, w, h, cover) {
+      const x = cover.x * w;
+      const y = cover.y * h;
+      const cw = cover.w * w;
+      const ch = cover.h * h;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      fillRoundRect(ctx, x + 5, y + 8, cw, ch, 4, 'rgba(0,0,0,.36)');
+      const metal = ctx.createLinearGradient(x, y, x, y + ch);
+      metal.addColorStop(0, '#4b3d2c');
+      metal.addColorStop(0.3, '#2b302b');
+      metal.addColorStop(1, '#131d1a');
+      fillRoundRect(ctx, x, y, cw, ch, 3, metal);
+      ctx.strokeStyle = 'rgba(215,160,89,.26)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,185,100,.14)';
+      for (let i = 1; i < 4; i += 1) {
+        const gx = x + (cw / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(gx, y + 3);
+        ctx.lineTo(gx, y + ch - 3);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(239,174,95,.34)';
+      ctx.fillRect(x + 4, y + 3, Math.min(24, cw * 0.2), 1);
+      ctx.restore();
+    }
+
+    drawEnemy(ctx, w, h, enemy) {
+      if (enemy.hp <= 0) return;
+      const x = enemy.x * w;
+      const y = enemy.y * h;
+      const angle = Math.atan2(this.playerPoint().y - y, this.playerPoint().x - x);
+      const radius = enemy.radius;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = 'rgba(0,0,0,.4)';
+      ctx.beginPath();
+      ctx.ellipse(0, radius * 0.45, radius * 0.85, radius * 0.34, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = enemy.brute ? 'rgba(255,144,75,.38)' : 'rgba(255,99,73,.26)';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = enemy.brute ? '#693a29' : '#422c27';
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = enemy.brute ? '#f3a45f' : '#e58367';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#ffb082';
+      ctx.beginPath();
+      ctx.moveTo(radius * 0.74, 0);
+      ctx.lineTo(radius * 0.4, -4);
+      ctx.lineTo(radius * 0.4, 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,224,193,.68)';
+      ctx.beginPath();
+      ctx.arc(radius * 0.26, 0, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+      if (enemy.brute) {
+        ctx.strokeStyle = 'rgba(255,180,105,.4)';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.52)';
+      ctx.fillRect(x - radius, y - radius - 10, radius * 2, 3);
+      ctx.fillStyle = enemy.brute ? '#f3ab69' : '#eb8466';
+      ctx.fillRect(x - radius, y - radius - 10, radius * 2 * clamp(enemy.hp / enemy.maxHp, 0, 1), 3);
+    }
+
+    drawPlayer(ctx, w, h) {
+      if (!this.player) return;
+      const x = this.player.x * w;
+      const y = this.player.y * h;
+      const angle = Math.atan2(this.manager.mouse.y - y, this.manager.mouse.x - x);
+      ctx.save();
+      if (this.player.invuln > 0) ctx.globalAlpha = 0.55 + Math.sin(this.time * 35) * 0.25;
+      if (this.player.dashTime > 0) {
+        glowCircle(ctx, x - this.player.dashX * 22, y - this.player.dashY * 22, 30, 'rgba(97,246,226,.2)', 0.8);
+      }
+      glowCircle(ctx, x, y, 48, 'rgba(86,238,220,.18)', 0.75);
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = 'rgba(11,20,20,.9)';
+      fillRoundRect(ctx, -11, -8, 42, 16, 8, 'rgba(11,20,20,.94)');
+      ctx.strokeStyle = 'rgba(112,240,224,.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#162d2b';
+      ctx.beginPath();
+      ctx.arc(0, 0, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#83f2e5';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.fillStyle = this.player.flash > 0 ? '#ffd0a3' : '#aafff1';
+      ctx.beginPath();
+      ctx.arc(3, 0, 4.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#d9b276';
+      ctx.fillRect(18, -2, 13, 4);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.54)';
+      ctx.fillRect(x - 25, y - 30, 50, 4);
+      ctx.fillStyle = '#83f2e5';
+      ctx.fillRect(x - 25, y - 30, 50 * clamp(this.player.hp / this.player.maxHp, 0, 1), 4);
+    }
+  }
+
+  /* ==========================================================================
+     Rust — First night
+     ========================================================================== */
+
+  class RustNight extends MiniGameBase {
+    constructor(manager) {
+      super(manager);
+      this.totalTime = 105;
+      this.nightAt = 45;
+      this.clock = 0;
+      this.player = null;
+      this.nodes = [];
+      this.wolves = [];
+      this.campfire = null;
+      this.inventory = { wood: 0, stone: 0, cloth: 0 };
+      this.nightAnnounced = false;
+      this.spawnTimer = 2;
+      this.shake = 0;
+    }
+
+    start() {
+      this.clock = 0;
+      this.player = { x: 0.5, y: 0.72, hp: 100, maxHp: 100, attackCd: 0, harvestCd: 0, swing: 0 };
+      this.wolves = [];
+      this.campfire = null;
+      this.inventory = { wood: 0, stone: 0, cloth: 0 };
+      this.nightAnnounced = false;
+      this.spawnTimer = 2.4;
+      this.kills = 0;
+      this.score = 0;
+      this.shake = 0;
+      this.nodes = [];
+      const types = [
+        { type: 'wood', count: 9, amount: 3 },
+        { type: 'stone', count: 7, amount: 2 },
+        { type: 'cloth', count: 5, amount: 1 }
+      ];
+      types.forEach((entry) => {
+        for (let i = 0; i < entry.count; i += 1) {
+          let x;
+          let y;
+          let tries = 0;
+          do {
+            x = rand(0.12, 0.88);
+            y = rand(0.18, 0.86);
+            tries += 1;
+          } while (dist(x, y, 0.5, 0.72) < 0.11 && tries < 30);
+          this.nodes.push({
+            type: entry.type, x, y, amount: entry.amount, max: entry.amount,
+            phase: rand(0, 6.2), size: rand(8, 14), depleted: false
+          });
+        }
+      });
+      this.toast('先采集 10 木材与 5 石料，按 F 点燃篝火。');
+      this.updateHUD();
+    }
+
+    get metric() {
+      return Math.min(this.w, this.h);
+    }
+
+    nearestNode() {
+      const player = { x: this.player.x * this.w, y: this.player.y * this.h };
+      return this.nodes.filter((node) => !node.depleted).map((node) => ({
+        node, distance: dist(player.x, player.y, node.x * this.w, node.y * this.h)
+      })).sort((a, b) => a.distance - b.distance)[0] || null;
+    }
+
+    harvest() {
+      if (this.player.harvestCd > 0) return;
+      const nearest = this.nearestNode();
+      if (!nearest || nearest.distance > this.metric * 0.14) {
+        this.toast('附近没有可采集的资源。');
+        return;
+      }
+      const node = nearest.node;
+      this.player.harvestCd = 0.34;
+      node.amount -= 1;
+      this.inventory[node.type] += 1;
+      if (node.amount <= 0) node.depleted = true;
+      const label = { wood: '木材', stone: '石料', cloth: '布料' }[node.type];
+      this.fx.burst(node.x * this.w, node.y * this.h, node.type === 'wood' ? '#d7a86c' : node.type === 'stone' ? '#a7b4b7' : '#d7d69b', 5, 65, 1.4);
+      this.fx.float(node.x * this.w, node.y * this.h - 10, `+1 ${label}`, '#efe2c4', 10);
+      this.updateHUD();
+    }
+
+    placeCampfire() {
+      if (this.campfire) {
+        this.toast('篝火已经点燃了。');
+        return;
+      }
+      if (this.inventory.wood < 10 || this.inventory.stone < 5) {
+        this.toast(`需要 10 木材和 5 石料 · 当前 ${this.inventory.wood}/${this.inventory.stone}`);
+        return;
+      }
+      this.inventory.wood -= 10;
+      this.inventory.stone -= 5;
+      this.campfire = { x: this.player.x, y: this.player.y, phase: 0 };
+      this.fx.ring(this.campfire.x * this.w, this.campfire.y * this.h, '#ffc46d', 74, 0.6, 2);
+      this.toast('篝火已点燃。它会驱赶靠近的野兽。');
+      this.updateHUD();
+    }
+
+    attack() {
+      if (this.player.attackCd > 0) return;
+      this.player.attackCd = 0.42;
+      this.player.swing = 0.18;
+      const player = { x: this.player.x * this.w, y: this.player.y * this.h };
+      const mouse = { x: this.manager.mouse.x, y: this.manager.mouse.y };
+      const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+      const candidates = this.wolves.map((wolf) => ({
+        wolf, distance: dist(player.x, player.y, wolf.x * this.w, wolf.y * this.h)
+      })).filter((entry) => entry.distance < this.metric * 0.18).sort((a, b) => {
+        const aAngle = Math.abs(Math.atan2(a.wolf.y * this.h - player.y, a.wolf.x * this.w - player.x) - angle);
+        const bAngle = Math.abs(Math.atan2(b.wolf.y * this.h - player.y, b.wolf.x * this.w - player.x) - angle);
+        return aAngle - bAngle;
+      });
+      const target = candidates.find((entry) => {
+        const wolfAngle = Math.atan2(entry.wolf.y * this.h - player.y, entry.wolf.x * this.w - player.x);
+        return Math.abs(Math.atan2(Math.sin(wolfAngle - angle), Math.cos(wolfAngle - angle))) < 1.08;
+      }) || candidates[0];
+      this.fx.ring(player.x, player.y, 'rgba(233,205,158,.4)', 42, 0.18, 1);
+      if (!target) return;
+      const point = { x: target.wolf.x * this.w, y: target.wolf.y * this.h };
+      target.wolf.hp -= 36;
+      this.fx.burst(point.x, point.y, '#c7b08c', 8, 110, 2);
+      this.shake = 4;
+      if (target.wolf.hp <= 0) {
+        this.kills += 1;
+        this.score += 1;
+        this.inventory.cloth += 1;
+        this.fx.ring(point.x, point.y, '#e1c284', 30, 0.35, 1.5);
+        this.wolves = this.wolves.filter((wolf) => wolf !== target.wolf);
+      }
+    }
+
+    pointerDown() {
+      this.attack();
+    }
+
+    keyDown(code) {
+      if (code === 'KeyE') this.harvest();
+      if (code === 'KeyF') this.placeCampfire();
+    }
+
+    spawnWolf() {
+      const edge = Math.floor(Math.random() * 4);
+      let x = 0.5;
+      let y = 0.5;
+      if (edge === 0) { x = rand(0.05, 0.95); y = 0.06; }
+      else if (edge === 1) { x = 0.95; y = rand(0.08, 0.9); }
+      else if (edge === 2) { x = rand(0.05, 0.95); y = 0.94; }
+      else { x = 0.05; y = rand(0.08, 0.9); }
+      this.wolves.push({
+        x, y, hp: 42, maxHp: 42, speed: rand(52, 74), attackCd: rand(0.4, 1.2), phase: rand(0, 6.2)
+      });
+    }
+
+    update(dt, w, h) {
+      super.update(dt, w, h);
+      if (this.ended) return;
+      this.clock += dt;
+      this.player.attackCd = Math.max(0, this.player.attackCd - dt);
+      this.player.harvestCd = Math.max(0, this.player.harvestCd - dt);
+      this.player.swing = Math.max(0, this.player.swing - dt);
+      const night = this.clock >= this.nightAt;
+      if (night && !this.nightAnnounced) {
+        this.nightAnnounced = true;
+        this.toast('夜幕降临。野狼开始靠近你的营地。', 'danger');
+      }
+      let dx = 0;
+      let dy = 0;
+      if (this.manager.keys.has('KeyW')) dy -= 1;
+      if (this.manager.keys.has('KeyS')) dy += 1;
+      if (this.manager.keys.has('KeyA')) dx -= 1;
+      if (this.manager.keys.has('KeyD')) dx += 1;
+      if (dx || dy) {
+        const length = Math.hypot(dx, dy) || 1;
+        this.player.x = clamp(this.player.x + (dx / length) * 220 * dt / w, 0.08, 0.92);
+        this.player.y = clamp(this.player.y + (dy / length) * 220 * dt / h, 0.12, 0.9);
+      }
+      const playerPoint = { x: this.player.x * w, y: this.player.y * h };
+
+      if (night) {
+        this.spawnTimer -= dt;
+        if (this.spawnTimer <= 0) {
+          if (this.wolves.length < 8) this.spawnWolf();
+          this.spawnTimer = Math.max(2.4, 4.1 - (this.clock - this.nightAt) * 0.014);
+        }
+      }
+
+      this.wolves.forEach((wolf) => {
+        wolf.attackCd -= dt;
+        const point = { x: wolf.x * w, y: wolf.y * h };
+        const angle = Math.atan2(playerPoint.y - point.y, playerPoint.x - point.x);
+        wolf.x = clamp(wolf.x + Math.cos(angle) * wolf.speed * dt / w, 0.02, 0.98);
+        wolf.y = clamp(wolf.y + Math.sin(angle) * wolf.speed * dt / h, 0.02, 0.98);
+        if (dist(point.x, point.y, playerPoint.x, playerPoint.y) < 28 && wolf.attackCd <= 0) {
+          wolf.attackCd = 1.15;
+          this.player.hp -= 9;
+          this.shake = 6;
+          this.fx.burst(playerPoint.x, playerPoint.y, '#d56b55', 9, 110, 2);
+        }
+        if (this.campfire) {
+          const firePoint = { x: this.campfire.x * w, y: this.campfire.y * h };
+          if (dist(point.x, point.y, firePoint.x, firePoint.y) < this.metric * 0.15) {
+            wolf.hp -= 28 * dt;
+            if (Math.random() < dt * 10) this.fx.burst(point.x, point.y, '#ffb25f', 2, 55, 1);
+            if (wolf.hp <= 0) {
+              this.kills += 1;
+              this.score += 1;
+              this.inventory.cloth += 1;
+              this.fx.burst(point.x, point.y, '#e4c37d', 12, 120, 2);
+            }
+          }
+        }
+      });
+      this.wolves = this.wolves.filter((wolf) => wolf.hp > 0);
+      if (this.campfire) {
+        const firePoint = { x: this.campfire.x * w, y: this.campfire.y * h };
+        if (dist(playerPoint.x, playerPoint.y, firePoint.x, firePoint.y) < this.metric * 0.15) {
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + dt * 5);
+        }
+      }
+      this.player.hp = Math.max(0, this.player.hp);
+      if (this.player.hp <= 0) {
+        this.finish({
+          win: false,
+          title: '你倒在了第一夜。',
+          desc: '野兽从黑暗里围了上来。下一次，早点把篝火点燃。',
+          stats: [
+            { label: '存活', value: formatTime(this.clock) },
+            { label: '击杀', value: String(this.kills) },
+            { label: '篝火', value: this.campfire ? '已点燃' : '未点燃' }
+          ]
+        });
+      } else if (this.clock >= this.totalTime) {
+        this.finish({
+          win: true,
+          title: '你看到了黎明。',
+          desc: this.campfire ? '篝火还在燃烧，海平线上出现了第一层灰蓝色的光。' : '你撑过了第一夜，但下次最好先造一座篝火。',
+          stats: [
+            { label: '存活', value: formatTime(this.totalTime) },
+            { label: '击杀', value: String(this.kills) },
+            { label: '木材', value: String(this.inventory.wood) },
+            { label: '篝火', value: this.campfire ? '已点燃' : '未点燃' }
+          ]
+        });
+      }
+      this.updateHUD();
+    }
+
+    updateHUD() {
+      const night = this.clock >= this.nightAt;
+      const fireText = this.campfire ? '篝火燃烧中' : '篝火未点燃';
+      this.setHud({
+        objective: this.campfire ? '守住篝火，撑到黎明' : '采集资源并点燃篝火',
+        sub: `木材 ${this.inventory.wood}/10 · 石料 ${this.inventory.stone}/5 · 布料 ${this.inventory.cloth} · 距黎明 ${formatTime(this.totalTime - this.clock)}`,
+        score: String(this.kills),
+        scoreLabel: '击杀',
+        status: `${night ? '夜晚' : '白天'} · ${fireText}${this.campfire ? '' : ' · F 放置'}`,
+        health: this.player ? this.player.hp / this.player.maxHp : 1,
+        healthLabel: this.player ? `生命 ${Math.ceil(this.player.hp)}` : '',
+        progress: clamp(this.clock / this.totalTime, 0, 1)
+      });
+    }
+
+    draw(ctx, w, h) {
+      ctx.save();
+      if (this.shake > 0) ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
+      const night = clamp((this.clock - this.nightAt + 8) / 18, 0, 1);
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      if (night > 0.2) {
+        sky.addColorStop(0, '#08111b');
+        sky.addColorStop(0.62, '#0c1b1b');
+        sky.addColorStop(1, '#07110f');
+      } else {
+        sky.addColorStop(0, '#3f6d75');
+        sky.addColorStop(0.48, '#779282');
+        sky.addColorStop(1, '#4f6f54');
+      }
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.translate(w * 0.5, h * 0.53);
+      ctx.fillStyle = night > 0.2 ? '#162a2c' : '#517e7d';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, w * 0.56, h * 0.53, -0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = night > 0.2 ? '#1a3027' : '#647f59';
+      ctx.beginPath();
+      ctx.ellipse(0, h * 0.015, w * 0.5, h * 0.46, -0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = night > 0.2 ? '#233c2b' : '#78905f';
+      ctx.beginPath();
+      ctx.ellipse(-w * 0.03, h * 0.045, w * 0.4, h * 0.36, 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(208,217,182,.08)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 7; i += 1) {
+        const x = w * 0.16 + i * w * 0.11;
+        ctx.beginPath();
+        ctx.moveTo(x, h * 0.2);
+        ctx.quadraticCurveTo(x + 28, h * 0.55, x - 10, h * 0.88);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      this.nodes.forEach((node) => this.drawNode(ctx, w, h, node));
+      if (this.campfire) this.drawCampfire(ctx, w, h);
+      this.wolves.forEach((wolf) => this.drawWolf(ctx, w, h, wolf));
+      this.drawPlayer(ctx, w, h);
+      this.fx.draw(ctx);
+
+      if (night > 0.2) {
+        ctx.fillStyle = `rgba(2,7,12,${0.52 * night})`;
+        ctx.fillRect(0, 0, w, h);
+        const player = { x: this.player.x * w, y: this.player.y * h };
+        glowCircle(ctx, player.x, player.y, 120, 'rgba(255,173,90,.12)', 0.8);
+        if (this.campfire) {
+          const fire = { x: this.campfire.x * w, y: this.campfire.y * h };
+          glowCircle(ctx, fire.x, fire.y, this.metric * 0.24, 'rgba(255,183,91,.24)', 0.9);
+        }
+        if (this.wolves.length) {
+          ctx.fillStyle = 'rgba(255,120,94,.55)';
+          ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+          ctx.fillText(`WOLVES ${this.wolves.length}`, w - 110, h * 0.14);
+        }
+      }
+
+      const nearest = this.nearestNode();
+      if (nearest && nearest.distance < this.metric * 0.14) {
+        const label = { wood: '木材', stone: '石料', cloth: '布料' }[nearest.node.type];
+        ctx.save();
+        ctx.textAlign = 'center';
+        fillRoundRect(ctx, w * 0.5 - 115, h * 0.83, 230, 30, 5, 'rgba(7,13,11,.72)');
+        ctx.strokeStyle = 'rgba(218,190,139,.2)';
+        ctx.strokeRect(w * 0.5 - 115, h * 0.83, 230, 30);
+        ctx.fillStyle = '#e6d4ad';
+        ctx.font = '500 10px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(`${label} · 按 E 采集 · 剩余 ${nearest.node.amount}`, w * 0.5, h * 0.83 + 19);
+        ctx.restore();
+      } else if (!this.campfire) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        fillRoundRect(ctx, w * 0.5 - 150, h * 0.83, 300, 30, 5, 'rgba(7,13,11,.55)');
+        ctx.fillStyle = 'rgba(222,205,166,.7)';
+        ctx.font = '500 9px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText('收集 10 木材 + 5 石料 · 按 F 点燃篝火', w * 0.5, h * 0.83 + 19);
+        ctx.restore();
+      }
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = night > 0.2 ? 'rgba(202,216,221,.6)' : 'rgba(248,238,205,.75)';
+      ctx.font = '600 12px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(night > 0.2 ? 'NIGHT · SURVIVE UNTIL DAWN' : 'DAY · GATHER AND BUILD', w * 0.5, h * 0.17);
+      ctx.restore();
+      ctx.restore();
+    }
+
+    drawNode(ctx, w, h, node) {
+      if (node.depleted) {
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#998b75';
+        ctx.beginPath();
+        ctx.arc(node.x * w, node.y * h, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+      const x = node.x * w;
+      const y = node.y * h + Math.sin(this.time * 1.6 + node.phase) * 2;
+      ctx.save();
+      if (node.type === 'wood') {
+        ctx.strokeStyle = '#5b432d';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x, y + node.size);
+        ctx.lineTo(x, y - node.size * 1.2);
+        ctx.stroke();
+        ctx.fillStyle = '#7d9d58';
+        ctx.beginPath();
+        ctx.arc(x, y - node.size * 1.4, node.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(177,212,126,.42)';
+        ctx.beginPath();
+        ctx.arc(x - 3, y - node.size * 1.7, node.size * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (node.type === 'stone') {
+        ctx.fillStyle = '#6b7977';
+        ctx.beginPath();
+        ctx.moveTo(x - node.size, y + node.size * 0.6);
+        ctx.lineTo(x - node.size * 0.5, y - node.size * 0.75);
+        ctx.lineTo(x + node.size * 0.5, y - node.size);
+        ctx.lineTo(x + node.size, y + node.size * 0.55);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(218,231,218,.22)';
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = '#b4b77b';
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 5; i += 1) {
+          const angle = (i / 5) * Math.PI * 2 + node.phase;
+          ctx.beginPath();
+          ctx.moveTo(x, y + node.size * 0.6);
+          ctx.quadraticCurveTo(x + Math.cos(angle) * 8, y - 4, x + Math.cos(angle) * node.size, y - node.size);
+          ctx.stroke();
+        }
+      }
+      ctx.fillStyle = 'rgba(240,229,199,.55)';
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText({ wood: 'WOOD', stone: 'STONE', cloth: 'FIBER' }[node.type], x, y + node.size + 11);
+      ctx.restore();
+    }
+
+    drawCampfire(ctx, w, h) {
+      const x = this.campfire.x * w;
+      const y = this.campfire.y * h;
+      const flicker = 1 + Math.sin(this.time * 13) * 0.06 + Math.sin(this.time * 21) * 0.03;
+      ctx.save();
+      glowCircle(ctx, x, y, this.metric * 0.26, 'rgba(255,169,73,.32)', 0.9);
+      ctx.fillStyle = '#45301d';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 4, 18, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#7e5831';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 12, y + 5);
+      ctx.lineTo(x + 11, y - 2);
+      ctx.moveTo(x - 9, y - 3);
+      ctx.lineTo(x + 13, y + 6);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,168,68,.85)';
+      ctx.beginPath();
+      ctx.moveTo(x - 8, y - 2);
+      ctx.quadraticCurveTo(x - 14, y - 20 * flicker, x, y - 29 * flicker);
+      ctx.quadraticCurveTo(x + 14, y - 13 * flicker, x + 8, y - 1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,230,155,.9)';
+      ctx.beginPath();
+      ctx.moveTo(x - 3, y - 2);
+      ctx.quadraticCurveTo(x - 4, y - 12, x + 1, y - 19 * flicker);
+      ctx.quadraticCurveTo(x + 8, y - 8, x + 4, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    drawWolf(ctx, w, h, wolf) {
+      if (wolf.hp <= 0) return;
+      const x = wolf.x * w;
+      const y = wolf.y * h;
+      const player = { x: this.player.x * w, y: this.player.y * h };
+      const angle = Math.atan2(player.y - y, player.x - x);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = 'rgba(0,0,0,.4)';
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 15, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#303332';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 16, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#252a29';
+      ctx.beginPath();
+      ctx.moveTo(10, -3);
+      ctx.lineTo(22, -4);
+      ctx.lineTo(16, 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#c96d50';
+      ctx.beginPath();
+      ctx.arc(14, -4, 1.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1b2020';
+      ctx.beginPath();
+      ctx.moveTo(-13, -6);
+      ctx.lineTo(-20, -8);
+      ctx.lineTo(-15, 1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(x - 14, y - 18, 28, 3);
+      ctx.fillStyle = '#d37159';
+      ctx.fillRect(x - 14, y - 18, 28 * clamp(wolf.hp / wolf.maxHp, 0, 1), 3);
+    }
+
+    drawPlayer(ctx, w, h) {
+      const x = this.player.x * w;
+      const y = this.player.y * h;
+      const angle = Math.atan2(this.manager.mouse.y - y, this.manager.mouse.x - x);
+      ctx.save();
+      glowCircle(ctx, x, y, 46, 'rgba(245,213,154,.12)', 0.8);
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 15, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#5a4f3b';
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#dac296';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = '#d1b484';
+      ctx.beginPath();
+      ctx.arc(0, -9, 6.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#c1a56f';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(7, -2);
+      ctx.lineTo(17, -9);
+      ctx.stroke();
+      ctx.fillStyle = '#8a7653';
+      ctx.beginPath();
+      ctx.arc(18, -10, 4, 0, Math.PI * 2);
+      ctx.fill();
+      if (this.player.swing > 0) {
+        ctx.strokeStyle = 'rgba(255,231,183,.55)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 31, -2.2, -0.55);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(x - 24, y - 31, 48, 4);
+      ctx.fillStyle = '#e2c88d';
+      ctx.fillRect(x - 24, y - 31, 48 * clamp(this.player.hp / this.player.maxHp, 0, 1), 4);
+    }
+  }
+
+  /* ==========================================================================
+     ELDEN RING — The Omen duel
+     ========================================================================== */
+
+  class EldenDuel extends MiniGameBase {
+    constructor(manager) {
+      super(manager);
+      this.boss = null;
+      this.player = null;
+      this.attacks = [];
+      this.projectiles = [];
+      this.shake = 0;
+    }
+
+    start() {
+      this.player = {
+        x: 0.5, y: 0.78, hp: 100, maxHp: 100, flasks: 2, attackCd: 0, flaskCd: 0,
+        dashCd: 0, dashTime: 0, dashX: 0, dashY: 0, invuln: 0, flash: 0, swing: 0
+      };
+      this.boss = {
+        x: 0.5, y: 0.32, hp: 360, maxHp: 360, attackTimer: 1.8, cooldown: 0,
+        phase: 1, flash: 0, step: 0
+      };
+      this.attacks = [];
+      this.projectiles = [];
+      this.shake = 0;
+      this.updateHUD();
+    }
+
+    get metric() {
+      return Math.min(this.w, this.h);
+    }
+
+    points() {
+      return {
+        player: { x: this.player.x * this.w, y: this.player.y * this.h },
+        boss: { x: this.boss.x * this.w, y: this.boss.y * this.h }
+      };
+    }
+
+    keyDown(code) {
+      if (code === 'ShiftLeft' || code === 'ShiftRight') this.roll();
+      if (code === 'KeyE') this.drinkFlask();
+    }
+
+    pointerDown() {
+      this.attack();
+    }
+
+    roll() {
+      if (!this.player || this.player.dashCd > 0) {
+        if (this.player) this.toast(`翻滚冷却中 · ${this.player.dashCd.toFixed(1)} 秒`);
+        return;
+      }
+      let x = (this.manager.keys.has('KeyD') ? 1 : 0) - (this.manager.keys.has('KeyA') ? 1 : 0);
+      let y = (this.manager.keys.has('KeyS') ? 1 : 0) - (this.manager.keys.has('KeyW') ? 1 : 0);
+      if (!x && !y) {
+        const points = this.points();
+        const angle = Math.atan2(points.player.y - points.boss.y, points.player.x - points.boss.x);
+        x = Math.cos(angle);
+        y = Math.sin(angle);
+      }
+      const length = Math.hypot(x, y) || 1;
+      this.player.dashX = x / length;
+      this.player.dashY = y / length;
+      this.player.dashTime = 0.24;
+      this.player.invuln = 0.38;
+      this.player.dashCd = 0.95;
+      const points = this.points();
+      this.fx.ring(points.player.x, points.player.y, 'rgba(225,203,131,.55)', 32, 0.3, 1.4);
+    }
+
+    drinkFlask() {
+      if (!this.player || this.player.flasks <= 0 || this.player.flaskCd > 0) {
+        if (this.player?.flasks === 0) this.toast('圣杯瓶已经空了。');
+        return;
+      }
+      this.player.flasks -= 1;
+      this.player.flaskCd = 1.2;
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 42);
+      const points = this.points();
+      this.fx.ring(points.player.x, points.player.y, '#e7c97d', 46, 0.55, 1.8);
+      this.fx.float(points.player.x, points.player.y - 28, '+42', '#f2dd9e', 14);
+      this.toast(`红露滴圣杯瓶 · 剩余 ${this.player.flasks} 瓶`);
+    }
+
+    attack() {
+      if (!this.player || this.player.attackCd > 0 || this.player.dashTime > 0) return;
+      this.player.attackCd = 0.48;
+      this.player.swing = 0.2;
+      const points = this.points();
+      const mouseAngle = Math.atan2(this.manager.mouse.y - points.player.y, this.manager.mouse.x - points.player.x);
+      const bossAngle = Math.atan2(points.boss.y - points.player.y, points.boss.x - points.player.x);
+      const difference = Math.abs(Math.atan2(Math.sin(bossAngle - mouseAngle), Math.cos(bossAngle - mouseAngle)));
+      const distance = dist(points.player.x, points.player.y, points.boss.x, points.boss.y);
+      this.fx.ring(points.player.x, points.player.y, 'rgba(245,220,163,.5)', 52, 0.2, 1.6);
+      if (distance > this.metric * 0.19 || difference > 1.45) return;
+      this.damageBoss(20);
+      this.fx.burst(points.boss.x, points.boss.y, '#ffd992', 13, 150, 2.6);
+      this.shake = 6;
+    }
+
+    damageBoss(amount) {
+      if (!this.boss || this.boss.hp <= 0) return;
+      this.boss.hp -= amount;
+      this.boss.flash = 0.12;
+      if (this.boss.hp <= 0) {
+        this.boss.hp = 0;
+        const points = this.points();
+        this.fx.burst(points.boss.x, points.boss.y, '#f6d57f', 55, 320, 4);
+        this.fx.ring(points.boss.x, points.boss.y, '#ffe6a0', 140, 0.9, 3);
+        this.shake = 13;
+        this.finish({
+          win: true,
+          title: '恶兆守卫倒下了。',
+          desc: '黄金雾散开，巨斧落地。褪色者跨过了第一道门槛。',
+          stats: [
+            { label: '用时', value: formatTime(this.time) },
+            { label: '剩余生命', value: `${Math.ceil(this.player.hp)}` },
+            { label: '圣杯瓶', value: String(this.player.flasks) },
+            { label: '伤害', value: '360' }
+          ]
+        });
+        return;
+      }
+      if (this.boss.phase === 1 && this.boss.hp <= this.boss.maxHp * 0.5) {
+        this.boss.phase = 2;
+        this.boss.attackTimer = 0.9;
+        this.toast('恶兆守卫进入第二阶段 · 攻击更快了', 'danger');
+        const points = this.points();
+        this.fx.ring(points.boss.x, points.boss.y, '#f06f55', 100, 0.7, 3);
+        this.shake = 9;
+      }
+    }
+
+    damagePlayer(amount) {
+      if (!this.player || this.player.invuln > 0 || this.player.hp <= 0) return;
+      this.player.hp -= amount;
+      this.player.flash = 1;
+      this.shake = 8;
+      const points = this.points();
+      this.fx.burst(points.player.x, points.player.y, '#e78268', 12, 140, 2.4);
+      if (this.player.hp <= 0) {
+        this.player.hp = 0;
+        this.finish({
+          win: false,
+          title: '你死亡了。',
+          desc: '黄金雾门再次合拢。褪色者会在赐福处醒来。',
+          stats: [
+            { label: '用时', value: formatTime(this.time) },
+            { label: '首领生命', value: `${Math.ceil(this.boss.hp)} / ${this.boss.maxHp}` },
+            { label: '阶段', value: String(this.boss.phase) }
+          ]
+        });
+      }
+    }
+
+    startBossAttack() {
+      const boss = this.boss;
+      const points = this.points();
+      const angle = Math.atan2(points.player.y - points.boss.y, points.player.x - points.boss.x);
+      const phaseTwo = boss.phase === 2;
+      const options = phaseTwo ? ['slam', 'sweep', 'charge', 'knives'] : ['slam', 'sweep', 'charge'];
+      let type = pick(options);
+      if (dist(points.player.x, points.player.y, points.boss.x, points.boss.y) > this.metric * 0.32 && type === 'slam') type = phaseTwo ? 'knives' : 'charge';
+      const duration = type === 'knives' ? 0.82 : type === 'charge' ? 1.02 : type === 'sweep' ? 0.92 : 1.05;
+      this.attacks.push({
+        type, age: 0, duration,
+        x: points.player.x / this.w,
+        y: points.player.y / this.h,
+        angle,
+        radius: this.metric * 0.095,
+        hit: false
+      });
+      this.toast(type === 'slam' ? '巨斧抬起 · 离开落点' : type === 'sweep' ? '横扫预警' : type === 'charge' ? '冲锋路径出现' : '黄金短刀正在凝聚', 'danger');
+    }
+
+    executeBossAttack(attack) {
+      const points = this.points();
+      const playerPoint = points.player;
+      if (attack.type === 'slam') {
+        const targetX = attack.x * this.w;
+        const targetY = attack.y * this.h;
+        this.fx.ring(targetX, targetY, '#e6a766', attack.radius * 1.4, 0.5, 3);
+        this.fx.burst(targetX, targetY, '#d4a05f', 30, 230, 3.4);
+        this.shake = 12;
+        if (dist(playerPoint.x, playerPoint.y, targetX, targetY) < attack.radius) this.damagePlayer(24);
+      } else if (attack.type === 'sweep') {
+        const range = this.metric * 0.31;
+        const halfAngle = 0.66;
+        const angleToPlayer = Math.atan2(playerPoint.y - points.boss.y, playerPoint.x - points.boss.x);
+        const difference = Math.abs(Math.atan2(Math.sin(angleToPlayer - attack.angle), Math.cos(angleToPlayer - attack.angle)));
+        this.fx.ring(points.boss.x, points.boss.y, '#e0a463', range, 0.45, 3);
+        this.shake = 9;
+        if (dist(playerPoint.x, playerPoint.y, points.boss.x, points.boss.y) < range && difference < halfAngle) this.damagePlayer(21);
+      } else if (attack.type === 'charge') {
+        const range = Math.max(this.w, this.h);
+        this.shake = 10;
+        let closest = Infinity;
+        for (let i = 0; i <= 18; i += 1) {
+          const t = i / 18;
+          const x = points.boss.x + Math.cos(attack.angle) * range * t;
+          const y = points.boss.y + Math.sin(attack.angle) * range * t;
+          closest = Math.min(closest, dist(playerPoint.x, playerPoint.y, x, y));
+        }
+        this.fx.burst(points.boss.x, points.boss.y, '#d2a568', 20, 240, 3);
+        if (closest < 38) this.damagePlayer(27);
+      } else if (attack.type === 'knives') {
+        for (let i = -2; i <= 2; i += 1) {
+          const angle = attack.angle + i * 0.14;
+          this.projectiles.push({
+            x: points.boss.x + Math.cos(angle) * 38,
+            y: points.boss.y + Math.sin(angle) * 38,
+            vx: Math.cos(angle) * 235,
+            vy: Math.sin(angle) * 235,
+            life: 2.5
+          });
+        }
+        this.fx.ring(points.boss.x, points.boss.y, '#f0c16e', 80, 0.4, 2);
+      }
+    }
+
+    update(dt, w, h) {
+      super.update(dt, w, h);
+      if (this.ended || !this.player || !this.boss) return;
+      this.player.attackCd = Math.max(0, this.player.attackCd - dt);
+      this.player.flaskCd = Math.max(0, this.player.flaskCd - dt);
+      this.player.dashCd = Math.max(0, this.player.dashCd - dt);
+      this.player.invuln = Math.max(0, this.player.invuln - dt);
+      this.player.flash = Math.max(0, this.player.flash - dt * 4);
+      this.player.swing = Math.max(0, this.player.swing - dt);
+      this.boss.flash = Math.max(0, this.boss.flash - dt);
+      this.boss.cooldown = Math.max(0, this.boss.cooldown - dt);
+      this.boss.step += dt;
+
+      let moveX = 0;
+      let moveY = 0;
+      if (this.manager.keys.has('KeyW')) moveY -= 1;
+      if (this.manager.keys.has('KeyS')) moveY += 1;
+      if (this.manager.keys.has('KeyA')) moveX -= 1;
+      if (this.manager.keys.has('KeyD')) moveX += 1;
+      if (this.player.dashTime > 0) {
+        this.player.dashTime -= dt;
+        this.player.x = clamp(this.player.x + this.player.dashX * 440 * dt / w, 0.06, 0.94);
+        this.player.y = clamp(this.player.y + this.player.dashY * 440 * dt / h, 0.36, 0.92);
+      } else if (moveX || moveY) {
+        const length = Math.hypot(moveX, moveY) || 1;
+        this.player.x = clamp(this.player.x + (moveX / length) * 215 * dt / w, 0.06, 0.94);
+        this.player.y = clamp(this.player.y + (moveY / length) * 215 * dt / h, 0.33, 0.92);
+      }
+
+      const points = this.points();
+      const distance = dist(points.player.x, points.player.y, points.boss.x, points.boss.y);
+      if (!this.attacks.length && this.boss.cooldown <= 0) {
+        if (distance > this.metric * 0.15) {
+          const angle = Math.atan2(points.player.y - points.boss.y, points.player.x - points.boss.x);
+          const speed = this.boss.phase === 2 ? 82 : 60;
+          this.boss.x = clamp(this.boss.x + Math.cos(angle) * speed * dt / w, 0.12, 0.88);
+          this.boss.y = clamp(this.boss.y + Math.sin(angle) * speed * dt / h, 0.16, 0.66);
+        }
+        this.boss.attackTimer -= dt;
+        if (this.boss.attackTimer <= 0) {
+          this.startBossAttack();
+          this.boss.attackTimer = this.boss.phase === 2 ? rand(1.15, 1.8) : rand(1.6, 2.4);
+        }
+      }
+
+      this.attacks.forEach((attack) => {
+        attack.age += dt;
+        if (!attack.hit && attack.age >= attack.duration) {
+          attack.hit = true;
+          this.executeBossAttack(attack);
+        }
+      });
+      this.attacks = this.attacks.filter((attack) => attack.age < attack.duration + 0.4);
+      this.projectiles.forEach((projectile) => {
+        projectile.x += projectile.vx * dt;
+        projectile.y += projectile.vy * dt;
+        projectile.life -= dt;
+        if (dist(projectile.x, projectile.y, points.player.x, points.player.y) < 17) {
+          projectile.life = 0;
+          this.damagePlayer(14);
+        }
+      });
+      this.projectiles = this.projectiles.filter((projectile) => projectile.life > 0);
+      if (this.boss.cooldown <= 0 && !this.attacks.length && Math.random() < dt * 0.1 && this.boss.phase === 2) {
+        this.boss.cooldown = 0.7;
+      }
+      this.updateHUD();
+    }
+
+    updateHUD() {
+      this.setHud({
+        objective: '击败恶兆守卫',
+        sub: `首领生命 ${Math.ceil(this.boss?.hp || 0)} / ${this.boss?.maxHp || 0} · 第 ${this.boss?.phase || 1} 阶段`,
+        score: formatTime(this.time),
+        scoreLabel: '用时',
+        status: this.player ? `圣杯瓶 ×${this.player.flasks} · 翻滚 ${this.player.dashCd > 0 ? `${this.player.dashCd.toFixed(1)}s` : '就绪'}` : '',
+        health: this.player ? this.player.hp / this.player.maxHp : 1,
+        healthLabel: this.player ? `生命 ${Math.ceil(this.player.hp)}` : '',
+        progress: this.boss ? 1 - this.boss.hp / this.boss.maxHp : 0
+      });
+    }
+
+    draw(ctx, w, h) {
+      if (!this.player || !this.boss) return;
+      ctx.save();
+      if (this.shake > 0) ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
+      const background = ctx.createRadialGradient(w * 0.5, h * 0.1, 20, w * 0.5, h * 0.45, Math.max(w, h) * 0.7);
+      background.addColorStop(0, '#6e6540');
+      background.addColorStop(0.18, '#302f24');
+      background.addColorStop(0.62, '#141b16');
+      background.addColorStop(1, '#080c09');
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+
+      this.drawErdtree(ctx, w, h);
+      this.drawArenaFloor(ctx, w, h);
+      this.drawAttacks(ctx, w, h);
+      this.drawBoss(ctx, w, h);
+      this.projectiles.forEach((projectile) => {
+        ctx.save();
+        ctx.strokeStyle = '#f2cf7b';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#efb54f';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(projectile.x, projectile.y);
+        ctx.lineTo(projectile.x - projectile.vx * 0.022, projectile.y - projectile.vy * 0.022);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.drawPlayer(ctx, w, h);
+      this.fx.draw(ctx);
+      this.drawBossHealth(ctx, w, h);
+
+      if (this.player.flash > 0) {
+        ctx.fillStyle = `rgba(152,32,18,${this.player.flash * 0.22})`;
+        ctx.fillRect(0, 0, w, h);
+      }
+      ctx.restore();
+    }
+
+    drawErdtree(ctx, w, h) {
+      ctx.save();
+      const x = w * 0.5;
+      const y = h * 0.04;
+      const glow = ctx.createRadialGradient(x, y + 90, 10, x, y + 90, w * 0.27);
+      glow.addColorStop(0, 'rgba(235,208,125,.18)');
+      glow.addColorStop(1, 'rgba(235,208,125,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h * 0.45);
+      ctx.strokeStyle = 'rgba(231,206,128,.32)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x, h * 0.31);
+      ctx.quadraticCurveTo(x - 8, h * 0.19, x, h * 0.08);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 13; i += 1) {
+        const side = i % 2 ? 1 : -1;
+        const branchY = h * 0.11 + i * h * 0.014;
+        ctx.beginPath();
+        ctx.moveTo(x, branchY);
+        ctx.quadraticCurveTo(x + side * w * 0.055, branchY - h * 0.05, x + side * w * 0.12, branchY - h * 0.07);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.35;
+      for (let i = 0; i < 34; i += 1) {
+        const angle = rand(-Math.PI, Math.PI);
+        const radius = rand(30, 190);
+        ctx.fillStyle = i % 3 ? 'rgba(235,204,112,.35)' : 'rgba(255,232,164,.5)';
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(angle) * radius, h * 0.1 + Math.sin(angle) * radius * 0.42, rand(1, 2.4), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    drawArenaFloor(ctx, w, h) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(201,181,133,.13)';
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 6; i += 1) {
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.58, w * 0.1 * i, h * 0.085 * i, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 20; i += 1) {
+        const angle = (i / 20) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5 + Math.cos(angle) * w * 0.12, h * 0.58 + Math.sin(angle) * h * 0.1);
+        ctx.lineTo(w * 0.5 + Math.cos(angle) * w * 0.56, h * 0.58 + Math.sin(angle) * h * 0.47);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(230,205,139,.055)';
+      ctx.font = '500 9px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('THE GOLDEN ORDER', w * 0.5, h * 0.48);
+      ctx.restore();
+    }
+
+    drawAttacks(ctx, w, h) {
+      this.attacks.forEach((attack) => {
+        const bossPoint = { x: this.boss.x * w, y: this.boss.y * h };
+        const progress = clamp(attack.age / attack.duration, 0, 1);
+        const alpha = attack.hit ? clamp(1 - (attack.age - attack.duration) / 0.4, 0, 1) : 0.2 + progress * 0.35;
+        ctx.save();
+        if (attack.type === 'slam') {
+          const x = attack.x * w;
+          const y = attack.y * h;
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = progress > 0.78 ? 'rgba(236,152,76,.35)' : 'rgba(163,110,53,.16)';
+          ctx.beginPath();
+          ctx.arc(x, y, attack.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(244,198,123,.7)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x, y, attack.radius * progress, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (attack.type === 'sweep') {
+          const range = this.metric * 0.31;
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = progress > 0.78 ? 'rgba(240,157,91,.28)' : 'rgba(196,133,70,.12)';
+          ctx.beginPath();
+          ctx.moveTo(bossPoint.x, bossPoint.y);
+          ctx.arc(bossPoint.x, bossPoint.y, range, attack.angle - 0.66, attack.angle + 0.66);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(248,202,128,.65)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else if (attack.type === 'charge') {
+          const range = Math.max(w, h);
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = progress > 0.8 ? 'rgba(255,171,91,.55)' : 'rgba(202,143,75,.2)';
+          ctx.lineWidth = 54;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(bossPoint.x, bossPoint.y);
+          ctx.lineTo(bossPoint.x + Math.cos(attack.angle) * range, bossPoint.y + Math.sin(attack.angle) * range);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(251,220,160,.65)';
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+        } else if (attack.type === 'knives') {
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = 'rgba(244,206,124,.7)';
+          ctx.lineWidth = 2;
+          for (let i = -2; i <= 2; i += 1) {
+            const angle = attack.angle + i * 0.14;
+            ctx.beginPath();
+            ctx.moveTo(bossPoint.x, bossPoint.y);
+            ctx.lineTo(bossPoint.x + Math.cos(angle) * 120, bossPoint.y + Math.sin(angle) * 120);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      });
+    }
+
+    drawBoss(ctx, w, h) {
+      const x = this.boss.x * w;
+      const y = this.boss.y * h;
+      const playerPoint = { x: this.player.x * w, y: this.player.y * h };
+      const angle = Math.atan2(playerPoint.y - y, playerPoint.x - x);
+      const scale = this.metric / 480;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI / 2);
+      glowCircle(ctx, 0, 0, 72 * scale, this.boss.phase === 2 ? 'rgba(236,103,69,.26)' : 'rgba(199,164,99,.2)', 0.8);
+      ctx.fillStyle = 'rgba(0,0,0,.38)';
+      ctx.beginPath();
+      ctx.ellipse(0, 22 * scale, 34 * scale, 13 * scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = this.boss.flash > 0 ? '#ffe0a2' : this.boss.phase === 2 ? '#553329' : '#3b3b2e';
+      ctx.beginPath();
+      ctx.moveTo(0, -37 * scale);
+      ctx.lineTo(23 * scale, -17 * scale);
+      ctx.lineTo(27 * scale, 24 * scale);
+      ctx.lineTo(8 * scale, 38 * scale);
+      ctx.lineTo(-8 * scale, 38 * scale);
+      ctx.lineTo(-27 * scale, 24 * scale);
+      ctx.lineTo(-23 * scale, -17 * scale);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = this.boss.phase === 2 ? '#d47458' : '#c8a95f';
+      ctx.lineWidth = 1.7;
+      ctx.stroke();
+      ctx.strokeStyle = '#c9a75f';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(-15 * scale, -29 * scale);
+      ctx.quadraticCurveTo(-32 * scale, -48 * scale, -23 * scale, -58 * scale);
+      ctx.moveTo(15 * scale, -29 * scale);
+      ctx.quadraticCurveTo(32 * scale, -48 * scale, 23 * scale, -58 * scale);
+      ctx.stroke();
+      ctx.fillStyle = this.boss.phase === 2 ? '#f06f51' : '#d5b369';
+      ctx.beginPath();
+      ctx.arc(0, -13 * scale, 7 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#191812';
+      ctx.beginPath();
+      ctx.arc(0, -13 * scale, 3.2 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#8d7b52';
+      ctx.lineWidth = 4 * scale;
+      ctx.beginPath();
+      ctx.moveTo(28 * scale, 10 * scale);
+      ctx.lineTo(39 * scale, -31 * scale);
+      ctx.stroke();
+      ctx.fillStyle = '#6c6145';
+      ctx.beginPath();
+      ctx.moveTo(33 * scale, -38 * scale);
+      ctx.lineTo(55 * scale, -36 * scale);
+      ctx.lineTo(44 * scale, -20 * scale);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(x - 55, y - 76, 110, 5);
+      ctx.fillStyle = this.boss.phase === 2 ? '#ec7b5c' : '#d9b66b';
+      ctx.fillRect(x - 55, y - 76, 110 * clamp(this.boss.hp / this.boss.maxHp, 0, 1), 5);
+      ctx.fillStyle = 'rgba(235,217,173,.7)';
+      ctx.font = '500 8px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('恶兆守卫', x, y - 84);
+    }
+
+    drawPlayer(ctx, w, h) {
+      const x = this.player.x * w;
+      const y = this.player.y * h;
+      const angle = Math.atan2(this.manager.mouse.y - y, this.manager.mouse.x - x);
+      ctx.save();
+      if (this.player.invuln > 0) ctx.globalAlpha = 0.5 + Math.sin(this.time * 35) * 0.3;
+      glowCircle(ctx, x, y, 42, 'rgba(212,193,126,.16)', 0.8);
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.fillStyle = 'rgba(0,0,0,.32)';
+      ctx.beginPath();
+      ctx.ellipse(0, 9, 16, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = this.player.flash > 0 ? '#ffd0a7' : '#4d4a3a';
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#d6c081';
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+      ctx.fillStyle = '#d6c081';
+      ctx.beginPath();
+      ctx.arc(0, -10, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#292820';
+      ctx.beginPath();
+      ctx.arc(0, -10, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(223,207,161,.72)';
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.moveTo(8, -2);
+      ctx.lineTo(27, -17);
+      ctx.stroke();
+      if (this.player.swing > 0) {
+        ctx.strokeStyle = 'rgba(255,232,169,.7)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 36, -2.4, -0.7);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(x - 27, y - 33, 54, 4);
+      ctx.fillStyle = '#d9c27f';
+      ctx.fillRect(x - 27, y - 33, 54 * clamp(this.player.hp / this.player.maxHp, 0, 1), 4);
+      for (let i = 0; i < this.player.flasks; i += 1) {
+        ctx.fillStyle = '#b84f3d';
+        ctx.beginPath();
+        ctx.arc(x - 9 + i * 10, y + 24, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(239,202,131,.6)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      }
+    }
+
+    drawBossHealth(ctx, w, h) {
+      const barWidth = Math.min(w * 0.52, 470);
+      const x = w * 0.5 - barWidth / 2;
+      const y = h * 0.87;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(226,207,164,.7)';
+      ctx.font = '500 9px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText('恶兆守卫 · MARGIT THE FELL', w * 0.5, y - 8);
+      ctx.fillStyle = 'rgba(8,8,6,.72)';
+      fillRoundRect(ctx, x, y, barWidth, 7, 3, 'rgba(8,8,6,.72)');
+      const gradient = ctx.createLinearGradient(x, 0, x + barWidth, 0);
+      gradient.addColorStop(0, this.boss.phase === 2 ? '#c94f3c' : '#c29a55');
+      gradient.addColorStop(1, this.boss.phase === 2 ? '#f0a36b' : '#ebd28a');
+      ctx.fillStyle = gradient;
+      fillRoundRect(ctx, x, y, barWidth * clamp(this.boss.hp / this.boss.maxHp, 0, 1), 7, 3, gradient);
+      ctx.strokeStyle = 'rgba(226,200,146,.24)';
+      ctx.strokeRect(x, y, barWidth, 7);
+      ctx.fillStyle = 'rgba(200,180,140,.45)';
+      ctx.font = '500 7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`PHASE ${this.boss.phase}`, w * 0.5, y + 19);
+      ctx.restore();
+    }
+  }
+
+  /* ==========================================================================
+     Cyberpunk 2077 — Breach protocol
+     ========================================================================== */
+
+  class CyberpunkBreach extends MiniGameBase {
+    constructor(manager) {
+      super(manager);
+      this.tokens = ['1C', '55', 'BD', 'FF', '7A', 'E9'];
+      this.tokenColors = {
+        '1C': '#66e3ff', '55': '#f2dc63', 'BD': '#ff7ac8', 'FF': '#81f0b7', '7A': '#d0a3ff', 'E9': '#ffad66'
+      };
+      this.targetNames = ['数据保险库', '安全协议', '摄像头覆写'];
+      this.bufferMax = 8;
+      this.duration = 80;
+    }
+
+    start() {
+      this.matrix = Array.from({ length: 6 }, () => Array.from({ length: 6 }, () => pick(this.tokens)));
+      this.buffer = [];
+      this.path = [];
+      this.axis = 'row';
+      this.fixed = 0;
+      this.timer = this.duration;
+      this.hover = { row: -1, col: -1 };
+      this.glitch = 0;
+      this.outcome = null;
+      this.outcomeTimer = 0;
+      this.completed = 0;
+      this.score = 0;
+      const generated = [];
+      for (let i = 0; i < 8; i += 1) {
+        const axis = i === 0 ? 'row' : (i % 2 === 1 ? 'col' : 'row');
+        const row = axis === 'row' ? (i === 0 ? 0 : generated[generated.length - 1].r) : Math.floor(Math.random() * 6);
+        const col = axis === 'col' ? generated[generated.length - 1].c : Math.floor(Math.random() * 6);
+        generated.push({ r: row, c: col, token: this.matrix[row][col] });
+      }
+      this.targets = [
+        { name: this.targetNames[0], sequence: generated.slice(0, 3).map((cell) => cell.token), matched: 0, complete: false, reward: '1000 €$' },
+        { name: this.targetNames[1], sequence: generated.slice(3, 6).map((cell) => cell.token), matched: 0, complete: false, reward: 'SSR 程序' },
+        { name: this.targetNames[2], sequence: generated.slice(6, 8).map((cell) => cell.token), matched: 0, complete: false, reward: '访问凭证' }
+      ];
+      this.updateHUD();
+      this.toast('ICE 握手完成。从高亮行中选择第一枚代码。');
+    }
+
+    layout(w, h) {
+      const gap = 5;
+      const cell = Math.max(28, Math.min(54, (w * 0.43 - gap * 5) / 6, (h * 0.48 - gap * 5) / 6));
+      const gridW = cell * 6 + gap * 5;
+      const gridX = Math.max(28, w * 0.055);
+      const gridY = Math.max(145, h * 0.235);
+      return {
+        gap, cell, gridW, gridH: gridW, gridX, gridY,
+        rightX: gridX + gridW + Math.max(28, w * 0.045),
+        rightW: Math.max(220, w - (gridX + gridW) - Math.max(28, w * 0.045) - 30)
+      };
+    }
+
+    cellAt(x, y) {
+      const layout = this.layout(this.w, this.h);
+      for (let row = 0; row < 6; row += 1) {
+        for (let col = 0; col < 6; col += 1) {
+          const cx = layout.gridX + col * (layout.cell + layout.gap);
+          const cy = layout.gridY + row * (layout.cell + layout.gap);
+          if (x >= cx && x <= cx + layout.cell && y >= cy && y <= cy + layout.cell) return { row, col };
+        }
+      }
+      return null;
+    }
+
+    isAllowed(row, col) {
+      return this.axis === 'row' ? row === this.fixed : col === this.fixed;
+    }
+
+    pointerMove(x, y) {
+      const cell = this.cellAt(x, y);
+      this.hover = cell || { row: -1, col: -1 };
+    }
+
+    pointerDown(x, y) {
+      if (this.outcome) return;
+      const cell = this.cellAt(x, y);
+      if (!cell) return;
+      if (!this.isAllowed(cell.row, cell.col)) {
+        this.glitch = 0.32;
+        this.timer = Math.max(0, this.timer - 2.2);
+        this.toast('无效选择：当前只能使用高亮行或列。', 'danger');
+        return;
+      }
+      const token = this.matrix[cell.row][cell.col];
+      this.buffer.push(token);
+      this.path.push(cell);
+      this.glitch = 0.08;
+      this.fx.ring(this.manager.mouse.x, this.manager.mouse.y, this.tokenColors[token], 26, 0.25, 1.4);
+      if (this.axis === 'row') { this.axis = 'col'; this.fixed = cell.col; }
+      else { this.axis = 'row'; this.fixed = cell.row; }
+      this.refreshMatches();
+      if (this.targets.every((target) => target.complete)) {
+        this.win();
+      } else if (this.buffer.length >= this.bufferMax) {
+        this.lose('缓冲区已写满，序列仍未完成。ICE 锁定了连接。');
+      }
+      this.updateHUD();
+    }
+
+    refreshMatches() {
+      this.targets.forEach((target) => {
+        let index = 0;
+        for (const token of this.buffer) {
+          if (index < target.sequence.length && token === target.sequence[index]) index += 1;
+        }
+        target.matched = index;
+        if (!target.complete && index >= target.sequence.length) {
+          target.complete = true;
+          this.completed += 1;
+          this.score += 1000;
+          this.toast(`${target.name} 已解锁 · ${target.reward}`, 'success');
+        }
+      });
+    }
+
+    win() {
+      this.outcome = {
+        win: true,
+        title: 'ICE 已被撬开。',
+        desc: '缓冲区里的代码组成了正确的序列，荒坂子网向你敞开了最后一层门。',
+        stats: [
+          { label: '完成序列', value: `${this.completed} / ${this.targets.length}` },
+          { label: '缓冲区', value: `${this.buffer.length} / ${this.bufferMax}` },
+          { label: '剩余时间', value: formatTime(this.timer) },
+          { label: '得分', value: String(this.score) }
+        ]
+      };
+      this.outcomeTimer = 0.9;
+      this.fx.ring(this.manager.mouse.x, this.manager.mouse.y, '#f4e65a', 90, 0.7, 2);
+    }
+
+    lose(desc) {
+      this.outcome = {
+        win: false,
+        title: '连接已被 ICE 切断。',
+        desc,
+        stats: [
+          { label: '完成序列', value: `${this.completed} / ${this.targets.length}` },
+          { label: '缓冲区', value: `${this.buffer.length} / ${this.bufferMax}` },
+          { label: '剩余时间', value: formatTime(this.timer) }
+        ]
+      };
+      this.outcomeTimer = 0.75;
+      this.glitch = 0.6;
+    }
+
+    keyDown() {}
+
+    update(dt, w, h) {
+      super.update(dt, w, h);
+      if (this.ended) return;
+      this.glitch = Math.max(0, this.glitch - dt * 2.4);
+      if (this.outcome) {
+        this.outcomeTimer -= dt;
+        if (this.outcomeTimer <= 0) this.finish(this.outcome);
+        this.updateHUD();
+        return;
+      }
+      this.timer = Math.max(0, this.timer - dt);
+      if (this.timer <= 0) this.lose('信号窗口关闭，ICE 主动终止了连接。');
+      this.updateHUD();
+    }
+
+    updateHUD() {
+      this.setHud({
+        objective: `完成全部 ${this.targets.length} 组序列`,
+        sub: `缓冲区 ${this.buffer.length}/${this.bufferMax} · 剩余 ${formatTime(this.timer)} · ${this.completed} 组已解锁`,
+        score: `${this.completed}/${this.targets.length}`,
+        scoreLabel: '序列',
+        status: this.axis === 'row' ? `当前行 R${this.fixed + 1}` : `当前列 C${this.fixed + 1}`,
+        health: this.timer / this.duration,
+        healthLabel: `连接窗口 ${Math.ceil(this.timer)}s`,
+        progress: this.completed / this.targets.length
+      });
+    }
+
+    draw(ctx, w, h) {
+      const layout = this.layout(w, h);
+      const background = ctx.createLinearGradient(0, 0, 0, h);
+      background.addColorStop(0, '#100d1f');
+      background.addColorStop(0.55, '#0a1420');
+      background.addColorStop(1, '#060a10');
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+
+      this.drawCity(ctx, w, h);
+      this.drawMatrix(ctx, w, h, layout);
+      this.drawTargets(ctx, w, h, layout);
+      this.drawBuffer(ctx, w, h, layout);
+      this.fx.draw(ctx);
+
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(91,229,255,.55)';
+      ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('BREACH PROTOCOL // ARASAKA LOCAL SUBNET', layout.gridX, layout.gridY - 39);
+      ctx.fillStyle = 'rgba(246,216,90,.7)';
+      ctx.textAlign = 'right';
+      ctx.fillText('ICE LAYER 03', layout.gridX + layout.gridW, layout.gridY - 39);
+      ctx.strokeStyle = 'rgba(86,225,255,.17)';
+      ctx.beginPath();
+      ctx.moveTo(layout.gridX, layout.gridY - 27);
+      ctx.lineTo(layout.gridX + layout.gridW, layout.gridY - 27);
+      ctx.stroke();
+      ctx.restore();
+
+      if (this.glitch > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, this.glitch * 1.8);
+        ctx.fillStyle = 'rgba(255,62,127,.18)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = 'rgba(63,237,255,.26)';
+        ctx.fillRect(0, Math.random() * h, w, 2);
+        ctx.fillStyle = 'rgba(255,63,130,.3)';
+        ctx.fillRect(0, Math.random() * h, w, 1);
+        ctx.restore();
+      }
+
+      const cursor = this.cellAt(this.manager.mouse.x, this.manager.mouse.y);
+      if (cursor) {
+        const cellX = layout.gridX + cursor.col * (layout.cell + layout.gap);
+        const cellY = layout.gridY + cursor.row * (layout.cell + layout.gap);
+        ctx.save();
+        ctx.strokeStyle = this.isAllowed(cursor.row, cursor.col) ? '#f6e15e' : 'rgba(255,86,121,.45)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cellX - 1, cellY - 1, layout.cell + 2, layout.cell + 2);
+        ctx.restore();
+      }
+
+      if (this.outcome) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        const color = this.outcome.win ? '#75f4c5' : '#ff6f91';
+        ctx.fillStyle = 'rgba(4,8,12,.55)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = color;
+        ctx.font = '600 23px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(this.outcome.win ? 'ICE BREACHED' : 'CONNECTION TERMINATED', w * 0.5, h * 0.48);
+        ctx.font = '500 9px "SFMono-Regular", Consolas, monospace';
+        ctx.fillStyle = 'rgba(224,238,242,.64)';
+        ctx.fillText('正在写入本地记录…', w * 0.5, h * 0.52);
+        ctx.restore();
+      }
+    }
+
+    drawCity(ctx, w, h) {
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      for (let i = 0; i < 17; i += 1) {
+        const x = (i / 17) * w;
+        const buildingH = h * (0.12 + ((i * 37) % 55) / 220);
+        const width = w * (0.028 + ((i * 17) % 30) / 1200);
+        ctx.fillStyle = i % 3 === 0 ? 'rgba(30,26,57,.9)' : 'rgba(17,25,42,.92)';
+        ctx.fillRect(x, h * 0.58 - buildingH, width, buildingH + h * 0.42);
+        for (let wy = h * 0.58 - buildingH + 12; wy < h * 0.58; wy += 14) {
+          for (let wx = x + 5; wx < x + width - 4; wx += 11) {
+            if ((wx + wy + i) % 4 < 2) {
+              ctx.fillStyle = i % 2 ? 'rgba(255,205,83,.22)' : 'rgba(81,228,255,.18)';
+              ctx.fillRect(wx, wy, 3, 2);
+            }
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(255,73,174,.11)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 12; i += 1) {
+        const y = h * 0.62 + i * h * 0.032;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y + (i % 2 ? 7 : -5));
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = 'rgba(110,235,255,.2)';
+      for (let i = 0; i < 22; i += 1) {
+        const x = (i * 67 + (this.time * 12) % 67) % w;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x - 11, h * 0.2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    drawMatrix(ctx, w, h, layout) {
+      const current = this.axis;
+      const fixed = this.fixed;
+      ctx.save();
+      for (let row = 0; row < 6; row += 1) {
+        for (let col = 0; col < 6; col += 1) {
+          const x = layout.gridX + col * (layout.cell + layout.gap);
+          const y = layout.gridY + row * (layout.cell + layout.gap);
+          const allowed = current === 'row' ? row === fixed : col === fixed;
+          const selected = this.path.some((cell) => cell.r === row && cell.c === col);
+          const token = this.matrix[row][col];
+          ctx.fillStyle = allowed ? 'rgba(15,58,71,.76)' : selected ? 'rgba(50,30,52,.6)' : 'rgba(7,15,23,.7)';
+          fillRoundRect(ctx, x, y, layout.cell, layout.cell, 2, ctx.fillStyle);
+          ctx.strokeStyle = allowed ? 'rgba(86,229,255,.5)' : selected ? 'rgba(255,201,96,.36)' : 'rgba(93,126,142,.16)';
+          ctx.lineWidth = allowed ? 1.2 : 0.8;
+          ctx.stroke();
+          if (allowed) {
+            ctx.globalAlpha = 0.09 + Math.sin(this.time * 4) * 0.02;
+            ctx.fillStyle = '#5fe8ff';
+            ctx.fillRect(x, y, layout.cell, layout.cell);
+            ctx.globalAlpha = 1;
+          }
+          ctx.fillStyle = this.tokenColors[token] || '#e9f6ff';
+          ctx.font = `600 ${Math.max(10, layout.cell * 0.3)}px "SFMono-Regular", Consolas, monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText(token, x + layout.cell / 2, y + layout.cell / 2 + layout.cell * 0.1);
+          ctx.fillStyle = 'rgba(219,239,245,.26)';
+          ctx.font = '500 5.5px "SFMono-Regular", Consolas, monospace';
+          ctx.fillText(`${String.fromCharCode(65 + row)}${col + 1}`, x + layout.cell / 2, y + layout.cell - 5);
+        }
+      }
+      ctx.fillStyle = 'rgba(246,222,91,.8)';
+      ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'left';
+      if (current === 'row') {
+        const y = layout.gridY + fixed * (layout.cell + layout.gap) + layout.cell / 2;
+        ctx.fillText('▶', layout.gridX - 14, y + 3);
+      } else {
+        const x = layout.gridX + fixed * (layout.cell + layout.gap) + layout.cell / 2;
+        ctx.fillText('▼', x - 3, layout.gridY - 9);
+      }
+      ctx.restore();
+    }
+
+    drawTargets(ctx, w, h, layout) {
+      ctx.save();
+      const x = layout.rightX;
+      const y = layout.gridY - 8;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(101,226,255,.52)';
+      ctx.font = '600 7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('SEQUENCE // REQUIRED', x, y - 12);
+      this.targets.forEach((target, index) => {
+        const cardY = y + index * 61;
+        ctx.fillStyle = target.complete ? 'rgba(25,60,49,.55)' : 'rgba(8,15,23,.62)';
+        fillRoundRect(ctx, x, cardY, layout.rightW, 51, 3, ctx.fillStyle);
+        ctx.strokeStyle = target.complete ? 'rgba(109,240,181,.4)' : target.matched > 0 ? 'rgba(238,214,89,.33)' : 'rgba(90,123,137,.18)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = target.complete ? '#77f0bd' : '#d6e5e7';
+        ctx.font = '500 9px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(target.name, x + 10, cardY + 16);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = target.complete ? 'rgba(118,241,190,.7)' : 'rgba(239,215,93,.55)';
+        ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(target.complete ? 'UNLOCKED' : target.reward, x + layout.rightW - 10, cardY + 15);
+        ctx.textAlign = 'left';
+        let tokenX = x + 10;
+        target.sequence.forEach((token, tokenIndex) => {
+          const width = 30;
+          const tokenY = cardY + 25;
+          const matched = tokenIndex < target.matched;
+          ctx.fillStyle = matched ? 'rgba(55,104,90,.72)' : 'rgba(24,39,50,.8)';
+          fillRoundRect(ctx, tokenX, tokenY, width, 19, 2, ctx.fillStyle);
+          ctx.strokeStyle = matched ? 'rgba(115,241,184,.35)' : 'rgba(92,131,148,.18)';
+          ctx.strokeRect(tokenX, tokenY, width, 19);
+          ctx.fillStyle = matched ? '#91ffd0' : this.tokenColors[token];
+          ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(token, tokenX + width / 2, tokenY + 13);
+          if (tokenIndex < target.sequence.length - 1) {
+            ctx.fillStyle = 'rgba(129,159,170,.38)';
+            ctx.fillText('›', tokenX + width + 5, tokenY + 13);
+          }
+          tokenX += width + 10;
+        });
+        ctx.textAlign = 'left';
+      });
+      ctx.restore();
+    }
+
+    drawBuffer(ctx, w, h, layout) {
+      const x = layout.rightX;
+      const y = Math.min(h * 0.8, layout.gridY + layout.gridH + 34);
+      const slot = Math.min(38, (layout.rightW - 7 * 7) / 8);
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(101,226,255,.52)';
+      ctx.font = '600 7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`BUFFER // ${this.buffer.length}/${this.bufferMax}`, x, y - 10);
+      for (let i = 0; i < this.bufferMax; i += 1) {
+        const slotX = x + i * (slot + 7);
+        const filled = Boolean(this.buffer[i]);
+        ctx.fillStyle = filled ? 'rgba(35,50,55,.9)' : 'rgba(7,14,21,.7)';
+        fillRoundRect(ctx, slotX, y, slot, 30, 2, ctx.fillStyle);
+        ctx.strokeStyle = filled ? 'rgba(242,218,90,.55)' : 'rgba(91,128,144,.22)';
+        ctx.strokeRect(slotX, y, slot, 30);
+        if (filled) {
+          ctx.fillStyle = this.tokenColors[this.buffer[i]] || '#edf8fa';
+          ctx.font = '600 9px "SFMono-Regular", Consolas, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(this.buffer[i], slotX + slot / 2, y + 19);
+        }
+      }
+      ctx.fillStyle = 'rgba(174,203,210,.34)';
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('每次选择会锁定下一行或下一列', x, y + 45);
+      ctx.restore();
+    }
+  }
+
+  /* ==========================================================================
+     Destiny 2 — The Red War, a five-chapter campaign tribute
+     ========================================================================== */
+
+  const DESTINY_MISSIONS = [
+    {
+      id: 'homecoming',
+      en: 'Homecoming',
+      biome: 'lastcity',
+      faction: 'cabal',
+      factionCn: '红色军团',
+      eyebrow: 'THE RED WAR // HOMECOMING',
+      chapter: '第一章',
+      title: '归乡',
+      cn: '最后的城市 · 塔城广场',
+      location: 'THE LAST CITY // TOWER PLAZA',
+      brief: '红色军团撕开了城墙。护送最后一批平民登上撤离艇，然后从广场活着出去。',
+      objective: '击退三波红色军团并抵达撤离点',
+      type: 'waves',
+      accent: '#e9bd72',
+      accent2: '#e25d48',
+      sky: '#5a2826',
+      sky2: '#140d12',
+      ground: '#30343a'
+    },
+    {
+      id: 'spark',
+      en: 'Spark',
+      biome: 'edz',
+      faction: 'cabal',
+      factionCn: '红色军团',
+      eyebrow: 'THE RED WAR // SPARK',
+      chapter: '第二章',
+      title: '火花',
+      cn: '欧洲死区 · 碎片林地',
+      location: 'EUROPEAN DEAD ZONE // SHARD',
+      brief: '光能被夺走了，但旅行者留下的碎片仍在回应。靠近它，重新点亮你的光。',
+      objective: '在旅行者碎片旁恢复光能',
+      type: 'shard',
+      accent: '#a8eed8',
+      accent2: '#62c7a7',
+      sky: '#233f36',
+      sky2: '#07130f',
+      ground: '#263b2d'
+    },
+    {
+      id: '1au',
+      en: '1AU',
+      biome: 'almighty',
+      faction: 'cabal',
+      factionCn: '红色军团',
+      eyebrow: 'THE RED WAR // 1AU',
+      chapter: '第三章',
+      title: '1AU',
+      cn: '太阳神级战舰 · 导流环',
+      location: 'THE ALMIGHTY // SOLAR ARRAY',
+      brief: '红色军团把太阳变成了一件武器。穿过导流环，摧毁三座太阳导流器。',
+      objective: '摧毁三座太阳导流器',
+      type: 'conduits',
+      accent: '#ffd37a',
+      accent2: '#ff7b3f',
+      sky: '#5f2c1a',
+      sky2: '#180b0b',
+      ground: '#3a2d28'
+    },
+    {
+      id: 'chosen',
+      en: 'Chosen',
+      biome: 'cabalship',
+      faction: 'cabal',
+      factionCn: '红色军团',
+      eyebrow: 'THE RED WAR // CHOSEN',
+      chapter: '第四章',
+      title: '选择',
+      cn: 'Ghaul 旗舰 · 护盾甲板',
+      location: 'GHAUL’S FLAGSHIP // SHIELD DECK',
+      brief: '旗舰的护盾把整片甲板切成了红色。拆掉发生器，让帝国的百夫长亲自来见你。',
+      objective: '摧毁护盾发生器并击败帝国百夫长',
+      type: 'generators',
+      accent: '#e7b460',
+      accent2: '#d94f3e',
+      sky: '#351719',
+      sky2: '#0b070a',
+      ground: '#2a2324'
+    },
+    {
+      id: 'redwar',
+      en: 'Red War',
+      biome: 'cabalthrone',
+      faction: 'cabal',
+      factionCn: '红色军团',
+      eyebrow: 'THE RED WAR // FINALE',
+      chapter: '终章',
+      title: '猩红终局',
+      cn: 'Ghaul 旗舰 · 王座厅',
+      location: 'THE RED WAR // THRONE OF GHAUL',
+      brief: '他夺走了光，却从未理解光。站到 Ghaul 面前，结束这场猩红战争。',
+      objective: '击败 Dominus Ghaul',
+      type: 'boss',
+      accent: '#f2c66f',
+      accent2: '#f05d46',
+      sky: '#481b1b',
+      sky2: '#0b0708',
+      ground: '#32231e'
+    }
+  ];
+
+  const DESTINY_BIOMES = {
+    mercury: { sky: '#6b4329', sky2: '#170e0a', ground: '#4b3422', accent: '#e6bb70', accent2: '#8ed9ce', horizon: 'vex-spires', particles: 'embers' },
+    venus: { sky: '#5b4829', sky2: '#161007', ground: '#4a3a23', accent: '#e8ca78', accent2: '#8fe0b5', horizon: 'venus-jungle', particles: 'spores' },
+    vaultglass: { sky: '#453b27', sky2: '#0d0b07', ground: '#3a3423', accent: '#e7d38d', accent2: '#8ce7dc', horizon: 'vault-glass', particles: 'data' },
+    blackhole: { sky: '#10091c', sky2: '#020104', ground: '#120b1c', accent: '#e7b96e', accent2: '#a98bff', horizon: 'blackhole', particles: 'motes' },
+    eventhorizon: { sky: '#0a0614', sky2: '#010103', ground: '#100a18', accent: '#f0cb85', accent2: '#b496ff', horizon: 'blackhole', particles: 'motes' },
+    vexforest: { sky: '#294d45', sky2: '#081310', ground: '#2b4037', accent: '#79dfc3', accent2: '#b9f3df', horizon: 'vex-forest', particles: 'data' },
+    vexcore: { sky: '#1c3d49', sky2: '#061015', ground: '#253b43', accent: '#75d7e9', accent2: '#d4f8ff', horizon: 'vex-core', particles: 'data' },
+    mars: { sky: '#5b3020', sky2: '#160b0a', ground: '#4b3326', accent: '#e2a968', accent2: '#f3d9ae', horizon: 'bray-towers', particles: 'snow' },
+    braytech: { sky: '#2d4654', sky2: '#0a1218', ground: '#33454b', accent: '#8cd3e7', accent2: '#e8f8ff', horizon: 'bray-towers', particles: 'snow' },
+    warmind: { sky: '#3d201d', sky2: '#0e0809', ground: '#392a2a', accent: '#e17d57', accent2: '#ffd0a1', horizon: 'warmind-core', particles: 'embers' },
+    prison: { sky: '#2f2637', sky2: '#0b0910', ground: '#332b39', accent: '#c7a0d9', accent2: '#ec7f9c', horizon: 'prison', particles: 'dust' },
+    tangled: { sky: '#4c2d1d', sky2: '#130b08', ground: '#403026', accent: '#d29d6a', accent2: '#b26d67', horizon: 'asteroids', particles: 'dust' },
+    moon: { sky: '#2f373a', sky2: '#0b0f11', ground: '#303639', accent: '#b9c8bf', accent2: '#7fa58e', horizon: 'hive-spires', particles: 'dust' },
+    scarlet: { sky: '#3b1b1f', sky2: '#0d0709', ground: '#352326', accent: '#de6f68', accent2: '#efb08b', horizon: 'scarlet-keep', particles: 'embers' },
+    pyramid: { sky: '#211f28', sky2: '#08070b', ground: '#24242b', accent: '#b7aed0', accent2: '#e7e2f1', horizon: 'pyramid', particles: 'motes' },
+    europa: { sky: '#334b59', sky2: '#0a1319', ground: '#33474f', accent: '#a9d7e8', accent2: '#e7f8ff', horizon: 'ice-cliffs', particles: 'snow' },
+    riis: { sky: '#283445', sky2: '#090d14', ground: '#2a3441', accent: '#8fbde8', accent2: '#b98dde', horizon: 'fallen-city', particles: 'snow' },
+    throne: { sky: '#3b472f', sky2: '#0d110a', ground: '#34402d', accent: '#b9db87', accent2: '#e5efb1', horizon: 'throne-temple', particles: 'spores' },
+    temple: { sky: '#283322', sky2: '#080c07', ground: '#293424', accent: '#a4cf6c', accent2: '#d9f2a4', horizon: 'hive-cathedral', particles: 'spores' },
+    neomuna: { sky: '#362449', sky2: '#0d0814', ground: '#34293f', accent: '#eaa4d1', accent2: '#5ce2e8', horizon: 'neon-city', particles: 'neon' },
+    typhon: { sky: '#241931', sky2: '#08050b', ground: '#282031', accent: '#c58cdf', accent2: '#e7b6ba', horizon: 'typhon', particles: 'embers' },
+    paleheart: { sky: '#5b5d5b', sky2: '#151719', ground: '#4a4b48', accent: '#f2ead6', accent2: '#d8f4ee', horizon: 'organic-arches', particles: 'motes' },
+    sanctum: { sky: '#45474b', sky2: '#0f1114', ground: '#3a3d42', accent: '#ece5d0', accent2: '#f5ecc9', horizon: 'sanctum', particles: 'motes' },
+    dreaming: { sky: '#2f2a45', sky2: '#0b0a13', ground: '#2d2a3b', accent: '#b79ae6', accent2: '#73ddd0', horizon: 'awoken-spires', particles: 'motes' },
+    kepler: { sky: '#211a38', sky2: '#07060e', ground: '#252038', accent: '#c79cff', accent2: '#7de3e1', horizon: 'kepler', particles: 'motes' },
+    'kepler-academy': { sky: '#252244', sky2: '#080812', ground: '#29283f', accent: '#a9c7ff', accent2: '#8ff1e7', horizon: 'kepler-academy', particles: 'motes' },
+    'kepler-singularity': { sky: '#171127', sky2: '#05040a', ground: '#1f1a2d', accent: '#d4a6ff', accent2: '#6ff5ef', horizon: 'singularity', particles: 'motes' },
+    nessus: { sky: '#3f3b27', sky2: '#0f0d08', ground: '#3b3524', accent: '#d9bd78', accent2: '#79d7c6', horizon: 'vex-forest', particles: 'data' },
+    tharsis: { sky: '#5c2c21', sky2: '#170b09', ground: '#4c3025', accent: '#e2a35f', accent2: '#83cbd9', horizon: 'tharsis-outpost', particles: 'dust' },
+    'tharsis-city': { sky: '#593026', sky2: '#160a0a', ground: '#493127', accent: '#efb46d', accent2: '#6fd8df', horizon: 'tharsis-city', particles: 'embers' },
+    'tharsis-fort': { sky: '#47221e', sky2: '#120807', ground: '#3c2824', accent: '#dd8f56', accent2: '#b7d4dc', horizon: 'tharsis-fort', particles: 'dust' },
+    lastcity: { sky: '#5a2826', sky2: '#140d12', ground: '#30343a', accent: '#e9bd72', accent2: '#e25d48', horizon: 'city', particles: 'embers' },
+    edz: { sky: '#233f36', sky2: '#07130f', ground: '#263b2d', accent: '#a8eed8', accent2: '#62c7a7', horizon: 'forest', particles: 'spores' },
+    almighty: { sky: '#5f2c1a', sky2: '#180b0b', ground: '#3a2d28', accent: '#ffd37a', accent2: '#ff7b3f', horizon: 'ship', particles: 'embers' },
+    cabalship: { sky: '#351719', sky2: '#0b070a', ground: '#2a2324', accent: '#e7b460', accent2: '#d94f3e', horizon: 'ship', particles: 'embers' },
+    cabalthrone: { sky: '#481b1b', sky2: '#0b0708', ground: '#32231e', accent: '#f2c66f', accent2: '#f05d46', horizon: 'cabalthrone', particles: 'embers' }
+  };
+
+  const DESTINY_PLANET_SVG = {
+    earth: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="eo" cx="32%" cy="25%" r="86%"><stop offset="0" stop-color="#bcefff"/><stop offset=".22" stop-color="#68c3ec"/><stop offset=".52" stop-color="#237db9"/><stop offset=".80" stop-color="#0b3d68"/><stop offset="1" stop-color="#031729"/></radialGradient><linearGradient id="el" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#88b66a"/><stop offset=".42" stop-color="#5e9252"/><stop offset=".72" stop-color="#a5865c"/><stop offset="1" stop-color="#6d6c4d"/></linearGradient><linearGradient id="ed" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d2b37f"/><stop offset="1" stop-color="#9b7a4d"/></linearGradient><radialGradient id="eice" cx="50%" cy="50%" r="50%"><stop offset=".2" stop-color="#f4fdff" stop-opacity=".95"/><stop offset="1" stop-color="#bfe8f5" stop-opacity=".1"/></radialGradient><clipPath id="earth-clip"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="40" fill="url(#eo)"/><g clip-path="url(#earth-clip)"><path d="M8 30c8-9 17-11 26-8l8 7 2 10-8 8-9 2-7-5-8-4-5-6z" fill="url(#el)"/><path d="M25 47c6-2 11 0 14 5l5 13-8 12-10 7-8-5-3-13 3-11z" fill="url(#el)"/><path d="M42 17l9-5 12 2 9 8-4 9-11 3-9-3-7-6z" fill="url(#el)"/><path d="M50 36l10-3 12 5 9 11-4 13-10 7-12-3-5-11 1-11z" fill="url(#el)"/><path d="M52 55l8-2 8 4 5 7-5 6-10 1-6-7z" fill="#557d53"/><path d="M75 58l8 3 5 6-4 7-8-1-5-7z" fill="#658756"/><path d="M10 58l8 3 6 7-3 8-8 3-7-5-1-9z" fill="#547c55"/><path d="M36 74l7 1 5 4-3 7-8 2-5-5z" fill="#75955e"/><path d="M42 39l9-4 8 4 2 8-6 7-9-2-5-7z" fill="url(#ed)"/><path d="M56 26l12-3 11 4 3 7-9 5-13-2-4-7z" fill="#7f8456"/><ellipse cx="30" cy="9" rx="18" ry="6" fill="url(#eice)"/><ellipse cx="31" cy="88" rx="22" ry="7" fill="url(#eice)"/><path d="M17 32c9-3 18-1 25 4s15 5 23 0" stroke="#dff7ff" stroke-width="1.8" opacity=".35" fill="none"/><path d="M23 58c8 3 15 1 21-3s13-3 19 0" stroke="#e8fbff" stroke-width="1.3" opacity=".28" fill="none"/><path d="M37 15c5 1 8 4 9 8M75 25c-3 4-3 8-1 12" stroke="#f0fcff" stroke-width="1" opacity=".25" fill="none"/><path d="M12 43c10-7 24-7 34-1s20 5 30-2 16-4 20 0" stroke="#f3fdff" stroke-width="2.2" opacity=".2" fill="none"/><circle cx="60" cy="32" r="3.5" fill="#d9c59a" opacity=".35"/><circle cx="35" cy="64" r="4.5" fill="#9c7e54" opacity=".4"/></g><circle cx="48" cy="48" r="40.7" fill="none" stroke="#bdf4ff" stroke-opacity=".52"/><circle cx="48" cy="48" r="42" fill="none" stroke="#dffcff" stroke-opacity=".14"/></svg>`,
+    'earth-night': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><clipPath id="nclip"><circle cx="48" cy="48" r="40"/></clipPath><radialGradient id="nhalo" cx="50%" cy="50%" r="50%"><stop offset=".3" stop-color="#ffbd62" stop-opacity=".16"/><stop offset="1" stop-color="#ffbd62" stop-opacity="0"/></radialGradient></defs><g clip-path="url(#nclip)"><circle cx="48" cy="48" r="40" fill="url(#nhalo)"/><g fill="#ffcf76" opacity=".86"><circle cx="17" cy="29" r=".9"/><circle cx="20" cy="32" r=".6"/><circle cx="23" cy="28" r=".7"/><circle cx="26" cy="33" r="1"/><circle cx="29" cy="29" r=".6"/><circle cx="31" cy="36" r=".8"/><circle cx="34" cy="31" r=".5"/><circle cx="18" cy="38" r=".7"/><circle cx="24" cy="40" r=".6"/><circle cx="28" cy="42" r=".8"/><circle cx="31" cy="46" r=".5"/><circle cx="26" cy="52" r=".8"/><circle cx="30" cy="55" r=".6"/><circle cx="34" cy="58" r=".7"/><circle cx="29" cy="64" r=".5"/><circle cx="33" cy="70" r=".7"/><circle cx="37" cy="75" r=".5"/><circle cx="45" cy="20" r=".7"/><circle cx="48" cy="24" r=".6"/><circle cx="52" cy="22" r=".8"/><circle cx="56" cy="19" r=".5"/><circle cx="59" cy="25" r=".7"/><circle cx="62" cy="23" r=".6"/><circle cx="65" cy="28" r=".9"/><circle cx="68" cy="31" r=".6"/><circle cx="72" cy="29" r=".7"/><circle cx="75" cy="34" r=".5"/><circle cx="59" cy="36" r=".7"/><circle cx="63" cy="40" r=".8"/><circle cx="67" cy="43" r=".6"/><circle cx="71" cy="45" r=".7"/><circle cx="74" cy="49" r=".6"/><circle cx="78" cy="54" r=".8"/><circle cx="73" cy="59" r=".6"/><circle cx="78" cy="63" r=".5"/><circle cx="70" cy="68" r=".7"/><circle cx="75" cy="72" r=".5"/><circle cx="59" cy="71" r=".6"/><circle cx="64" cy="75" r=".5"/><circle cx="52" cy="80" r=".6"/><circle cx="46" cy="72" r=".5"/><circle cx="38" cy="64" r=".6"/><circle cx="21" cy="55" r=".5"/><circle cx="16" cy="48" r=".7"/><circle cx="25" cy="72" r=".5"/><circle cx="43" cy="55" r=".5"/><circle cx="48" cy="62" r=".6"/><circle cx="54" cy="58" r=".5"/></g><g fill="#fff0c0" opacity=".72"><circle cx="27" cy="30" r="1.4"/><circle cx="58" cy="24" r="1.2"/><circle cx="67" cy="42" r="1.5"/><circle cx="73" cy="58" r="1.2"/><circle cx="31" cy="58" r="1.1"/><circle cx="48" cy="78" r="1.1"/></g><g stroke="#ffbf68" stroke-width=".35" opacity=".55" fill="none"><path d="M16 30l10 3 6 6 3 9M18 43l7 6 4 10M27 29l5-8M44 21l9 5 7 1M58 27l10 5 4 8-3 8M62 39l-5 12-9 8M72 48l5 9-4 8M34 55l13 3 10-1M28 65l8 3 6 5"/></g></g><circle cx="48" cy="48" r="40.7" fill="none" stroke="#ffcf79" stroke-opacity=".08"/></svg>`,
+    'earth-clouds': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><clipPath id="cclip"><circle cx="48" cy="48" r="40"/></clipPath><linearGradient id="cg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset=".25" stop-color="#ffffff" stop-opacity=".4"/><stop offset=".55" stop-color="#ffffff" stop-opacity=".68"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient></defs><g clip-path="url(#cclip)" fill="none" stroke="url(#cg)" stroke-linecap="round"><path d="M8 28c12-7 23-8 34-4s18 5 28 0 18-3 24 2" stroke-width="3"/><path d="M14 40c10 5 20 4 29-2s19-6 28 0 15 4 22-1" stroke-width="2.4"/><path d="M12 56c10-4 18-2 27 3s18 4 27-1 17-4 23 0" stroke-width="3.2"/><path d="M20 70c8 3 16 2 23-2s14-4 21 0 14 4 20 0" stroke-width="2"/><path d="M34 19c7-3 13-2 18 2M64 66c5-3 10-2 14 1" stroke-width="1.8"/></g><circle cx="48" cy="48" r="40.7" fill="none" stroke="#ffffff" stroke-opacity=".08"/></svg>`,
+    mars: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="26%" r="84%"><stop offset="0" stop-color="#ebae82"/><stop offset=".35" stop-color="#b95d40"/><stop offset=".72" stop-color="#762f27"/><stop offset="1" stop-color="#2b1113"/></radialGradient><radialGradient id="s" cx="70%" cy="78%" r="66%"><stop offset="0" stop-color="#160607" stop-opacity=".62"/><stop offset="1" stop-color="#160607" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#e18458" opacity=".11"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><ellipse cx="38" cy="24" rx="23" ry="9" fill="#e8d8c7" opacity=".78" transform="rotate(-8 38 24)"/><path d="M16 57c9-8 19-9 27-4s14 3 21-2 14-2 20 3" stroke="#5a211d" stroke-width="3" fill="none" opacity=".55"/><path d="M28 43c8 1 13 5 20 4s15-4 24-2" stroke="#60241e" stroke-width="5" fill="none" opacity=".32"/><ellipse cx="32" cy="63" rx="9" ry="5" fill="#5d241e" opacity=".36"/><ellipse cx="67" cy="35" rx="7" ry="4" fill="#7c3729" opacity=".38"/><circle cx="61" cy="69" r="4.5" fill="#4b1c18" opacity=".4"/><circle cx="25" cy="34" r="3" fill="#e0a27c" opacity=".35"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#f0ad83" stroke-opacity=".46"/></svg>`,
+    mercury: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="33%" cy="25%" r="85%"><stop offset="0" stop-color="#e3d2ae"/><stop offset=".34" stop-color="#ab9a7b"/><stop offset=".7" stop-color="#6a6152"/><stop offset="1" stop-color="#28251f"/></radialGradient><radialGradient id="s" cx="70%" cy="78%" r="66%"><stop offset="0" stop-color="#0c0b08" stop-opacity=".66"/><stop offset="1" stop-color="#0c0b08" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#d7b76f" opacity=".09"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><circle cx="30" cy="32" r="8" fill="#746b5a" opacity=".5"/><circle cx="65" cy="27" r="5" fill="#786e5c" opacity=".45"/><circle cx="62" cy="62" r="10" fill="#6e6452" opacity=".38"/><circle cx="27" cy="68" r="6" fill="#7b705c" opacity=".34"/><path d="M18 47l14-5 11 5 10-7 15 4" stroke="#e4c88d" stroke-width="1.8" fill="none" opacity=".38"/><path d="M35 22l5 12-3 13 8 11-4 14" stroke="#e9d09a" stroke-width="1.3" fill="none" opacity=".24"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#edd49a" stroke-opacity=".42"/></svg>`,
+    tangled: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="26%" r="84%"><stop offset="0" stop-color="#c99261"/><stop offset=".34" stop-color="#8a5738"/><stop offset=".7" stop-color="#583522"/><stop offset="1" stop-color="#21130d"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#0d0705" stop-opacity=".68"/><stop offset="1" stop-color="#0d0705" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#d09a62" opacity=".09"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M12 32l12-5 10 4-2 9-11 4-9-5z" fill="#6c452c" opacity=".66"/><path d="M48 19l14 4 8 11-6 9-13-3-6-10z" fill="#74462b" opacity=".55"/><path d="M30 52l13-4 12 7-3 13-12 7-11-7z" fill="#5d3925" opacity=".56"/><path d="M60 55l12-4 10 7-4 12-11 5-8-8z" fill="#6f452c" opacity=".5"/><path d="M17 72l8-7 9 3-2 10-9 4-7-4z" fill="#4e3020" opacity=".55"/><path d="M10 51c15-12 31-8 45 2s22 7 34-4" stroke="#e3b17a" stroke-width="1.4" fill="none" opacity=".3"/><circle cx="33" cy="62" r="2.4" fill="#b489cb" opacity=".75"/><circle cx="66" cy="36" r="2" fill="#80d7d2" opacity=".68"/><circle cx="56" cy="70" r="1.6" fill="#e8b675" opacity=".65"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#dca977" stroke-opacity=".4"/></svg>`,
+    dreaming: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="26%" r="84%"><stop offset="0" stop-color="#cbb1e9"/><stop offset=".34" stop-color="#8b6fba"/><stop offset=".7" stop-color="#513a74"/><stop offset="1" stop-color="#1b112c"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#08040d" stop-opacity=".68"/><stop offset="1" stop-color="#08040d" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#9b7cdb" opacity=".12"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M18 75l7-26 9-4 8 30z" fill="#73d7cc" opacity=".5"/><path d="M42 82l8-34 8-9 10 40z" fill="#c7a4ed" opacity=".45"/><path d="M65 68l6-17 8-5 6 22z" fill="#7be3d7" opacity=".36"/><path d="M12 41c14-8 28-7 41-1s24 5 35-1" stroke="#e0cdf7" stroke-width="1.6" fill="none" opacity=".38"/><path d="M14 57c14 4 25 1 37-4s25-4 35 2" stroke="#80e1d5" stroke-width="1.3" fill="none" opacity=".3"/><circle cx="29" cy="25" r="1.3" fill="#f1e7ff" opacity=".8"/><circle cx="70" cy="34" r="1.1" fill="#bffbf0" opacity=".8"/><circle cx="52" cy="17" r="1.2" fill="#f1e7ff" opacity=".7"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#cbb3f0" stroke-opacity=".5"/></svg>`,
+    moon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="26%" r="84%"><stop offset="0" stop-color="#d0d1ca"/><stop offset=".35" stop-color="#9a9b94"/><stop offset=".72" stop-color="#62645f"/><stop offset="1" stop-color="#222523"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#070808" stop-opacity=".66"/><stop offset="1" stop-color="#070808" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#b9c5bd" opacity=".08"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><ellipse cx="35" cy="31" rx="17" ry="12" fill="#6b6d68" opacity=".38"/><ellipse cx="62" cy="60" rx="15" ry="11" fill="#5d615c" opacity=".34"/><circle cx="27" cy="59" r="7" fill="#73766f" opacity=".45"/><circle cx="67" cy="30" r="5" fill="#7a7c75" opacity=".4"/><circle cx="54" cy="73" r="4" fill="#555853" opacity=".45"/><circle cx="40" cy="51" r="3" fill="#848780" opacity=".34"/><circle cx="76" cy="51" r="2.5" fill="#898b84" opacity=".3"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#d3d5ce" stroke-opacity=".38"/></svg>`,
+    europa: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="25%" r="84%"><stop offset="0" stop-color="#f6fdff"/><stop offset=".34" stop-color="#c9e8f0"/><stop offset=".7" stop-color="#81b4c9"/><stop offset="1" stop-color="#31576b"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#07131a" stop-opacity=".62"/><stop offset="1" stop-color="#07131a" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#9ee3f4" opacity=".1"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M12 38c10-5 18-2 25 5s14 9 26 3 14-4 21 1" stroke="#f5ffff" stroke-width="2.2" fill="none" opacity=".7"/><path d="M20 61c10 2 15 8 23 7s14-8 24-6 12 4 18 2" stroke="#d4f7ff" stroke-width="1.6" fill="none" opacity=".55"/><path d="M35 19l5 18-6 12 7 14-4 13" stroke="#e8fbff" stroke-width="1.4" fill="none" opacity=".5"/><path d="M70 25l-7 15 5 11-9 12" stroke="#f0fdff" stroke-width="1.2" fill="none" opacity=".45"/><ellipse cx="30" cy="49" rx="8" ry="5" fill="#5c91a8" opacity=".25"/><ellipse cx="64" cy="54" rx="10" ry="4" fill="#5d93a9" opacity=".22"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#d7f7ff" stroke-opacity=".58"/></svg>`,
+    throne: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="25%" r="84%"><stop offset="0" stop-color="#eef6d2"/><stop offset=".34" stop-color="#b7ce8f"/><stop offset=".7" stop-color="#758e58"/><stop offset="1" stop-color="#2b3822"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#0a0e06" stop-opacity=".64"/><stop offset="1" stop-color="#0a0e06" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#c8e79c" opacity=".1"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M12 33c12-5 22-3 31 4s17 9 30 2 13-2 18 2" stroke="#f2f9de" stroke-width="3" fill="none" opacity=".36"/><path d="M16 59c11 3 19 0 27-5s16-6 26-1 13 6 20 3" stroke="#e5f2c7" stroke-width="2.2" fill="none" opacity=".3"/><ellipse cx="32" cy="51" rx="11" ry="7" fill="#43592f" opacity=".5"/><ellipse cx="64" cy="37" rx="14" ry="8" fill="#4a6134" opacity=".44"/><ellipse cx="57" cy="70" rx="10" ry="5" fill="#3d512b" opacity=".48"/><path d="M29 30l4-10 5 9 5-13 4 12" stroke="#d7ecb1" stroke-width="1.3" fill="none" opacity=".35"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#d9ecb4" stroke-opacity=".48"/></svg>`,
+    neptune: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="25%" r="84%"><stop offset="0" stop-color="#86c9f2"/><stop offset=".34" stop-color="#3f83c7"/><stop offset=".7" stop-color="#1a477b"/><stop offset="1" stop-color="#071a36"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#020711" stop-opacity=".66"/><stop offset="1" stop-color="#020711" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#5bdcf1" opacity=".11"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M10 34c14-4 26-2 36 2s22 4 40-2" stroke="#a4e7fb" stroke-width="4.5" fill="none" opacity=".2"/><path d="M13 50c13 3 23 1 33-3s21-4 37 2" stroke="#b7f5ff" stroke-width="3" fill="none" opacity=".16"/><path d="M18 65c13 2 22 0 30-4s18-4 31 1" stroke="#97e8f7" stroke-width="2.2" fill="none" opacity=".14"/><path d="M55 61c7-2 13 0 18 4" stroke="#f28ed5" stroke-width="1.2" fill="none" opacity=".5"/><circle cx="58" cy="66" r="1.6" fill="#f3a0e4" opacity=".85"/><circle cx="66" cy="61" r="1.2" fill="#7cf6f2" opacity=".8"/><circle cx="72" cy="68" r="1.4" fill="#f4a8e8" opacity=".7"/><circle cx="78" cy="59" r="1" fill="#8efbf5" opacity=".7"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#8fe7fa" stroke-opacity=".52"/></svg>`,
+    paleheart: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="25%" r="84%"><stop offset="0" stop-color="#ffffff"/><stop offset=".38" stop-color="#f0ece1"/><stop offset=".72" stop-color="#c9c2b2"/><stop offset="1" stop-color="#736e61"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#25231d" stop-opacity=".46"/><stop offset="1" stop-color="#25231d" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="45" fill="#fdf9ec" opacity=".16"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M18 53c8-13 19-18 30-17s21 6 29 19" stroke="#d8c28f" stroke-width="2.4" fill="none" opacity=".56"/><path d="M22 64c8-6 15-7 23-4s16 2 26-4" stroke="#e9dcb9" stroke-width="1.8" fill="none" opacity=".6"/><path d="M30 31c7 2 11 8 12 17s0 18-4 27" stroke="#cdb887" stroke-width="1.3" fill="none" opacity=".4"/><path d="M61 23c-4 8-4 17 0 26s7 16 4 27" stroke="#efe5c9" stroke-width="1.1" fill="none" opacity=".45"/><path d="M40 70c7-3 14-3 21 0" stroke="#b7ded7" stroke-width="1.3" fill="none" opacity=".4"/><circle cx="42" cy="42" r="3.2" fill="#f7e9b7" opacity=".35"/><circle cx="57" cy="57" r="2.2" fill="#d5e9df" opacity=".34"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#fffdf3" stroke-opacity=".65"/></svg>`
+  };
+
+  DESTINY_PLANET_SVG.kepler = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="35%" cy="28%" r="82%"><stop offset="0" stop-color="#8b7cc4"/><stop offset=".36" stop-color="#4a3d78"/><stop offset=".72" stop-color="#241d42"/><stop offset="1" stop-color="#070611"/></radialGradient><radialGradient id="s" cx="70%" cy="78%" r="66%"><stop offset="0" stop-color="#030207" stop-opacity=".7"/><stop offset="1" stop-color="#030207" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="45" fill="#8fdff0" opacity=".08"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M14 34l12-7 14 2 7 8-6 9-13 2-10-5z" fill="#342a56" opacity=".6"/><path d="M52 18l15 3 8 11-5 9-14-3-6-10z" fill="#40316a" opacity=".5"/><path d="M28 58l13-5 12 7-3 13-13 6-10-8z" fill="#2b2247" opacity=".55"/><ellipse cx="48" cy="50" rx="34" ry="10" fill="none" stroke="#8cefe9" stroke-width="1.5" opacity=".5" transform="rotate(-16 48 50)"/><ellipse cx="48" cy="50" rx="24" ry="6" fill="none" stroke="#d5b1ff" stroke-width="1" opacity=".45" transform="rotate(-16 48 50)"/><circle cx="48" cy="50" r="4" fill="#f4ffff" opacity=".92"/><circle cx="48" cy="50" r="8" fill="none" stroke="#aefdf4" stroke-width="1" opacity=".5"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#cdb5ff" stroke-opacity=".48"/></svg>`;
+  DESTINY_PLANET_SVG.tharsis = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="26%" r="84%"><stop offset="0" stop-color="#e7ae7e"/><stop offset=".35" stop-color="#a9533b"/><stop offset=".72" stop-color="#612a25"/><stop offset="1" stop-color="#221011"/></radialGradient><radialGradient id="s" cx="70%" cy="78%" r="66%"><stop offset="0" stop-color="#100506" stop-opacity=".68"/><stop offset="1" stop-color="#100506" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#e18f5b" opacity=".1"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><ellipse cx="37" cy="22" rx="22" ry="8" fill="#e7d0bf" opacity=".68" transform="rotate(-8 37 22)"/><path d="M12 52l15-5 12 5 12-4 14 6 20-3" stroke="#54231f" stroke-width="2.4" fill="none" opacity=".45"/><path d="M24 71c10 3 17 0 25-5s18-5 29 0" stroke="#7c3b2b" stroke-width="1.4" fill="none" opacity=".4"/><path d="M50 36l14-3 12 5-3 10-13 4-11-5z" fill="#5c3027" opacity=".45"/><circle cx="61" cy="61" r="2" fill="#8af0ec" opacity=".8"/><circle cx="67" cy="57" r="1.5" fill="#f0b875" opacity=".8"/><circle cx="55" cy="67" r="1.2" fill="#8af0ec" opacity=".7"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#f0b27f" stroke-opacity=".42"/></svg>`;
+
+  DESTINY_PLANET_SVG.nessus = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="26%" r="84%"><stop offset="0" stop-color="#c9d39a"/><stop offset=".34" stop-color="#7b9362"/><stop offset=".7" stop-color="#4d5b3d"/><stop offset="1" stop-color="#1f2619"/></radialGradient><radialGradient id="s" cx="70%" cy="78%" r="66%"><stop offset="0" stop-color="#080c06" stop-opacity=".64"/><stop offset="1" stop-color="#080c06" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#87d8c6" opacity=".09"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M14 35l13-8 15 2 8 9-7 10-14 2-10-6z" fill="#9b6b45" opacity=".46"/><path d="M51 17l16 4 9 12-6 10-15-3-7-11z" fill="#557a62" opacity=".5"/><path d="M28 60l14-5 13 8-3 14-14 6-11-9z" fill="#78533b" opacity=".48"/><path d="M12 51c15-8 29-6 42 1s24 5 34-1" stroke="#8ce8d7" stroke-width="1.4" fill="none" opacity=".4"/><path d="M18 65c13 3 23 1 33-3s20-4 31 1" stroke="#d8bd7c" stroke-width="1.1" fill="none" opacity=".3"/><circle cx="33" cy="31" r="1.5" fill="#b7f4e8" opacity=".6"/><circle cx="62" cy="44" r="1.2" fill="#b7f4e8" opacity=".55"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#c9e7a5" stroke-opacity=".44"/></svg>`;
+
+  DESTINY_PLANET_SVG.venus = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="25%" r="85%"><stop offset="0" stop-color="#fff1c5"/><stop offset=".32" stop-color="#e5c87e"/><stop offset=".66" stop-color="#a47b43"/><stop offset="1" stop-color="#3b2917"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#140c05" stop-opacity=".64"/><stop offset="1" stop-color="#140c05" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#efd38a" opacity=".11"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M9 36c11-8 21-9 33-4s23 3 45-4" stroke="#fff4cb" stroke-width="3.2" fill="none" opacity=".45"/><path d="M12 52c12-5 21-4 31 1s23 4 41-3" stroke="#f8e2a5" stroke-width="2.4" fill="none" opacity=".4"/><path d="M20 68c11 3 20 1 30-4s20-3 29 1" stroke="#ddb970" stroke-width="1.8" fill="none" opacity=".32"/><path d="M23 47l14-9 10 4-3 12-14 7-9-5z" fill="#69764a" opacity=".45"/><path d="M55 62l11-5 11 4-2 10-12 4-9-5z" fill="#5f7144" opacity=".4"/><path d="M58 24l8-3 9 3-1 7-9 3-8-3z" fill="#7a7c4d" opacity=".32"/><path d="M11 61c15-7 27-5 39 1s25 3 39-4" stroke="#8df0c7" stroke-width="1.2" fill="none" opacity=".4"/><circle cx="61" cy="33" r="1.6" fill="#a7ffe3" opacity=".8"/><circle cx="69" cy="39" r="1.1" fill="#a7ffe3" opacity=".65"/><circle cx="27" cy="60" r="1.2" fill="#d8f5ab" opacity=".6"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#f6df9e" stroke-opacity=".55"/></svg>`;
+  DESTINY_PLANET_SVG.blackhole = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="bh" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe7b5" stop-opacity=".95"/><stop offset=".2" stop-color="#e9b56b" stop-opacity=".58"/><stop offset=".48" stop-color="#9b6be0" stop-opacity=".26"/><stop offset=".76" stop-color="#2d184b" stop-opacity=".12"/><stop offset="1" stop-color="#08050f" stop-opacity="0"/></radialGradient><linearGradient id="disk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4b234b" stop-opacity="0"/><stop offset=".18" stop-color="#b96b3f"/><stop offset=".34" stop-color="#ffe5a4"/><stop offset=".52" stop-color="#fff8dc"/><stop offset=".7" stop-color="#df9a55"/><stop offset=".86" stop-color="#7c5fc4"/><stop offset="1" stop-color="#170d2b" stop-opacity="0"/></linearGradient><radialGradient id="core" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#000"/><stop offset=".72" stop-color="#000"/><stop offset=".84" stop-color="#09040f"/><stop offset=".92" stop-color="#5b3f91" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter></defs><circle cx="48" cy="48" r="46" fill="url(#bh)"/><g transform="rotate(-18 48 48)" filter="url(#soft)" opacity=".9"><ellipse cx="48" cy="48" rx="41" ry="10" fill="none" stroke="url(#disk)" stroke-width="4.2"/><ellipse cx="48" cy="48" rx="33" ry="6.5" fill="none" stroke="url(#disk)" stroke-width="2" opacity=".65"/></g><circle cx="48" cy="48" r="19" fill="url(#core)"/><circle cx="48" cy="48" r="21" fill="none" stroke="#ffe5a8" stroke-width="1.6" opacity=".92"/><path d="M19 43C29 29 67 29 77 43M19 53C29 67 67 67 77 53" fill="none" stroke="#d9c0ff" stroke-width="1.1" opacity=".58"/><path d="M8 48C23 64 73 64 88 48" fill="none" stroke="url(#disk)" stroke-width="4.4" opacity=".96"/><circle cx="22" cy="37" r=".9" fill="#f4eaff"/><circle cx="77" cy="32" r=".7" fill="#f4eaff"/><circle cx="67" cy="73" r="1" fill="#ffe2ac"/><circle cx="18" cy="66" r=".7" fill="#c6b2ff"/><circle cx="48" cy="48" r="41" fill="none" stroke="#f1d391" stroke-opacity=".32"/></svg>`;
+
+  const DESTINY_PLANET_TINTS = {
+    earth: ['#9dd8f2', '#3f8bc8', '#06182e'],
+    mars: ['#ebae82', '#b95d40', '#2b1113'],
+    mercury: ['#e3d2ae', '#ab9a7b', '#28251f'],
+    tangled: ['#c99261', '#8a5738', '#21130d'],
+    dreaming: ['#cbb1e9', '#8b6fba', '#1b112c'],
+    moon: ['#d0d1ca', '#9a9b94', '#222523'],
+    europa: ['#f6fdff', '#c9e8f0', '#31576b'],
+    throne: ['#eef6d2', '#b7ce8f', '#2b3822'],
+    neptune: ['#86c9f2', '#3f83c7', '#071a36'],
+    paleheart: ['#ffffff', '#f0ece1', '#736e61'],
+    kepler: ['#8b7cc4', '#4a3d78', '#070611'],
+    tharsis: ['#e7ae7e', '#a9533b', '#221011'],
+    nessus: ['#c9d39a', '#7b9362', '#1f2619'],
+    venus: ['#fff1c5', '#e5c87e', '#3b2917'],
+    blackhole: ['#ffe7b5', '#9b6be0', '#08050f']
+  };
+
+  const DESTINY_PLANET_BY_BIOME = {
+    lastcity: 'earth',
+    mercury: 'mercury',
+    vexforest: 'mercury',
+    vexcore: 'mercury',
+    mars: 'mars',
+    braytech: 'mars',
+    warmind: 'mars',
+    tangled: 'tangled',
+    prison: 'tangled',
+    dreaming: 'dreaming',
+    moon: 'moon',
+    scarlet: 'moon',
+    pyramid: 'moon',
+    europa: 'europa',
+    riis: 'europa',
+    throne: 'throne',
+    temple: 'throne',
+    neomuna: 'neptune',
+    typhon: 'neptune',
+    paleheart: 'paleheart',
+    sanctum: 'paleheart',
+    cabalship: 'mars',
+    almighty: 'mars',
+    edz: 'earth',
+    cabalthrone: 'mars',
+    kepler: 'kepler',
+    'kepler-academy': 'kepler',
+    'kepler-singularity': 'kepler',
+    venus: 'venus',
+    vaultglass: 'venus',
+    blackhole: 'blackhole',
+    eventhorizon: 'blackhole',
+    tharsis: 'tharsis',
+    'tharsis-city': 'tharsis',
+    'tharsis-fort': 'tharsis',
+    nessus: 'nessus'
+  };
+
+
+  function destinySceneVariant(horizon, variant, palette, hash) {
+    const accent = palette.accent;
+    const accent2 = palette.accent2;
+    const shift = (hash % 41) - 20;
+    let art = '';
+    const isVex = /vex/.test(horizon);
+    const isScorn = /prison|asteroids/.test(horizon);
+    const isHive = /hive|scarlet|pyramid|throne|awoken/.test(horizon);
+    const isIce = /ice|fallen/.test(horizon);
+    const isCity = /neon|typhon|city|forest|ship|cabalthrone/.test(horizon);
+    const isOrganic = /organic|sanctum/.test(horizon);
+    const isKepler = /kepler|singularity/.test(horizon);
+    const isTharsis = /tharsis/.test(horizon);
+    if (isVex) {
+      if (variant === 0) {
+        art += `<path d="M250 286L400 92L550 286" fill="none" stroke="${accent}" stroke-width="9" opacity=".34"/><path d="M292 286L400 142L508 286" fill="none" stroke="${accent2}" stroke-width="2" opacity=".34"/><circle cx="400" cy="158" r="13" fill="${accent}" opacity=".55"/><path d="M400 158V286" stroke="${accent2}" stroke-width="2" opacity=".25" stroke-dasharray="4 8"/>`;
+      } else if (variant === 1) {
+        art += `<path d="M${520 + shift} 286V142l28-38 30 38v144z" fill="#263a36" opacity=".9" stroke="${accent}" stroke-width="1" stroke-opacity=".3"/><circle cx="${548 + shift}" cy="168" r="17" fill="none" stroke="${accent2}" stroke-width="2" opacity=".45"/><path d="M${548 + shift} 185v101" stroke="${accent2}" stroke-width="2" opacity=".25"/>`;
+      } else if (variant === 2) {
+        art += `<circle cx="${210 + shift}" cy="170" r="74" fill="none" stroke="${accent}" stroke-width="5" opacity=".3"/><circle cx="${210 + shift}" cy="170" r="48" fill="none" stroke="${accent2}" stroke-width="1.5" opacity=".3" stroke-dasharray="3 7"/><path d="M${210 + shift} 96v148M${136 + shift} 170h148" stroke="${accent2}" stroke-width="1" opacity=".16"/>`;
+      } else {
+        art += `<path d="M${360 + shift} 286V200l-44-32 44-22V110M${360 + shift} 200l55-34-55-24V92" fill="none" stroke="${accent}" stroke-width="4" opacity=".3"/><circle cx="${360 + shift}" cy="200" r="8" fill="${accent2}" opacity=".5"/>`;
+      }
+    } else if (/bray|warmind/.test(horizon)) {
+      if (variant === 0) {
+        art += `<path d="M${350 + shift} 286V126h54v160z" fill="#213038" opacity=".92" stroke="${accent2}" stroke-width="1" stroke-opacity=".25"/><path d="M${330 + shift} 150h94M${330 + shift} 180h94" stroke="${accent}" stroke-width="2" opacity=".18"/><circle cx="${377 + shift}" cy="116" r="10" fill="${accent}" opacity=".45"/>`;
+      } else if (variant === 1) {
+        art += `<path d="M${230 + shift} 286c0-58 48-92 100-92s100 34 100 92z" fill="#23343b" opacity=".9" stroke="${accent2}" stroke-width="1.5" stroke-opacity=".24"/><path d="M${280 + shift} 286V224h100v62" fill="none" stroke="${accent}" stroke-width="2" opacity=".18"/>`;
+      } else if (variant === 2) {
+        art += `<circle cx="${560 + shift}" cy="174" r="46" fill="none" stroke="${accent}" stroke-width="3" opacity=".35"/><circle cx="${560 + shift}" cy="174" r="26" fill="${accent}" opacity=".13"/><ellipse cx="${560 + shift}" cy="174" rx="77" ry="18" fill="none" stroke="${accent2}" stroke-width="1.4" opacity=".28" transform="rotate(-18 ${560 + shift} 174)"/>`;
+      } else {
+        art += `<path d="M${220 + shift} 260h300M${250 + shift} 260l35-84M${470 + shift} 260l-35-84" stroke="${accent2}" stroke-width="3" opacity=".24"/><path d="M${285 + shift} 176h120" stroke="${accent}" stroke-width="2" opacity=".28"/>`;
+      }
+    } else if (isScorn) {
+      const x = 300 + shift;
+      if (variant === 0) {
+        art += `<path d="M${x - 70} 286V206h48v80M${x + 22} 286V176h54v110" fill="#30241f" opacity=".92" stroke="${accent}" stroke-width="1.4" stroke-opacity=".26"/><path d="M${x - 46} 206v-24M${x + 49} 176v-32" stroke="${accent2}" stroke-width="2" opacity=".3"/>`;
+      } else if (variant === 1) {
+        art += `<path d="M${x - 100} 286c24-58 58-82 100-82s76 24 100 82z" fill="#2c211d" opacity=".9" stroke="${accent2}" stroke-width="1" stroke-opacity=".2"/><path d="M${x} 204V112l-34 26M${x} 112l34 26" fill="none" stroke="${accent}" stroke-width="3" opacity=".28"/>`;
+      } else if (variant === 2) {
+        art += `<path d="M${x - 26} 286V156l26-26 26 26v130z" fill="#3b2932" opacity=".92" stroke="${accent}" stroke-width="1.5" stroke-opacity=".28"/><circle cx="${x}" cy="182" r="10" fill="${accent2}" opacity=".5"/><path d="M${x - 70} 286c22-30 44-34 70 0M${x} 286c22-30 44-34 70 0" fill="none" stroke="${accent2}" stroke-width="2" opacity=".2"/>`;
+      } else {
+        art += `<path d="M${x - 90} 248l72-36 64 20 46 52-100 10-82-26z" fill="#2b211d" opacity=".9"/><path d="M${x - 52} 286l24-46M${x + 44} 286l-24-46" stroke="${accent}" stroke-width="2" opacity=".25"/><circle cx="${x + 28}" cy="234" r="3" fill="${accent2}" opacity=".7"/>`;
+      }
+    } else if (isHive) {
+      if (horizon === 'pyramid') {
+        art += `<path d="M${330 + shift} 286L460 92L590 286Z" fill="#15131b" opacity=".9"/><path d="M460 92V286" stroke="${accent2}" stroke-width="1" opacity=".3"/>`;
+      } else if (variant === 0) {
+        art += `<path d="M${260 + shift} 286V180c0-58 44-92 102-92s102 34 102 92v106" fill="none" stroke="${accent}" stroke-width="8" opacity=".26"/><path d="M${310 + shift} 286V206c0-32 22-52 52-52s52 20 52 52v80" fill="none" stroke="${accent2}" stroke-width="2" opacity=".25"/>`;
+      } else if (variant === 1) {
+        art += `<path d="M${420 + shift} 286L452 100l22 186z" fill="#252a20" opacity=".94" stroke="${accent}" stroke-width="1" stroke-opacity=".3"/><path d="M${450 + shift} 112v174" stroke="${accent2}" stroke-width="2" opacity=".3"/><circle cx="${452 + shift}" cy="146" r="14" fill="none" stroke="${accent2}" stroke-width="2" opacity=".38"/>`;
+      } else if (variant === 2) {
+        art += `<path d="M${180 + shift} 250l82-46 110 22 56 48-118 12-90-8z" fill="#26251f" opacity=".9" stroke="${accent2}" stroke-width="1" stroke-opacity=".2"/><path d="M${250 + shift} 286l32-72 26 72" fill="none" stroke="${accent}" stroke-width="2" opacity=".28"/>`;
+      } else {
+        art += `<circle cx="${400 + shift}" cy="206" r="62" fill="none" stroke="${accent}" stroke-width="4" opacity=".25"/><path d="M${338 + shift} 206h124M${400 + shift} 144v124" stroke="${accent2}" stroke-width="1.5" opacity=".3" stroke-dasharray="5 7"/><circle cx="${400 + shift}" cy="206" r="24" fill="${accent}" opacity=".12"/>`;
+      }
+    } else if (isIce) {
+      if (variant === 0) {
+        art += `<path d="M${330 + shift} 286L430 92L530 286Z" fill="#b8e1eb" opacity=".24" stroke="${accent2}" stroke-width="2" stroke-opacity=".3"/><path d="M430 118v168" stroke="#f3ffff" stroke-width="2" opacity=".4"/>`;
+      } else if (variant === 1) {
+        art += `<path d="M${180 + shift} 286V190l35-34 34 34v96M${640 + shift} 286V166l30-42 32 42v120" fill="#293b56" opacity=".9" stroke="${accent2}" stroke-width="1.5" stroke-opacity=".25"/><path d="M${215 + shift} 156v-28M${702 + shift} 124v-36" stroke="${accent}" stroke-width="2" opacity=".35"/>`;
+      } else if (variant === 2) {
+        art += `<path d="M120 246c90-76 180-74 270-4s190 48 290-38" fill="none" stroke="${accent2}" stroke-width="5" opacity=".22"/><path d="M120 246c90-76 180-74 270-4s190 48 290-38" fill="none" stroke="#eefcff" stroke-width="1" opacity=".2" stroke-dasharray="3 9"/>`;
+      } else {
+        art += `<path d="M${240 + shift} 250l108-34 120 42-110 28z" fill="#2c3e56" opacity=".85" stroke="${accent2}" stroke-width="1" stroke-opacity=".24"/><path d="M${290 + shift} 244l58-20 54 22" stroke="${accent}" stroke-width="2" opacity=".28"/>`;
+      }
+    } else if (isCity) {
+      const x = 260 + shift;
+      if (variant === 0) {
+        art += `<path d="M${x} 286V154l34-38 33 38v132z" fill="#1d2430" opacity=".94" stroke="${accent}" stroke-width="1" stroke-opacity=".3"/><path d="M${x + 17} 116v170M${x + 51} 116v170" stroke="${accent2}" stroke-width="2" opacity=".25"/>`;
+      } else if (variant === 1) {
+        art += `<path d="M${x - 40} 286V214c0-50 42-78 84-78s84 28 84 78v72" fill="none" stroke="${accent}" stroke-width="6" opacity=".25"/><path d="M${x - 12} 286v-48h56v48" fill="none" stroke="${accent2}" stroke-width="2" opacity=".28"/>`;
+      } else if (variant === 2) {
+        art += `<path d="M${x - 70} 226h180l-22 38h-136z" fill="#2d2335" opacity=".9"/><path d="M${x - 92} 226l22-36h180l22 36M${x - 40} 264v22M${x + 50} 264v22" fill="none" stroke="${accent2}" stroke-width="2" opacity=".26"/>`;
+      } else {
+        art += `<path d="M${x + 20} 286V138l12-44 12 44v148zM${x + 32} 138l-58 30M${x + 32} 138l58 30" fill="none" stroke="${accent}" stroke-width="3" opacity=".3"/><circle cx="${x + 32}" cy="112" r="8" fill="${accent2}" opacity=".45"/>`;
+      }
+    } else if (isOrganic) {
+      const x = 380 + shift;
+      if (variant === 0) {
+        art += `<circle cx="${x}" cy="196" r="82" fill="none" stroke="${accent}" stroke-width="5" opacity=".3"/><circle cx="${x}" cy="196" r="46" fill="none" stroke="${accent2}" stroke-width="2" opacity=".32"/><path d="M${x} 114v164" stroke="${accent2}" stroke-width="1" opacity=".2"/>`;
+      } else if (variant === 1) {
+        art += `<path d="M${x - 90} 286V156l32-32 32 32v130M${x + 28} 286V138l30-30 30 30v148" fill="none" stroke="${accent}" stroke-width="4" opacity=".26"/><circle cx="${x + 58}" cy="122" r="12" fill="${accent2}" opacity=".28"/>`;
+      } else if (variant === 2) {
+        art += `<path d="M${x} 286V178l-66-46M${x} 178l66-46M${x} 204l-42-30M${x} 204l42-30" fill="none" stroke="${accent2}" stroke-width="3" opacity=".3"/><circle cx="${x}" cy="170" r="17" fill="${accent}" opacity=".22"/>`;
+      } else {
+        art += `<path d="M${x - 74} 286V202c0-34 30-56 74-56s74 22 74 56v84" fill="none" stroke="${accent}" stroke-width="7" opacity=".23"/><path d="M${x - 48} 286V216c0-22 20-38 48-38s48 16 48 38v70" fill="none" stroke="${accent2}" stroke-width="2" opacity=".26"/>`;
+      }
+    } else if (isKepler) {
+      const x = 330 + shift;
+      if (variant === 0) {
+        art += `<path d="M${x - 70} 286c0-78 32-126 70-126s70 48 70 126z" fill="#262244" opacity=".9" stroke="${accent}" stroke-width="2" stroke-opacity=".3"/><path d="M${x} 160v126M${x - 38} 286c0-50 18-82 38-106M${x + 38} 286c0-50-18-82-38-106" fill="none" stroke="${accent2}" stroke-width="1" opacity=".3"/>`;
+      } else if (variant === 1) {
+        art += `<ellipse cx="${x + 90}" cy="170" rx="96" ry="24" fill="none" stroke="${accent2}" stroke-width="4" opacity=".46" transform="rotate(-16 ${x + 90} 170)"/><ellipse cx="${x + 90}" cy="170" rx="56" ry="11" fill="none" stroke="${accent}" stroke-width="2" opacity=".4" transform="rotate(-16 ${x + 90} 170)"/><circle cx="${x + 90}" cy="170" r="8" fill="#f4ffff" opacity=".8"/>`;
+      } else if (variant === 2) {
+        art += `<path d="M${x + 10} 286V150l24-38 24 38v136z" fill="#211d38" opacity=".94" stroke="${accent2}" stroke-width="1.5" stroke-opacity=".28"/><path d="M${x + 34} 130v156" stroke="${accent}" stroke-width="2" opacity=".35"/><circle cx="${x + 34}" cy="182" r="13" fill="${accent}" opacity=".18"/>`;
+      } else {
+        art += `<path d="M${x - 120} 286c20-84 78-112 120-112s100 28 120 112" fill="none" stroke="${accent}" stroke-width="7" opacity=".24"/><path d="M${x - 70} 286c12-52 44-72 70-72s58 20 70 72" fill="none" stroke="${accent2}" stroke-width="2" opacity=".28"/>`;
+      }
+    } else if (isTharsis) {
+      const x = 330 + shift;
+      if (variant === 0) {
+        art += `<path d="M${x - 80} 286V188h64v98M${x + 44} 286V158h76v128" fill="#34221d" opacity=".92" stroke="${accent}" stroke-width="1.5" stroke-opacity=".28"/><path d="M${x + 82} 158v-42" stroke="${accent2}" stroke-width="2" opacity=".4"/>`;
+      } else if (variant === 1) {
+        art += `<path d="M${x - 110} 286V206l32-26 32 26v80M${x + 30} 286V182l40-34 40 34v104" fill="none" stroke="${accent}" stroke-width="4" opacity=".28"/><path d="M${x - 78} 180v-22M${x + 70} 148v-28" stroke="${accent2}" stroke-width="2" opacity=".3"/>`;
+      } else if (variant === 2) {
+        art += `<path d="M${x - 100} 230h210l-24 36h-162z" fill="#3a241e" opacity=".9"/><path d="M${x - 100} 230l26-38h210l-26 38" fill="none" stroke="${accent}" stroke-width="3" opacity=".28"/><path d="M${x - 40} 266v20M${x + 55} 266v20" stroke="${accent2}" stroke-width="2" opacity=".28"/>`;
+      } else {
+        art += `<path d="M${x + 30} 286V156l16-54 16 54v130zM${x + 46} 156l-72 32M${x + 46} 156l72 32" fill="none" stroke="${accent}" stroke-width="3" opacity=".3"/><circle cx="${x + 46}" cy="134" r="9" fill="${accent2}" opacity=".42"/>`;
+      }
+    } else {
+      art += `<path d="M120 286c80-56 170-50 240 0M440 286c80-56 170-50 240 0" fill="none" stroke="${accent}" stroke-width="3" opacity=".18"/>`;
+    }
+    const foreground = variant % 2 === 0
+      ? `<path d="M0 286V232l72-20 52 30 14 44z" fill="#080d12" opacity=".82"/><path d="M800 286V208l-58 18-44 34-18 26z" fill="#080d12" opacity=".78"/>`
+      : `<path d="M0 286V218l44-22 72 22 22 68z" fill="#080d12" opacity=".8"/><path d="M800 286V226l-84-26-34 34-12 52z" fill="#080d12" opacity=".76"/>`;
+    return art + foreground;
+  }
+
+
+  function destinyBlackHoleSceneSvg(missionId = '') {
+    let hash = 31;
+    for (let i = 0; i < missionId.length; i += 1) hash = (hash * 37 + missionId.charCodeAt(i)) % 9973;
+    const n = (step) => ((hash * step) % 97) / 97;
+    const stars = Array.from({ length: 120 }, (_, i) => {
+      const x = (i * 137 + hash) % 797;
+      const y = ((i * 71 + hash * 0.7) % 300) + 6;
+      const r = i % 13 === 0 ? 1.7 : i % 5 === 0 ? 1.05 : 0.65;
+      const o = 0.13 + ((i * 17) % 42) / 100;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${i % 8 === 0 ? '#ffe3a8' : i % 11 === 0 ? '#cab3ff' : '#e4f5ff'}" opacity="${o.toFixed(2)}"/>`;
+    }).join('');
+    const debris = Array.from({ length: 44 }, (_, i) => {
+      const angle = (i / 44) * Math.PI * 2 + n(i + 2) * 0.3;
+      const rx = 118 + n(i + 5) * 182;
+      const x = 400 + Math.cos(angle) * rx;
+      const y = 208 + Math.sin(angle) * rx * 0.25;
+      const size = 0.7 + n(i + 9) * 1.8;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${size.toFixed(1)}" fill="${i % 3 === 0 ? '#ffe6ad' : '#bda4ff'}" opacity="${(0.16 + n(i + 13) * 0.38).toFixed(2)}"/>`;
+    }).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+      <defs>
+        <radialGradient id="bh-void" cx="50%" cy="45%" r="58%">
+          <stop offset="0" stop-color="#191028"/>
+          <stop offset=".36" stop-color="#080510"/>
+          <stop offset=".72" stop-color="#030207"/>
+          <stop offset="1" stop-color="#010102"/>
+        </radialGradient>
+        <radialGradient id="bh-photon" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#fff3c8" stop-opacity=".95"/>
+          <stop offset=".38" stop-color="#efbd72" stop-opacity=".7"/>
+          <stop offset=".72" stop-color="#a278ff" stop-opacity=".3"/>
+          <stop offset="1" stop-color="#000" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="bh-disk" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#2c174a" stop-opacity="0"/>
+          <stop offset=".16" stop-color="#8a4b42" stop-opacity=".65"/>
+          <stop offset=".32" stop-color="#f2c479"/>
+          <stop offset=".48" stop-color="#fff9df"/>
+          <stop offset=".63" stop-color="#ffd284"/>
+          <stop offset=".8" stop-color="#9c73e6"/>
+          <stop offset="1" stop-color="#180d2b" stop-opacity="0"/>
+        </linearGradient>
+        <radialGradient id="bh-floor" cx="50%" cy="0%" r="100%">
+          <stop offset="0" stop-color="#3b2b50"/>
+          <stop offset=".3" stop-color="#171022"/>
+          <stop offset="1" stop-color="#030207"/>
+        </radialGradient>
+        <filter id="bh-blur"><feGaussianBlur stdDeviation="8"/></filter>
+        <filter id="bh-soft"><feGaussianBlur stdDeviation="2.5"/></filter>
+      </defs>
+      <rect width="800" height="450" fill="url(#bh-void)"/>
+      ${stars}
+      <g fill="none" stroke="#a98bff" stroke-width=".7" opacity=".24">
+        <ellipse cx="400" cy="208" rx="252" ry="42" transform="rotate(-12 400 208)"/>
+        <ellipse cx="400" cy="208" rx="286" ry="48" transform="rotate(-12 400 208)" stroke-dasharray="2 9"/>
+        <ellipse cx="400" cy="208" rx="318" ry="54" transform="rotate(-12 400 208)" stroke-dasharray="1 14"/>
+      </g>
+      <g transform="rotate(-12 400 208)" opacity=".92" filter="url(#bh-blur)">
+        <ellipse cx="400" cy="208" rx="214" ry="43" fill="none" stroke="url(#bh-disk)" stroke-width="10">
+          <animate attributeName="opacity" values=".58;.95;.58" dur="7.5s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="400" cy="208" rx="166" ry="29" fill="none" stroke="url(#bh-disk)" stroke-width="4" opacity=".75">
+          <animate attributeName="opacity" values=".35;.8;.35" dur="5.2s" repeatCount="indefinite"/>
+        </ellipse>
+      </g>
+      <circle cx="400" cy="208" r="82" fill="#010003"/>
+      <circle cx="400" cy="208" r="86" fill="none" stroke="url(#bh-photon)" stroke-width="5" filter="url(#bh-soft)"/>
+      <g fill="none" stroke="#e8d4ff" opacity=".56">
+        <path d="M292 190C326 139 474 139 508 190" stroke-width="2.2"/>
+        <path d="M286 226C330 275 470 275 514 226" stroke-width="1.7" opacity=".72"/>
+        <path d="M310 166C360 126 440 126 490 166" stroke-width="1" opacity=".42"/>
+      </g>
+      <path d="M118 208C210 254 590 254 682 208" fill="none" stroke="url(#bh-disk)" stroke-width="8" opacity=".9" filter="url(#bh-soft)"/>
+      <g opacity=".72">${debris}
+        <animateTransform attributeName="transform" type="rotate" from="0 400 208" to="360 400 208" dur="42s" repeatCount="indefinite"/>
+      </g>
+      <g fill="none" stroke="#b9a0ff" stroke-width=".9" opacity=".26">
+        <path d="M400 104C466 104 520 146 520 208S466 312 400 312 280 270 280 208 334 104 400 104Z" stroke-dasharray="2 8"/>
+        <path d="M400 132C448 132 486 162 486 208S448 284 400 284 314 254 314 208 352 132 400 132Z" stroke-dasharray="1 6"/>
+      </g>
+      <path d="M0 320H800V450H0Z" fill="url(#bh-floor)"/>
+      <g opacity=".3" stroke="#a98bff" stroke-width=".7" fill="none">
+        <path d="M0 338H800M0 364H800M0 400H800"/>
+        <path d="M400 320L168 450M400 320L278 450M400 320L400 450M400 320L522 450M400 320L632 450"/>
+        <path d="M120 450C220 386 580 386 680 450" stroke-width="1.3"/>
+      </g>
+      <ellipse cx="400" cy="320" rx="360" ry="18" fill="#e7b96e" opacity=".08"/>
+      <text x="400" y="430" text-anchor="middle" fill="#e7b96e" opacity=".22" font-family="monospace" font-size="9" letter-spacing="4">EVENT HORIZON // GRAVITATIONAL ANOMALY</text>
+    </svg>`;
+  }
+
+  function destinySceneSvg(biomeKey, missionId = '') {
+    const palette = DESTINY_BIOMES[biomeKey] || DESTINY_BIOMES.mercury;
+    const horizon = palette.horizon || 'vex-spires';
+    if (horizon === 'blackhole') return destinyBlackHoleSceneSvg(missionId);
+    let hash = 17;
+    for (let i = 0; i < missionId.length; i += 1) hash = (hash * 31 + missionId.charCodeAt(i)) % 9973;
+    const n = (step) => ((hash * step) % 97) / 97;
+    const stars = Array.from({ length: 42 }, (_, i) => {
+      const x = (i * 137 + hash) % 797;
+      const y = ((i * 71 + hash * 0.7) % 254) + 10;
+      const r = i % 11 === 0 ? 1.6 : i % 5 === 0 ? 1.1 : 0.7;
+      const o = 0.18 + ((i * 13) % 40) / 100;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${i % 9 === 0 ? '#ffe6bd' : '#e6f6ff'}" opacity="${o.toFixed(2)}"/>`;
+    }).join('');
+    const spires = (count, color, width, heightBase, spread = 1) => Array.from({ length: count }, (_, i) => {
+      const x = 40 + i * ((720 * spread) / Math.max(1, count - 1));
+      const h = heightBase * (0.55 + n(i + 3) * 0.9);
+      const w = width * (0.7 + n(i + 7) * 0.7);
+      return `<path d="M${(x - w / 2).toFixed(1)} 286 L${x.toFixed(1)} ${(286 - h).toFixed(1)} L${(x + w / 2).toFixed(1)} 286Z" fill="${color}" opacity=".82"/>`;
+    }).join('');
+    const towers = (count, color, light, heightBase) => Array.from({ length: count }, (_, i) => {
+      const x = 55 + i * (690 / Math.max(1, count - 1));
+      const w = 24 + n(i + 11) * 36;
+      const h = heightBase * (0.55 + n(i + 23) * 1.1);
+      const y = 286 - h;
+      const lights = Array.from({ length: 4 }, (_, k) => `<rect x="${(x + 5).toFixed(1)}" y="${(y + 12 + k * 17).toFixed(1)}" width="2" height="5" fill="${light}" opacity=".55"/>`).join('');
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${color}" opacity=".88"/>${lights}<rect x="${(x - 4).toFixed(1)}" y="${(y - 4).toFixed(1)}" width="${(w + 8).toFixed(1)}" height="4" fill="${light}" opacity=".22"/>`;
+    }).join('');
+    let landmarks = '';
+    if (horizon === 'venus-jungle' || horizon === 'vault-glass') {
+      if (horizon === 'vault-glass') {
+        landmarks = `${spires(8, '#3b3621', 20, 104)}<g fill="none" stroke="${palette.accent}" opacity=".38"><ellipse cx="590" cy="178" rx="78" ry="26"/><ellipse cx="590" cy="178" rx="54" ry="16"/><ellipse cx="590" cy="178" rx="30" ry="9"/></g><path d="M590 152v52M564 178h52" stroke="${palette.accent2}" stroke-width="1" opacity=".35"/><g fill="none" stroke="${palette.accent2}" opacity=".18">${Array.from({ length: 6 }, (_, i) => `<path d="M${90 + i * 120} 286V${196 + n(i + 5) * 54}"/><path d="M${90 + i * 120} ${230 + n(i + 3) * 30}l-22-16"/>`).join('')}</g>`;
+      } else {
+        landmarks = `${spires(9, '#465334', 24, 112)}<g fill="none" stroke="${palette.accent2}" opacity=".24">${Array.from({ length: 7 }, (_, i) => {
+          const x = 72 + i * 116;
+          const h = 65 + n(i + 7) * 58;
+          return `<path d="M${x} 286V${286 - h}M${x} ${286 - h * 0.7}l${-24 - n(i) * 18} -22M${x} ${286 - h * 0.58}l${22 + n(i + 4) * 16} -18" stroke-width="2"/>`;
+        }).join('')}</g><g fill="#e8d39a" opacity=".12"><ellipse cx="210" cy="116" rx="145" ry="22"/><ellipse cx="610" cy="156" rx="176" ry="26"/><ellipse cx="430" cy="84" rx="110" ry="14"/></g><path d="M80 258c120-38 210-24 310 4s210 20 326-14" fill="none" stroke="${palette.accent}" stroke-width="2" opacity=".2"/>`;
+      }
+    } else if (horizon === 'vex-spires' || horizon === 'vex-forest' || horizon === 'vex-core') {
+      landmarks = `${spires(11, '#3d4a3f', 22, 108)}<circle cx="${(590 - n(2) * 60).toFixed(1)}" cy="184" r="61" fill="none" stroke="${palette.accent2}" stroke-width="2" opacity=".32"/><circle cx="${(590 - n(2) * 60).toFixed(1)}" cy="184" r="45" fill="none" stroke="${palette.accent}" stroke-width="1" opacity=".2"/>`;
+      if (horizon === 'vex-forest') {
+        landmarks += Array.from({ length: 7 }, (_, i) => {
+          const x = 80 + i * 112;
+          const h = 72 + n(i + 9) * 70;
+          return `<path d="M${x} 286V${286 - h}M${x} ${286 - h * 0.7}l${-24 - n(i) * 16} -24M${x} ${286 - h * 0.62}l${24 + n(i + 4) * 17} -22" stroke="${palette.accent2}" stroke-width="2" opacity=".22" fill="none"/>`;
+        }).join('');
+      }
+    } else if (horizon === 'bray-towers' || horizon === 'warmind-core') {
+      landmarks = `${towers(7, '#26343c', palette.accent2, 116)}<circle cx="615" cy="175" r="46" fill="none" stroke="${palette.accent}" stroke-width="2" opacity=".38"/><circle cx="615" cy="175" r="27" fill="${palette.accent}" opacity=".16"/>`;
+    } else if (horizon === 'prison' || horizon === 'asteroids') {
+      landmarks = Array.from({ length: 5 }, (_, i) => {
+        const x = 70 + i * 160;
+        const y = 125 + n(i + 2) * 90;
+        const r = 26 + n(i + 5) * 40;
+        return `<circle cx="${x}" cy="${y}" r="${r.toFixed(1)}" fill="#2d2221" opacity=".9"/><path d="M${x - r} ${y + r * 0.4}l${r * 0.8} ${-r * 0.25}l${r * 0.6} ${r * 0.35}" stroke="${palette.accent2}" stroke-width="1" opacity=".18" fill="none"/>`;
+      }).join('');
+    } else if (horizon === 'hive-spires' || horizon === 'scarlet-keep' || horizon === 'pyramid' || horizon === 'throne-temple' || horizon === 'hive-cathedral' || horizon === 'awoken-spires') {
+      if (horizon === 'scarlet-keep') {
+        landmarks = `<path d="M500 286V174l30-48 28 40 34-72 40 88 30-40 28 62v82z" fill="#2c1d21" opacity=".95" stroke="${palette.accent}" stroke-width="1" stroke-opacity=".3"/>`;
+      } else if (horizon === 'pyramid') {
+        landmarks = `<path d="M350 286L500 82 650 286Z" fill="#111016" opacity=".96"/><path d="M500 82V286" stroke="${palette.accent2}" stroke-width="1" opacity=".2"/>`;
+      } else {
+        landmarks = spires(10, '#222a20', 20, 118);
+      }
+      if (horizon === 'throne-temple' || horizon === 'hive-cathedral') {
+        landmarks += `<path d="M70 286V208c0-64 56-96 112-96s112 32 112 96v78" fill="none" stroke="${palette.accent}" stroke-width="3" opacity=".2"/><path d="M506 286V216c0-54 48-82 96-82s96 28 96 82v70" fill="none" stroke="${palette.accent2}" stroke-width="2" opacity=".15"/>`;
+      }
+      if (horizon === 'awoken-spires') {
+        landmarks += Array.from({ length: 6 }, (_, i) => {
+          const x = 80 + i * 120;
+          const h = 65 + n(i + 13) * 100;
+          return `<path d="M${x - 13} 286L${x} ${286 - h}L${x + 8} ${286 - h * 0.55}L${x + 23} 286Z" fill="#35284d" opacity=".9" stroke="${palette.accent2}" stroke-width="1" stroke-opacity=".24"/>`;
+        }).join('');
+      }
+    } else if (horizon === 'ice-cliffs' || horizon === 'fallen-city') {
+      landmarks = Array.from({ length: 8 }, (_, i) => {
+        const x = 20 + i * 108;
+        const h = 75 + n(i + 4) * 100;
+        return `<path d="M${x} 286L${x + 44} ${286 - h}L${x + 82} ${286 - h * 0.2}L${x + 118} 286Z" fill="#263c49" opacity=".9"/>`;
+      }).join('');
+      if (horizon === 'fallen-city') {
+        landmarks += towers(5, '#293b5a', palette.accent2, 145);
+      }
+    } else if (horizon === 'neon-city' || horizon === 'typhon') {
+      landmarks = towers(12, '#211d32', palette.accent2, 170);
+      landmarks += `<path d="M0 286h800" stroke="${palette.accent}" stroke-width="2" opacity=".3"/>`;
+      if (horizon === 'typhon') {
+        landmarks += `<path d="M80 286c40-120 110-150 160 0M540 286c50-140 120-130 180 0" fill="none" stroke="${palette.accent}" stroke-width="3" opacity=".25"/>`;
+      }
+    } else if (horizon === 'organic-arches' || horizon === 'sanctum') {
+      landmarks = Array.from({ length: 4 }, (_, i) => {
+        const x = 130 + i * 180;
+        const r = 100 + i * 28;
+        return `<path d="M${x - r} 286A${r} ${r} 0 0 1 ${x + r} 286" fill="none" stroke="${palette.accent}" stroke-width="2.4" opacity=".28"/>`;
+      }).join('');
+      landmarks += Array.from({ length: 6 }, (_, i) => `<rect x="${80 + i * 125}" y="${200 + n(i + 3) * 55}" width="14" height="${86 - n(i + 3) * 55}" fill="#cbc3ae" opacity=".2"/>`).join('');
+    } else if (horizon === 'kepler' || horizon === 'kepler-academy' || horizon === 'singularity') {
+      landmarks = Array.from({ length: 7 }, (_, i) => {
+        const x = 70 + i * 115;
+        const y = 120 + n(i + 5) * 110;
+        return `<path d="M${x} ${y}l${22 + n(i) * 24} ${-18 - n(i + 2) * 22}l${18 + n(i + 4) * 22} ${28 + n(i + 6) * 18}l${-42} ${28}z" fill="#201c32" opacity=".9" stroke="${palette.accent2}" stroke-width=".8" stroke-opacity=".25"/>`;
+      }).join('');
+      if (horizon === 'kepler-academy') {
+        landmarks += `<path d="M250 286V180l48-44 54 44v106M430 286V196l38-35 41 35v90" fill="none" stroke="${palette.accent}" stroke-width="3" opacity=".3"/>`;
+      }
+      if (horizon === 'singularity') {
+        landmarks += `<ellipse cx="590" cy="150" rx="96" ry="24" fill="none" stroke="${palette.accent2}" stroke-width="3" opacity=".55" transform="rotate(-16 590 150)"/><ellipse cx="590" cy="150" rx="63" ry="12" fill="none" stroke="${palette.accent}" stroke-width="2" opacity=".4" transform="rotate(-16 590 150)"/><circle cx="590" cy="150" r="9" fill="#f4ffff" opacity=".8"/>`;
+      }
+    } else if (horizon === 'tharsis-outpost' || horizon === 'tharsis-city' || horizon === 'tharsis-fort') {
+      landmarks = towers(horizon === 'tharsis-city' ? 11 : 7, '#3b2721', palette.accent2, 130);
+      landmarks += `<path d="M0 286h800" stroke="${palette.accent}" stroke-width="2" opacity=".22"/>`;
+      if (horizon === 'tharsis-fort') {
+        landmarks += `<path d="M120 286V194h90v92M580 286V174h130v112" fill="#2d1b1a" opacity=".92" stroke="${palette.accent}" stroke-width="2" stroke-opacity=".28"/><path d="M165 194v-32M650 174v-40" stroke="${palette.accent}" stroke-width="2" opacity=".4"/>`;
+      } else if (horizon === 'tharsis-city') {
+        landmarks += `<path d="M0 286c90-40 150-10 210-52s120-18 175 14 130 8 190-22 150 10 225 60" fill="none" stroke="${palette.accent2}" stroke-width="1.5" opacity=".22"/>`;
+      }
+    } else if (horizon === 'city' || horizon === 'forest' || horizon === 'ship' || horizon === 'throne') {
+      landmarks = towers(horizon === 'city' ? 12 : 6, '#1b2229', palette.accent2, 105);
+      if (horizon === 'city') landmarks += `<circle cx="400" cy="112" r="58" fill="#f4fbff" opacity=".14"/><circle cx="400" cy="112" r="42" fill="#eefaff" opacity=".28"/>`;
+      if (horizon === 'forest') landmarks += spires(15, '#12241a', 18, 95);
+      if (horizon === 'ship') landmarks += `<ellipse cx="400" cy="170" rx="230" ry="72" fill="none" stroke="${palette.accent}" stroke-width="2" opacity=".2"/><path d="M150 286h500" stroke="${palette.accent2}" stroke-width="5" opacity=".12"/>`;
+      if (horizon === 'throne') landmarks += `<path d="M260 286V196h80v90M460 286V180h90v106" fill="#2a1e1d" opacity=".9"/>`;
+    } else {
+      landmarks = spires(9, '#3d3430', 24, 100);
+    }
+    landmarks += destinySceneVariant(horizon, Math.abs(hash) % 4, palette, hash);
+    const particles = palette.particles === 'snow'
+      ? Array.from({ length: 28 }, (_, i) => `<circle cx="${((i * 83 + hash) % 800).toFixed(1)}" cy="${((i * 47 + hash * 0.3) % 270).toFixed(1)}" r="${1 + (i % 3) * 0.6}" fill="#eefbff" opacity=".32"/>`).join('')
+      : Array.from({ length: 20 }, (_, i) => `<circle cx="${((i * 89 + hash) % 800).toFixed(1)}" cy="${((i * 61 + hash * 0.2) % 260).toFixed(1)}" r="1.2" fill="${palette.accent2}" opacity=".22"/>`).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${palette.sky}"/><stop offset=".58" stop-color="${palette.sky2}"/><stop offset="1" stop-color="#05070a"/></linearGradient><linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${palette.ground}"/><stop offset=".65" stop-color="#111417"/><stop offset="1" stop-color="#06080a"/></linearGradient><radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="${palette.accent}" stop-opacity=".36"/><stop offset=".5" stop-color="${palette.accent2}" stop-opacity=".1"/><stop offset="1" stop-color="${palette.accent}" stop-opacity="0"/></radialGradient><radialGradient id="light" cx="50%" cy="42%" r="50%"><stop offset="0" stop-color="#f7ffff" stop-opacity=".9"/><stop offset=".3" stop-color="${palette.accent2}" stop-opacity=".4"/><stop offset="1" stop-color="${palette.accent}" stop-opacity="0"/></radialGradient></defs><rect width="800" height="450" fill="url(#sky)"/><circle cx="${(330 + n(2) * 160).toFixed(1)}" cy="${(165 + n(3) * 50).toFixed(1)}" r="155" fill="url(#glow)"/><circle cx="${(330 + n(2) * 160).toFixed(1)}" cy="${(165 + n(3) * 50).toFixed(1)}" r="58" fill="url(#light)" opacity=".55"/>${stars}${particles}<g opacity=".18" fill="none" stroke="${palette.accent2}" stroke-width=".8"><circle cx="400" cy="220" r="170"/><circle cx="400" cy="220" r="245" stroke-dasharray="2 8"/><path d="M400 50L610 330H190Z"/><path d="M80 220h640" stroke-dasharray="2 10"/></g><g>${landmarks}</g><path d="M0 286H800V450H0Z" fill="url(#floor)"/><g opacity=".2" stroke="${palette.accent2}" stroke-width=".7"><path d="M0 320H800M0 360H800M0 405H800"/><path d="M400 286L120 450M400 286L260 450M400 286L400 450M400 286L540 450M400 286L680 450"/></g><ellipse cx="400" cy="286" rx="360" ry="18" fill="${palette.accent}" opacity=".07"/></svg>`;
+  }
+
+
+  const DESTINY_RED_WAR_DESTINATION = {
+    id: 'redwar',
+    title: 'The Red War',
+    cn: '猩红战争',
+    planet: 'Earth',
+    planetEn: 'EARTH',
+    planetCn: '地球',
+    regionCn: '最后的城市',
+    date: '2017-09-06',
+    installed: true,
+    accent: '#e9bd72',
+    accent2: '#e25d48',
+    biome: 'lastcity',
+    faction: 'cabal',
+    factionCn: '红色军团',
+    map: { x: 0.50, y: 0.78 },
+    story: '红色军团夺走了最后的城市与光能。从塔城广场一路打到 Ghaul 的旗舰，重新点亮属于自己的光。',
+    missions: DESTINY_MISSIONS
+  };
+
+  const DESTINY_DLC_MODES = [
+    {
+      id: 'curse-of-osiris', title: 'Curse of Osiris', cn: '冥王诅咒', date: '2017-12-05', installed: true,
+      accent: '#6fd8c6', accent2: '#7b9fe8', biome: 'mercury', faction: 'vex', factionCn: 'Vex',
+      planet: 'Mercury', planetEn: 'MERCURY', planetCn: '水星', regionCn: '玻璃旷野', map: { x: 0.32, y: 0.84 },
+      story: '水星的玻璃旷野上，无尽森林再次打开。追随奥西里斯的足迹，穿过 Vex 模拟出的过去与未来，关闭失控的预言机。',
+      missions: [
+        { id: 'curse-gateway', title: '网关', en: 'The Gateway', location: 'MERCURY // FIELDS OF GLASS', brief: '奥西里斯的信号从水星表面传来。清除守在入口的 Vex，打开通往无尽森林的道路。', objective: '击退 Vex 并打开无尽森林入口', biome: 'mercury' },
+        { id: 'curse-deadly-trial', title: '致命试炼', en: 'A Deadly Trial', location: 'MERCURY // INFINITE FOREST', brief: '森林在每一次呼吸间重写自己。沿着奥西里斯留下的路径，击穿 Vex 的模拟防线。', objective: '穿过无尽森林并摧毁 Vex 模拟节点', biome: 'vexforest' },
+        { id: 'curse-deep-storage', title: '深层存储', en: 'Deep Storage', location: 'MERCURY // SIMULATED PAST', brief: '过去的图像被 Vex 当作武器储存。进入模拟档案，断开它们的预测引擎。', objective: '关闭 Vex 预测引擎', biome: 'vexforest' },
+        { id: 'curse-beyond-infinity', title: '超越无限', en: 'Beyond Infinity', location: 'MERCURY // INFINITE FOREST', brief: '奥西里斯在无数条时间线中留下回声。沿着他的轨迹穿过 Vex 的预测网络。', objective: '追踪奥西里斯并穿过模拟边界', biome: 'vexforest' },
+        { id: 'curse-tree-probabilities', title: '概率之树', en: 'Tree of Probabilities', location: 'MERCURY // TREE OF PROBABILITIES', brief: '概率之树正在把所有可能的结果压缩成一条。稳定它，否则无尽森林会坍缩。', objective: '稳定概率之树', biome: 'vexcore' },
+        { id: 'curse-hijacked', title: '被劫持', en: 'Hijacked', location: 'MERCURY // THE LIGHTHOUSE', brief: 'Vex 劫持了灯塔的模拟信号。夺回入口，为奥西里斯打开通往森林核心的路。', objective: '夺回被 Vex 劫持的灯塔', biome: 'mercury' },
+        { id: 'curse-garden-world', title: '花园世界', en: 'A Garden World', location: 'MERCURY // A GARDEN WORLD', brief: 'Vex 在森林深处培育了一个花园世界。关闭它的模拟核心，别让预言机继续生长。', objective: '关闭花园世界模拟', biome: 'vexforest' },
+        { id: 'curse-omega', title: '终局', en: 'Omega', location: 'MERCURY // INFINITE FOREST · OMEGA', brief: '预言机在森林最深处睁开了眼睛。奥西里斯等你一起终结这场无限循环。', objective: '击败 Panoptes, Infinite Mind', biome: 'vexcore', boss: true, bossName: 'Panoptes, Infinite Mind', bossKind: 'vex' }
+      ]
+    },
+    {
+      id: 'warmind', title: 'Warmind', cn: '战争智能', date: '2018-05-08', installed: true,
+      accent: '#8bd3ef', accent2: '#e6f5ff', biome: 'mars', faction: 'hive', factionCn: 'Hive',
+      planet: 'Mars', planetEn: 'MARS', planetCn: '火星', regionCn: '赫拉斯盆地', map: { x: 0.33, y: 0.27 },
+      story: '火星冰原下，沉睡的战争智能拉斯普廷苏醒。Hive 虫群正在挖掘它的核心，守住极地武库。',
+      missions: [
+        { id: 'warmind-ice-shadow', title: '冰与影', en: 'Ice and Shadow', location: 'MARS // HELLAS BASIN', brief: '安娜·布雷的求救信号穿过冰原。抵达赫拉斯盆地，清理正在钻入 BrayTech 设施的 Hive。', objective: '回应安娜的求救并清剿 Hive', biome: 'mars' },
+        { id: 'warmind-pilgrimage', title: '朝圣', en: 'Pilgrimage', location: 'MARS // BRAYTECH FUTURESCAPE', brief: 'BrayTech 的未来景观下藏着拉斯普廷的旧节点。沿着战争智能的碎片继续前进。', objective: '追踪拉斯普廷的信号', biome: 'braytech' },
+        { id: 'warmind-offworld', title: '离世界回收', en: 'Off-World Recovery', location: 'EARTH // EUROPEAN DEAD ZONE', brief: 'Xol 的使者在地球留下了痕迹。前往 EDZ，引出藏在冰层下的虫群。', objective: '在 EDZ 引出 Xol 的使者', biome: 'edz', faction: 'hive' },
+        { id: 'warmind-strange-terrain', title: '奇异地形', en: 'Strange Terrain', location: 'MARS // ALTON DYNAMO', brief: '虫群在阿尔顿发电机中筑巢。诺克里斯正在举行一场唤醒 Xol 的仪式。', objective: '穿过虫巢并击败 Nokris 的守卫', biome: 'warmind' },
+        { id: 'warmind-will', title: '千人之志', en: 'Will of the Thousands', location: 'MARS // MINDLAB: RASPUTIN', brief: 'Xol 从冰层下升起。握紧超载的战争智能标枪，结束千人之志。', objective: '击败 Xol, Will of the Thousands', biome: 'warmind', boss: true, bossName: 'Xol, Will of the Thousands', bossKind: 'hive' }
+      ]
+    },
+    {
+      id: 'forsaken', title: 'Forsaken', cn: '遗落之族', date: '2018-09-04', installed: true,
+      accent: '#d39d71', accent2: '#8b5d55', biome: 'tangled', faction: 'scorn', factionCn: 'Scorn',
+      planet: 'Tangled Shore', planetEn: 'TANGLED SHORE', planetCn: '纷争海岸', regionCn: '', map: { x: 0.72, y: 0.24 },
+      story: '长老监狱的越狱带走了 Cayde-6。踏入纷争海岸，追踪 Scorn 男爵，为 Cayde 复仇。',
+      missions: [
+        { id: 'forsaken-last-call', title: '最后一通电话', en: 'Last Call', location: 'TANGLED SHORE // PRISON OF ELDERS', brief: '长老监狱发生越狱。冲进暴动现场，找到 Cayde 留下的最后一条线索。', objective: '穿越长老监狱并追踪越狱者', biome: 'prison' },
+        { id: 'forsaken-high-plains', title: '高地蓝调', en: 'High Plains Blues', location: 'TANGLED SHORE // SORIKS’S CUT', brief: '蜘蛛的线索把你带到纷争海岸的高地。追踪 Scorn 的补给车队，找到男爵们的巢穴。', objective: '沿高地追踪 Scorn 补给线', biome: 'tangled' },
+        { id: 'forsaken-scorned', title: '被唾弃者', en: 'Scorned', location: 'TANGLED SHORE // SORIKS’S CUT', brief: 'Scorn 男爵正在分割纷争海岸。逐一击破他们的仪式与补给线。', objective: '击溃 Scorn 男爵的部队', biome: 'tangled' },
+        { id: 'forsaken-machinist', title: '机械师', en: 'The Machinist', location: 'TANGLED SHORE // JETSAM OF SATURN', brief: '机械师把整片废墟改造成了陷阱。穿过炮火，拆掉她的战争机器。', objective: '摧毁机械师的战争机器', biome: 'tangled' },
+        { id: 'forsaken-nothing-left', title: '无话可说', en: 'Nothing Left to Say', location: 'TANGLED SHORE // THIEVES’ LANDING', brief: '所有线索都指向盗贼之地。面对 Fikrul，替 Cayde 把这件事做完。', objective: '击败 Fikrul, the Fanatic', biome: 'tangled', boss: true, bossName: 'Fikrul, the Fanatic', bossKind: 'scorn' }
+      ]
+    },
+    {
+      id: 'shadowkeep', title: 'Shadowkeep', cn: '暗影要塞', date: '2019-10-01', installed: false,
+      accent: '#b9abc9', accent2: '#767587', biome: 'moon', faction: 'hive', factionCn: 'Hive · 梦魇',
+      planet: 'The Moon', planetEn: 'THE MOON', planetCn: '月球', regionCn: '风暴之洋', map: { x: 0.80, y: 0.70 },
+      story: '月球上出现了来自过去的幽灵。回到血色战争旧址，在噩梦与记忆之间追查金字塔的阴影。',
+      missions: [
+        { id: 'shadowkeep-disturbance', title: '神秘扰动', en: 'A Mysterious Disturbance', location: 'THE MOON // LUNAR BATTLEGROUNDS', brief: '月球的旧战场重新响起枪声。进入战斗遗址，确认那股从地底升起的异常。', objective: '调查月球的异常信号', biome: 'moon' },
+        { id: 'shadowkeep-answers', title: '寻找答案', en: 'In Search of Answers', location: 'THE MOON // SORROW’S HARBOR', brief: '悲港的 Hive 正在举行仪式。穿过虫群，找到通往 Scarlet Keep 的道路。', objective: '穿过悲港并打断 Hive 仪式', biome: 'moon' },
+        { id: 'shadowkeep-deep', title: '深入', en: 'In the Deep', location: 'THE MOON // SCARLET KEEP', brief: '猩红要塞的尖塔刺入月表。沿着梦魇的痕迹，一直走到要塞最深处。', objective: '深入 Scarlet Keep', biome: 'scarlet' },
+        { id: 'shadowkeep-beyond', title: '超越', en: 'Beyond', location: 'THE MOON // PYRAMID', brief: '金字塔在月表下低语。梦魇把旧敌人重新拼合，你必须再次击败它。', objective: '击败 Nightmare of Crota', biome: 'pyramid', boss: true, bossName: 'Nightmare of Crota', bossKind: 'hive' }
+      ]
+    },
+    {
+      id: 'beyond-light', title: 'Beyond Light', cn: '凌光之刻', date: '2020-11-10', installed: false,
+      accent: '#a7d5ed', accent2: '#6b82b9', biome: 'europa', faction: 'fallen', factionCn: 'Fallen · 黑暗氏族',
+      planet: 'Europa', planetEn: 'EUROPA', planetCn: '木卫二', regionCn: '拉斯摩尔的混沌', map: { x: 0.12, y: 0.46 },
+      story: '木卫二的冰层下封存着一种不属于光的力量。直面埃拉米斯，掌握停滞，或者被它吞没。',
+      missions: [
+        { id: 'beyond-doorstep', title: '黑暗门前', en: 'Darkness’s Doorstep', location: 'EUROPA // BEYOND', brief: '木卫二的冰原上出现了金字塔的轮廓。穿过暴风雪，找到黑暗力量的源头。', objective: '抵达 Europan Pyramid', biome: 'europa' },
+        { id: 'beyond-new-kell', title: '新凯尔', en: 'The New Kell', location: 'EUROPA // CADMUS RIDGE', brief: '埃拉米斯正在把分散的 Fallen 氏族锻造成新的战争机器。切断她的补给。', objective: '击退 Cadmus Ridge 的 Fallen', biome: 'europa' },
+        { id: 'beyond-rising-resistance', title: '抵抗崛起', en: 'Rising Resistance', location: 'EUROPA // ASTERION ABYSS', brief: '冰层下的抵抗者正在集结。穿过 Asterion Abyss，和她们一起切断 Fallen 的补给。', objective: '支援冰原抵抗者', biome: 'europa' },
+        { id: 'beyond-warrior', title: '战士', en: 'The Warrior', location: 'EUROPA // NEXUS', brief: 'Nexus 的守卫者挡住了通往 Bray 设施的路。击败她，夺取停滞原型的数据。', objective: '击败 Nexus 的守卫者', biome: 'europa' },
+        { id: 'beyond-technocrat', title: '技术官僚', en: 'The Technocrat', location: 'EUROPA // EVENTIDE RUINS', brief: '技术官僚在黄昏废墟中掌控着停滞科技。摧毁他的装置，让冰原失去防线。', objective: '摧毁 Fallen 停滞装置', biome: 'europa' },
+        { id: 'beyond-sabotaging', title: '破坏救赎', en: 'Sabotaging Salvation', location: 'EUROPA // BUNKER E15', brief: '救赎氏族的机器在 Bunker E15 中嗡嗡作响。炸掉核心，让埃拉米斯失去她的军队。', objective: '摧毁救赎氏族停滞核心', biome: 'europa' },
+        { id: 'beyond-aftermath', title: '余波', en: 'The Aftermath', location: 'EUROPA // CHARON’S CROSSING', brief: '冰原上的战斗留下了裂痕。穿过 Charon’s Crossing，追击撤退的 Fallen。', objective: '追击撤退的救赎氏族', biome: 'riis' },
+        { id: 'beyond-kell', title: '黑暗凯尔', en: 'The Kell of Darkness', location: 'EUROPA // RIIS-REBORN', brief: 'Riis-Reborn 的王座在暴风雪中亮起。面对埃拉米斯，决定谁能掌握停滞。', objective: '击败 Eramis, Kell of Darkness', biome: 'riis', boss: true, bossName: 'Eramis, Kell of Darkness', bossKind: 'fallen' }
+      ]
+    },
+    {
+      id: 'witch-queen', title: 'The Witch Queen', cn: '邪姬魅影', date: '2022-02-22', installed: false,
+      accent: '#b9db87', accent2: '#cfe9a7', biome: 'throne', faction: 'hive', factionCn: 'Hive · 光明虫群',
+      planet: 'Savathûn’s Throne World', planetEn: 'THRONE WORLD', planetCn: '萨瓦图恩的王座世界', regionCn: '', map: { x: 0.20, y: 0.68 },
+      story: '萨瓦图恩用光能编织了谎言。进入她的王座世界，在真相与恐惧之间寻找那把不存在于任何地方的剑。',
+      missions: [
+        { id: 'witch-arrival', title: '抵达', en: 'The Arrival', location: 'THRONE WORLD // FLORESCENT CANAL', brief: '王座世界在沼泽与圣光之间展开。沿着荧光运河前进，确认萨瓦图恩的军队正在做什么。', objective: '进入王座世界并建立前线', biome: 'throne' },
+        { id: 'witch-investigation', title: '调查', en: 'The Investigation', location: 'THRONE WORLD // MIASMA', brief: '瘴气中藏着被篡改的记忆。追踪光明虫群的仪式，找出邪姬的谎言。', objective: '调查 Miasma 的光能仪式', biome: 'throne' },
+        { id: 'witch-ghosts', title: '幽灵', en: 'The Ghosts', location: 'THRONE WORLD // TEMPLE OF THE WORMS', brief: '虫神殿里回荡着不属于 Hive 的光。穿过守卫，逼近王座。', objective: '突破 Temple of the Worms', biome: 'temple' },
+        { id: 'witch-ritual', title: '仪式', en: 'The Ritual', location: 'THRONE WORLD // QUEEN’S BAILEY', brief: '萨瓦图恩的光能仪式正在女王庭院进行。打断它，揭开她真正想要的东西。', objective: '打断王座世界的光能仪式', biome: 'temple' },
+        { id: 'witch-communion', title: '圣餐', en: 'The Communion', location: 'THRONE WORLD // APOTHECARY', brief: '药剂师的实验室里藏着光能虫群的秘密。穿过守卫，夺取样本。', objective: '突入 Apothecary 并夺取样本', biome: 'throne' },
+        { id: 'witch-cunning', title: '狡诈', en: 'The Cunning', location: 'THRONE WORLD // QUEEN’S BAILEY', brief: '邪姬用谎言把道路折叠起来。跟随她的诡计，找到通往荆棘宫廷的入口。', objective: '识破邪姬的幻象', biome: 'throne' },
+        { id: 'witch-mirror', title: '镜面', en: 'The Mirror', location: 'THRONE WORLD // COURT OF THORNS', brief: '镜面反射出另一个萨瓦图恩。击碎幻象，让真正的王座暴露出来。', objective: '击碎镜面幻象', biome: 'temple' },
+        { id: 'witch-last-chance', title: '最后机会', en: 'The Last Chance', location: 'THRONE WORLD // COURT OF THORNS', brief: '萨瓦图恩在荆棘宫廷等你。戳穿她的谎言，或者成为她计划的一部分。', objective: '击败 Savathûn, the Witch Queen', biome: 'temple', boss: true, bossName: 'Savathûn, the Witch Queen', bossKind: 'hive' }
+      ]
+    },
+    {
+      id: 'lightfall', title: 'Lightfall', cn: '光陨之秋', date: '2023-02-28', installed: false,
+      accent: '#e9a3cf', accent2: '#56d9e8', biome: 'neomuna', faction: 'shadow', factionCn: '暗影军团',
+      planet: 'Neptune', planetEn: 'NEPTUNE', planetCn: '海王星', regionCn: '内欧姆那', map: { x: 0.17, y: 0.24 },
+      story: '内欧姆那的城市正在被见证者抹去。穿过霓虹街区，与云层中的暗影正面交锋。',
+      missions: [
+        { id: 'lightfall-first-contact', title: '第一次接触', en: 'First Contact', location: 'NEOMUNA // NEOMUNA', brief: '暗影军团降临内欧姆那。穿过被占领的街道，与云行者建立联系。', objective: '击退登陆区的暗影军团', biome: 'neomuna' },
+        { id: 'lightfall-under-siege', title: '围城', en: 'Under Siege', location: 'NEOMUNA // AHIMSA PARK', brief: '卡鲁斯的军队正在封锁城市。守住阿希姆萨公园，给平民争取撤离时间。', objective: '守住 Ahimsa Park', biome: 'neomuna' },
+        { id: 'lightfall-downfall', title: '陨落', en: 'Downfall', location: 'NEOMUNA // LIMING HARBOR', brief: '暗影军团在 Liming Harbor 建立登陆场。摧毁他们的防空节点，撕开城市防线。', objective: '摧毁暗影军团登陆节点', biome: 'neomuna' },
+        { id: 'lightfall-breakneck', title: '断颈', en: 'Breakneck', location: 'NEOMUNA // STRIDER’S GATE', brief: 'Strider’s Gate 的传输阵列被卡鲁斯接管。冲过高速公路，抢回控制权。', objective: '夺回 Strider’s Gate', biome: 'neomuna' },
+        { id: 'lightfall-headlong', title: '鲁莽', en: 'Headlong', location: 'NEOMUNA // ZEPHYR CONCOURSE', brief: '和风大厅的传送门被暗影军团接管。冲进去，把战火推向卡鲁斯的旗舰。', objective: '夺回 Zephyr Concourse', biome: 'neomuna' },
+        { id: 'lightfall-desperate', title: '绝望手段', en: 'Desperate Measures', location: 'NEOMUNA // TYPHON IMPERATOR', brief: '卡鲁斯把整座城市压上赌桌。穿过泰丰号的甲板，逼他亲自出面。', objective: '攻入 Typhon Imperator', biome: 'typhon' },
+        { id: 'lightfall-no-time', title: '时间无多', en: 'No Time Left', location: 'NEOMUNA // TYPHON IMPERATOR', brief: '卡鲁斯在泰丰号上等待。击败他，阻止见证者夺走面纱。', objective: '击败 Emperor Calus', biome: 'typhon', boss: true, bossName: 'Emperor Calus', bossKind: 'cabal' }
+      ]
+    },
+    {
+      id: 'final-shape', title: 'The Final Shape', cn: '终焉之形', date: '2024-06-04', installed: false,
+      accent: '#f0d78f', accent2: '#d7f7ff', biome: 'paleheart', faction: 'dread', factionCn: 'Dread · 见证者',
+      planet: 'The Pale Heart', planetEn: 'PALE HEART', planetCn: '苍白之心', regionCn: '旅行者内部', map: { x: 0.50, y: 0.40 },
+      story: '旅行者的内部裂开一条通往终点的路。与队友一起进入苍白之心，结束光与暗的长久战争。',
+      missions: [
+        { id: 'final-transmigration', title: '迁移', en: 'Transmigration', location: 'PALE HEART // THE LANDING', brief: '你穿过旅行者的表面，落进一片由记忆构成的土地。找到通往苍白之心的路。', objective: '穿过 The Landing 并建立光能信标', biome: 'paleheart' },
+        { id: 'final-temptation', title: '诱惑', en: 'Temptation', location: 'PALE HEART // THE REFRACTION', brief: '折射之地的每一面镜子都在展示另一种结局。Dread 正在利用这些记忆。', objective: '击退 The Refraction 的 Dread', biome: 'paleheart' },
+        { id: 'final-requisition', title: '征用', en: 'Requisition', location: 'PALE HEART // THE IMPASS', brief: '阻碍者把守着你必须经过的通道。夺取它们的能量，打开圣所大门。', objective: '突破 The Impass', biome: 'paleheart' },
+        { id: 'final-alone', title: '独自', en: 'Alone', location: 'PALE HEART // THE HOLLOW', brief: '苍白之心把你和队友分开。独自穿过空洞，找到重新汇合的信标。', objective: '穿过 The Hollow 并恢复信标', biome: 'paleheart' },
+        { id: 'final-ascent', title: '上升', en: 'Ascent', location: 'PALE HEART // THE DIVIDE', brief: '记忆在你脚下断裂。沿着上升的几何阶梯，接近见证者的领域。', objective: '攀上 The Divide', biome: 'paleheart' },
+        { id: 'final-dissent', title: '异议', en: 'Dissent', location: 'PALE HEART // THE SECLUSION', brief: '一个声音在隐修地低语，试图让你相信战争毫无意义。穿过它，别停下。', objective: '穿过 The Seclusion', biome: 'paleheart' },
+        { id: 'final-message', title: '讯息', en: 'The Message', location: 'PALE HEART // THE TRANSGRESSION', brief: '旅行者留下了一条讯息。保护它，直到光能信标把它送出去。', objective: '保护旅行者的讯息', biome: 'sanctum' },
+        { id: 'final-iconoclasm', title: '破除圣像', en: 'Iconoclasm', location: 'PALE HEART // THE SANCTUM', brief: '见证者在圣所深处等待。光与暗的战争必须在这里结束。', objective: '击败 The Witness', biome: 'sanctum', boss: true, bossName: 'The Witness', bossKind: 'dread' }
+      ]
+    },
+    {
+      id: 'edge-of-fate', title: 'The Edge of Fate', cn: '宿命边缘', date: '2025-07-15', installed: true,
+      accent: '#c79cff', accent2: '#7de3e1', biome: 'kepler', faction: 'fallen', factionCn: 'House of Exile · Vex · Hive',
+      planet: 'Kepler', planetEn: 'KEPLER', planetCn: '开普勒', regionCn: '中央学院', map: { x: 0.34, y: 0.55 },
+      story: '一束来自太阳系边缘的信号穿过暗物质。开普勒被奇异点笼罩，中央学院、流亡者与 Vex 都在等待那道讯息被打开。',
+      missions: [
+        { id: 'edge-invitation', title: '邀请', en: 'The Invitation', location: 'KEPLER // CENTRAL ACADEMY', brief: '中央学院的灯光在暗物质中亮起。接受邀请，进入开普勒的第一道门。', objective: '抵达 Central Academy', biome: 'kepler-academy', faction: 'fallen' },
+        { id: 'edge-transient', title: '瞬态', en: 'Transient', location: 'KEPLER // OUTER STEPPES', brief: '外缘草原上的信号忽明忽暗。追踪 House of Exile 的信标，确认他们也在寻找同一样东西。', objective: '追踪流亡者信标', biome: 'kepler', faction: 'fallen' },
+        { id: 'edge-saturnism', title: '土星现象', en: 'Saturnism', location: 'KEPLER // CALDERA', brief: '火山口下的 Hive 把奇异点当成新的神。打断它们的献祭，别让虫群靠近核心。', objective: '打断 Caldera 的 Hive 献祭', biome: 'kepler', faction: 'hive' },
+        { id: 'edge-fallow', title: '休耕', en: 'Fallow', location: 'KEPLER // AIONIAN CAMPUS', brief: 'Aionian Campus 的 Vex 正在重写开普勒的历史。穿过校园，关闭它们的模拟农场。', objective: '关闭 Vex 模拟农场', biome: 'kepler-academy', faction: 'vex' },
+        { id: 'edge-nostos', title: '归乡', en: 'Nostos', location: 'KEPLER // EXILE’S ACCORD', brief: '流亡者把这里当作新的家园。穿过 Exile’s Accord，找到他们的领袖与真正的敌人。', objective: '穿过 Exile’s Accord', biome: 'kepler', faction: 'fallen' },
+        { id: 'edge-morphology', title: '形态学', en: 'Morphology', location: 'KEPLER // THE GORGE', brief: '峡谷中的 Vex 结构正在改变形状。适应它的节奏，摧毁变形核心。', objective: '摧毁峡谷变形核心', biome: 'kepler-singularity', faction: 'vex' },
+        { id: 'edge-disruption', title: '中断', en: 'Disruption', location: 'KEPLER // UNKNOWN PERIPHERY', brief: '未知边缘的 Hive 试图切断开普勒与外界的联系。守住信号，别让黑暗吞掉一切。', objective: '守住 Unknown Periphery 的信号', biome: 'kepler', faction: 'hive' },
+        { id: 'edge-calculus', title: '微积分', en: 'Calculus', location: 'KEPLER // THE SINGULARITY', brief: '奇异点把时间和空间压成一条曲线。穿过 Vex 的防线，逼近事件视界。', objective: '抵达 The Singularity', biome: 'kepler-singularity', faction: 'vex' },
+        { id: 'edge-criticality', title: '临界', en: 'Criticality', location: 'KEPLER // SINGULARITY CORE', brief: 'Ophiuchus 在奇点核心等待。打开那条讯息，或者让开普勒成为下一个被抹去的世界。', objective: '击败 Ophiuchus', biome: 'kepler-singularity', faction: 'vex', boss: true, bossName: 'Ophiuchus', bossKind: 'vex' }
+      ]
+    },
+    {
+      id: 'renegades', title: 'Renegades', cn: '反叛', date: '2025-12-02', installed: true,
+      accent: '#e2a35f', accent2: '#7fc6d8', biome: 'tharsis', faction: 'barant', factionCn: 'Barant Imperium · Pikers · Vex',
+      planet: 'Mars', planetEn: 'MARS', planetCn: '火星', regionCn: '塔尔西斯阔域', map: { x: 0.66, y: 0.55 },
+      story: '火星的塔尔西斯阔域成了边疆。Barant Imperium、Pikers 与 Vex 争夺同一片废土，而荣耀只属于最后还站着的人。',
+      missions: [
+        { id: 'renegades-imperium', title: '帝国', en: 'Imperium', location: 'MARS // THARSIS OUTPOST', brief: 'Barant Imperium 的战舰压过塔尔西斯天空。穿过前哨站，确认这支新帝国到底想要什么。', objective: '击退登陆的 Barant Imperium', biome: 'tharsis', faction: 'barant' },
+        { id: 'renegades-frontier', title: '欢迎来到边疆', en: 'Welcome to the Frontier', location: 'MARS // THARSIS BAZAAR', brief: '巴扎的枪声比叫卖声更响。穿过集市，和 Pikers 争夺一份通往内陆的地图。', objective: '穿过 Tharsis Bazaar', biome: 'tharsis-city', faction: 'fallen' },
+        { id: 'renegades-retainer', title: '可怖侍从', en: 'Fearsome Retainer', location: 'MARS // HELLAS FORTITUDE', brief: 'Barant 的侍从守着一座旧堡垒。拆掉它的防线，把帝国从赫拉斯赶出去。', objective: '攻破 Hellas Fortitude', biome: 'tharsis-fort', faction: 'barant' },
+        { id: 'renegades-out-cold', title: '寒冷之外', en: 'Out in the Cold', location: 'EUROPA // ADAMANT', brief: '一条线索把你带到木卫二的 Adamant。在冰原上追踪背叛者，别让关税变成遗言。', objective: '在 Adamant 追踪背叛者', biome: 'europa', faction: 'fallen' },
+        { id: 'renegades-long-con', title: '长线骗局', en: 'The Long Con', location: 'MARS // FREEHOLD OUTSKIRTS', brief: 'Freehold 的废墟里藏着一场长线骗局。Vex 在利用它，而你要把棋盘掀翻。', objective: '揭穿 Freehold 的 Vex 骗局', biome: 'tharsis', faction: 'vex' },
+        { id: 'renegades-glory', title: '荣耀之外', en: 'Glory Beyond', location: 'MARS // FIREBASE IMPERATOR', brief: '帝国把最后的荣耀押在 Firebase Imperator。击败 Barant Imperator，让边疆重新属于流亡者。', objective: '击败 Barant Imperator', biome: 'tharsis-fort', faction: 'barant', boss: true, bossName: 'Barant Imperator', bossKind: 'barant' }
+      ]
+    }
+  ];
+
+
+  const DESTINY_DREAMING_CITY = {
+    id: 'dreaming-city',
+    parentDlcId: 'forsaken',
+    title: 'Forsaken · Dreaming City',
+    cn: '幽梦之城',
+    planet: 'The Reef',
+    planetEn: 'DREAMING CITY',
+    planetCn: '幽梦之城',
+    regionCn: '',
+    date: '2018-09-04',
+    installed: false,
+    accent: '#b79ae6',
+    accent2: '#73ddd0',
+    biome: 'dreaming',
+    faction: 'taken',
+    factionCn: 'Taken · 幽梦之城',
+    map: { x: 0.82, y: 0.36 },
+    story: '幽梦之城从觉醒者女王的诅咒中醒来。穿过紫色水晶与 Taken 的裂隙，转动神谕引擎，直面瑞文留下的回声。',
+    missions: [
+      { id: 'dreaming-awakening', title: '觉醒', en: 'Awakening', location: 'DREAMING CITY // DIVALIAN MISTS', brief: '幽梦之城的循环再次开始。穿过迷雾与破碎的觉醒者建筑，找到女王留下的第一道线索。', objective: '穿过 Divalian 迷雾并点燃信标', biome: 'dreaming' },
+      { id: 'dreaming-broken-courier', title: '破碎信使', en: 'Broken Courier', location: 'DREAMING CITY // RHEASILVIA', brief: '一名信使在循环中迷失。追踪他的残影，找回被 Taken 撕碎的信息。', objective: '找回破碎信使的讯息', biome: 'dreaming' },
+      { id: 'dreaming-dark-monastery', title: '黑暗修道院', en: 'Dark Monastery', location: 'DREAMING CITY // ELEUSINIA', brief: 'ELEUSINIA 的修道院被 Taken 占据。进入回廊，切断它们与神谕引擎的连接。', objective: '进入黑暗修道院并净化回廊', biome: 'dreaming' },
+      { id: 'dreaming-hum', title: '星光低鸣', en: 'A Hum of Starlight', location: 'DREAMING CITY // RHEASILVIA', brief: '星光在瑞亚西尔维亚的地下低鸣。跟随声音，找到瑞文留下的最后一段回声。', objective: '追踪星光低鸣', biome: 'dreaming' },
+      { id: 'dreaming-oracle', title: '神谕引擎', en: 'The Oracle Engine', location: 'DREAMING CITY // QUEEN’S COURT', brief: '神谕引擎在女王宫廷深处转动。关闭它，让这座城市的循环暂时安静下来。', objective: '击败 Riven’s Echo', biome: 'dreaming', boss: true, bossName: 'Riven’s Echo', bossKind: 'taken' }
+    ]
+  };
+
+  const DESTINY_NESSUS_DESTINATION = {
+    id: 'nessus',
+    title: 'Nessus',
+    cn: '涅索斯',
+    planet: 'Nessus',
+    planetEn: 'NESSUS',
+    planetCn: '涅索斯',
+    regionCn: '阿卡狄亚谷',
+    date: '2017-09-06',
+    installed: true,
+    accent: '#d9bd78',
+    accent2: '#79d7c6',
+    biome: 'nessus',
+    faction: 'vex',
+    factionCn: 'Vex',
+    map: { x: 0.90, y: 0.53 },
+    story: '涅索斯是一颗被 Vex 改造成机器的半人马小行星。阿卡狄亚谷的河流与机械结构交叠，红色军团的残余也在这里寻找通往最后城市的道路。',
+    missions: [
+      { id: 'nessus-six', title: '六号', en: 'Six', location: 'NESSUS // ARCADIAN VALLEY', brief: '凯德六号的线索指向涅索斯。穿过阿卡狄亚谷，追踪 Vex 的异常信号。', objective: '追踪阿卡狄亚谷的 Vex 信号', biome: 'nessus', faction: 'vex' },
+      { id: 'nessus-looped', title: '循环', en: 'Looped', location: 'NESSUS // THE TANGLE', brief: 'Vex 把涅索斯的河流折成了一个循环。找到模拟的核心，把它从时间环里拽出来。', objective: '关闭 Vex 时间循环', biome: 'nessus', faction: 'vex' },
+      { id: 'nessus-exodus', title: '撤离', en: 'Exodus', location: 'NESSUS // EXODUS BLACK', brief: 'Exodus Black 的残骸里仍回响着求救信号。穿过 Vex 防线，击败 Protheon。', objective: '击败 Protheon, Modular Mind', biome: 'nessus', faction: 'vex', boss: true, bossName: 'Protheon, Modular Mind', bossKind: 'vex' }
+    ]
+  };
+
+  const DESTINY_VENUS_DESTINATION = {
+    id: 'venus',
+    title: 'Venus · Ishtar Sink',
+    cn: '金星 · 伊什塔尔深谷',
+    planet: 'Venus',
+    planetEn: 'VENUS',
+    planetCn: '金星',
+    regionCn: '伊什塔尔深谷',
+    date: '2026-03-18',
+    installed: true,
+    accent: '#e8ca78',
+    accent2: '#8fe0b5',
+    biome: 'venus',
+    faction: 'vex',
+    factionCn: 'Vex · 伊什塔尔集体',
+    map: { x: 0.61, y: 0.72 },
+    story: '金星的酸云下，伊什塔尔深谷正在被 Vex 重新编织。失联的先锋侦察队留下了最后一段信号，而玻璃拱顶的时间门扉正在缓慢开启。',
+    missions: [
+      { id: 'venus-arrival', title: '金星信号', en: 'Ishtar Signal', location: 'VENUS // ISHTAR SINK', brief: '先锋侦察队在金星失去联络。穿过酸雾与 Vex 废墟，找到他们留下的最后一段信号。', objective: '抵达伊什塔尔深谷并恢复侦察信标', biome: 'venus', faction: 'vex' },
+      { id: 'venus-conflux', title: '汇流', en: 'The Conflux', location: 'VENUS // ISHTAR CLIFFS', brief: 'Vex 正在把金星的地脉折成一座汇流塔。切断它们的同步节点，别让时间门扉彻底打开。', objective: '摧毁 Vex 汇流塔的同步节点', biome: 'venus', faction: 'vex' },
+      { id: 'venus-oracle', title: '神谕', en: 'The Oracle', location: 'VENUS // VAULT APPROACH', brief: '深谷尽头传来不属于这个时间的声音。跟随神谕的回声，找到玻璃拱顶的入口。', objective: '追踪神谕回声并抵达玻璃拱顶', biome: 'vaultglass', faction: 'vex' },
+      { id: 'venus-gate', title: '玻璃门扉', en: 'Glass Gate', location: 'VENUS // VAULT OF GLASS', brief: '玻璃拱顶的门扉在金星地底开启。穿过 Vex 的守门者，关闭正在重写时间的汇流核心。', objective: '关闭玻璃拱顶的汇流核心', biome: 'vaultglass', faction: 'vex' },
+      { id: 'venus-templar', title: '圣殿骑士', en: 'The Templar', location: 'VENUS // VAULT OF GLASS', brief: '圣殿骑士在拱顶深处醒来。击碎它的护盾，结束这场跨越时间的守望。', objective: '击败 The Templar, the Oracle', biome: 'vaultglass', faction: 'vex', boss: true, bossName: 'The Templar, the Oracle', bossKind: 'vex' }
+    ]
+  };
+
+  const DESTINY_BLACKHOLE_DESTINATION = {
+    id: 'blackhole',
+    title: 'Event Horizon',
+    cn: '事件视界',
+    planet: 'Sagittarius A*',
+    planetEn: 'EVENT HORIZON',
+    planetCn: '黑洞',
+    regionCn: '终末视界',
+    date: '2026-06-30',
+    installed: true,
+    accent: '#e7b96e',
+    accent2: '#b496ff',
+    biome: 'blackhole',
+    faction: 'dread',
+    factionCn: 'Dread · 事件视界',
+    map: { x: 0.94, y: 0.10 },
+    story: '银河系中心的超大质量黑洞撕开了一条通往未知的路径。吸积盘把恒星碾成光，时间在事件视界前被拉成长线；Dread 的舰队正在视界边缘等待，试图把整片星空拖进黑暗。',
+    missions: [
+      { id: 'blackhole-well', title: '引力井', en: 'Gravity Well', location: 'SAGITTARIUS A* // OUTER TIDE', brief: '黑洞的引力井正在吞掉靠近的一切。穿过被拉弯的星尘，在吸积盘外缘建立观测信标。', objective: '在引力井边缘建立观测信标', biome: 'blackhole', faction: 'dread' },
+      { id: 'blackhole-accretion', title: '吸积盘', en: 'Accretion', location: 'SAGITTARIUS A* // ACCRETION DISK', brief: '吸积盘把恒星残骸甩成一条金色河流。沿着光的切线前进，摧毁 Dread 的引力锚。', objective: '摧毁 Dread 的引力锚', biome: 'blackhole', faction: 'dread' },
+      { id: 'blackhole-time', title: '时间膨胀', en: 'Time Dilation', location: 'SAGITTARIUS A* // THE SLOW LIGHT', brief: '越靠近视界，时间越慢。你的每一次呼吸都被拉成一段回声，而 Dread 正在利用这段延迟。', objective: '穿过时间膨胀区并同步信标', biome: 'eventhorizon', faction: 'dread' },
+      { id: 'blackhole-tide', title: '潮汐锁定', en: 'Tidal Lock', location: 'SAGITTARIUS A* // TERMINUS', brief: '潮汐力把整片空间撕成同心弧。稳定航道，别让舰队被拖过最后一道临界线。', objective: '稳定潮汐航道并击退 Dread 舰队', biome: 'eventhorizon', faction: 'dread' },
+      { id: 'blackhole-singularity', title: '事件视界', en: 'Event Horizon', location: 'SAGITTARIUS A* // THE SINGULARITY', brief: '在光的尽头，奇点睁开了眼。穿过视界边缘，击败 The Singularity，或者和它一起消失。', objective: '击败 The Singularity', biome: 'eventhorizon', faction: 'dread', boss: true, bossName: 'The Singularity', bossKind: 'dread' }
+    ]
+  };
+
+  function buildDlcMissions(dlc) {
+    const list = Array.isArray(dlc.missions) ? dlc.missions : [];
+    return list.map((mission, index) => {
+      const biome = DESTINY_BIOMES[mission.biome || dlc.biome] || DESTINY_BIOMES.mercury;
+      return {
+        ...mission,
+        type: 'dlc',
+        chapter: `任务 ${index + 1} / ${list.length}`,
+        eyebrow: `${String(dlc.title).toUpperCase()} // ${dlc.planetEn || 'DESTINY 2'}`,
+        cn: mission.cn || `${dlc.cn} · ${mission.title}`,
+        location: mission.location || `${dlc.planetEn || 'DESTINY 2'} // ${dlc.planetCn || dlc.cn}`,
+        accent: mission.accent || biome.accent,
+        accent2: mission.accent2 || biome.accent2,
+        sky: mission.sky || biome.sky,
+        sky2: mission.sky2 || biome.sky2,
+        ground: mission.ground || biome.ground,
+        faction: mission.faction || dlc.faction,
+        factionCn: mission.factionCn || dlc.factionCn,
+        bossName: mission.bossName || '',
+        bossKind: mission.bossKind || dlc.faction,
+        biomeId: mission.biome || dlc.biome,
+        planet: dlc.planet,
+        planetEn: dlc.planetEn,
+        planetCn: dlc.planetCn,
+        dlcId: dlc.id
+      };
+    });
+  }
+
+  const DESTINY_ACTIVITIES = {
+    crucible: {
+      chapter: '熔炉',
+      title: '熔炉竞技场',
+      biome: 'lastcity',
+      faction: 'cabal',
+      factionCn: '守护者假想敌',
+      cn: 'CRUCIBLE · BANNERFALL',
+      location: 'CRUCIBLE // BANNERFALL',
+      brief: '六名守护者，一张地图，先达到 20 次击破。没有真实的对手，只有本地模拟的守护者。',
+      objective: '先取得 20 次击破',
+      type: 'crucible',
+      accent: '#7bbdff',
+      accent2: '#c28cff',
+      sky: '#172a46',
+      sky2: '#080d19',
+      ground: '#293849'
+    },
+    gambit: {
+      chapter: '智谋',
+      title: '智谋',
+      biome: 'tangled',
+      faction: 'cabal',
+      factionCn: '暗影军团',
+      cn: 'GAMBIT · PRIMEVAL',
+      location: 'GAMBIT // BANK',
+      brief: '击杀敌人收集荧光，带回中间存入银行。存满 25 个荧光，召唤 Primeval。',
+      objective: '收集并存入 25 个荧光，击败 Primeval',
+      type: 'gambit',
+      accent: '#75e2a4',
+      accent2: '#e5c265',
+      sky: '#16332d',
+      sky2: '#08130f',
+      ground: '#273b31'
+    },
+    reckoning: {
+      chapter: '大清算',
+      title: '大清算',
+      biome: 'pyramid',
+      faction: 'taken',
+      factionCn: 'Taken · 九层深渊',
+      cn: 'THE RECKONING · TIER III',
+      location: 'THE RECKONING // TIER III',
+      brief: '九层深渊正在收缩。在越来越强的敌人之间生存三波，离开清算。',
+      objective: '在九层深渊中生存三波',
+      type: 'reckoning',
+      accent: '#c49aff',
+      accent2: '#6edccc',
+      sky: '#241a3a',
+      sky2: '#0a0712',
+      ground: '#2a243b'
+    }
+  };
+
+  DESTINY_ACTIVITIES.vanguard = {
+    chapter: '先锋打击',
+    title: '先锋打击',
+    biome: 'lastcity',
+    faction: 'cabal',
+    factionCn: '先锋行动',
+    cn: 'VANGUARD · STRIKE PLAYLIST',
+    location: 'VANGUARD // STRIKE PLAYLIST',
+    brief: '与先锋一起进入高危区域，清除敌人并击败打击首领。每次进入会轮换不同的打击。',
+    objective: '完成一次先锋打击',
+    type: 'strike',
+    accent: '#74d7ff',
+    accent2: '#e7c46d',
+    sky: '#14293a',
+    sky2: '#070d13',
+    ground: '#20313a'
+  };
+
+  DESTINY_ACTIVITIES.range = {
+    chapter: '靶场',
+    title: '靶场',
+    biome: 'lastcity',
+    faction: 'cabal',
+    factionCn: '训练目标',
+    cn: 'TRAINING GROUNDS · ALL ENEMY TYPES',
+    location: 'TOWER // FIRING RANGE',
+    brief: '塔城的射击训练场。这里生成所有类型的敌人目标，弹药与技能全部无限，用于测试武器、超能和近战。',
+    objective: '测试所有武器与技能',
+    type: 'range',
+    accent: '#79e0c1',
+    accent2: '#e8c66c',
+    sky: '#13252a',
+    sky2: '#070c0e',
+    ground: '#1d2b2e'
+  };
+
+  const DESTINY_ENEMY_FACTION = {
+    legionary: 'cabal', phalanx: 'cabal', incendior: 'cabal', gladiator: 'cabal', centurion: 'cabal',
+    goblin: 'vex', hobgoblin: 'vex', minotaur: 'vex',
+    thrall: 'hive', acolyte: 'hive', knight: 'hive',
+    raider: 'scorn', stalker: 'scorn', chieftain: 'scorn',
+    dreg: 'fallen', vandal: 'fallen', captain: 'fallen',
+    grim: 'dread', weaver: 'dread', subjugator: 'dread',
+    'taken-thrall': 'taken', 'taken-acolyte': 'taken', 'taken-knight': 'taken'
+  };
+
+  function destinyEnemySvg(type, faction = 'cabal') {
+    const palettes = {
+      cabal: { body: '#6d3a2e', plate: '#b36a43', glow: '#ffb35e', dark: '#241311' },
+      shadow: { body: '#352a4d', plate: '#6f5b9d', glow: '#d8a8ff', dark: '#120c1d' },
+      barant: { body: '#3b2e21', plate: '#ad7c43', glow: '#ffd37a', dark: '#17100b' },
+      vex: { body: '#30453f', plate: '#73b8a8', glow: '#91ffe6', dark: '#0b1b1a' },
+      hive: { body: '#3a3522', plate: '#88764c', glow: '#c6ff83', dark: '#121008' },
+      scorn: { body: '#4b3340', plate: '#8f5b72', glow: '#ff88c7', dark: '#1b0e17' },
+      fallen: { body: '#2d4050', plate: '#6588a1', glow: '#8bddff', dark: '#0c1722' },
+      dread: { body: '#251d31', plate: '#64507f', glow: '#a9ffd1', dark: '#090710' },
+      taken: { body: '#121016', plate: '#3c3452', glow: '#d7fff0', dark: '#050407' }
+    };
+    const p = palettes[faction] || palettes.cabal;
+    const taken = faction === 'taken';
+    const vex = faction === 'vex';
+    const cabal = faction === 'cabal' || faction === 'shadow' || faction === 'barant';
+    const hive = faction === 'hive' || taken;
+    const fallen = faction === 'fallen';
+    const scorn = faction === 'scorn';
+    const dread = faction === 'dread';
+    const heavy = ['centurion', 'minotaur', 'knight', 'captain', 'chieftain', 'subjugator', 'taken-knight'].includes(type);
+    let body = '';
+    let head = '';
+    let weapon = '';
+    let extras = '';
+
+    const eye = `<circle cx="32" cy="17" r="2.1" fill="${p.glow}"><animate attributeName="opacity" values=".55;1;.55" dur="2.4s" repeatCount="indefinite"/></circle>`;
+    if (cabal) {
+      body = `<path d="M19 26h26l5 15-5 10H19l-5-10z" fill="url(#body)" stroke="${p.plate}" stroke-width="1.1"/>
+        <path d="M19 26l-8 6 3 10 7-3M45 26l8 6-3 10-7-3" fill="${p.dark}" stroke="${p.plate}" stroke-width="1"/>
+        <path d="M23 47l4 10 5-1 1-10M41 47l-4 10-5-1-1-10" stroke="${p.dark}" stroke-width="5" stroke-linecap="round"/>
+        <path d="M25 34h15M25 39h11" stroke="${p.glow}" stroke-width="1.2" opacity=".55"/>`;
+      head = `<path d="M23 17h18l3 9H20z" fill="${p.plate}" stroke="${p.dark}" stroke-width="1.1"/>
+        <path d="M25 20h14l-1 4H26z" fill="${p.dark}" stroke="${p.glow}" stroke-width=".7"/>${eye}`;
+      extras = `<path d="M16 12l5 7M48 12l-5 7" stroke="${p.glow}" stroke-width="1" opacity=".45"/>`;
+      if (type === 'phalanx') {
+        weapon = `<path d="M11 28c-7 8-7 20 0 28l9-3-3-22z" fill="${p.dark}" stroke="${p.plate}" stroke-width="1.2"/>
+          <path d="M14 32c-3 5-3 12 0 17" stroke="${p.glow}" stroke-width="1" opacity=".65"/>`;
+      } else if (type === 'incendior') {
+        weapon = `<path d="M42 33h13l4 5-4 5H42z" fill="${p.dark}" stroke="${p.plate}"/>
+          <circle cx="48" cy="38" r="3" fill="${p.glow}" opacity=".8"/>
+          <path d="M54 34l8 4-8 4" fill="${p.plate}"/>`;
+        extras += `<path d="M17 31h-6v12h6M13 31v12" stroke="${p.plate}" stroke-width="2"/>`;
+      } else if (type === 'gladiator') {
+        weapon = `<path d="M50 27l8-9M50 49l8 9" stroke="${p.glow}" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M46 32l5 6-5 6" fill="none" stroke="${p.plate}" stroke-width="1.4"/>`;
+      } else if (type === 'centurion') {
+        weapon = `<path d="M47 30h13v7H47z" fill="${p.dark}" stroke="${p.plate}"/><path d="M58 33h5v2h-5z" fill="${p.glow}"/>`;
+        extras += `<path d="M15 22L8 8l10 7M49 22l7-14-10 7" fill="${p.dark}" stroke="${p.plate}" stroke-width="1.2"/>`;
+      } else {
+        weapon = `<path d="M45 31h15v4H45zM56 29h5v8h-5z" fill="${p.dark}" stroke="${p.plate}" stroke-width="1"/>`;
+      }
+    } else if (vex) {
+      body = `<path d="M32 23l14 9-4 19H22l-4-19z" fill="url(#body)" stroke="${p.plate}" stroke-width="1.1"/>
+        <path d="M22 33l-9-5M42 33l9-5M25 48l-5 8M39 48l5 8" stroke="${p.plate}" stroke-width="3" stroke-linecap="round"/>
+        <path d="M28 31h8v11h-8z" fill="${p.dark}" stroke="${p.glow}" stroke-width=".8"/>
+        <path d="M24 27l8-6 8 6" stroke="${p.glow}" stroke-width="1.2" opacity=".6"/>`;
+      head = `<circle cx="32" cy="17" r="8" fill="${p.dark}" stroke="${p.plate}" stroke-width="1.3"/>
+        <circle cx="32" cy="17" r="3" fill="${p.glow}"><animate attributeName="r" values="2.4;3.2;2.4" dur="2s" repeatCount="indefinite"/></circle>
+        <path d="M24 17h5M35 17h5" stroke="${p.plate}" stroke-width="1.2"/>`;
+      extras = `<path d="M18 12l-4-5M46 12l4-5M18 21l-7 2M46 21l7 2" stroke="${p.plate}" stroke-width="1" opacity=".45"/>`;
+      if (type === 'hobgoblin') {
+        weapon = `<path d="M44 30h15v3H44zM57 27h7v9h-7z" fill="${p.dark}" stroke="${p.glow}" stroke-width=".8"/>
+          <path d="M53 36v7M49 40h8" stroke="${p.plate}" stroke-width="1.2"/>`;
+      } else if (type === 'minotaur') {
+        weapon = `<path d="M18 29L8 24l-3 5 9 7M46 29l10-5 3 5-9 7" fill="${p.dark}" stroke="${p.plate}" stroke-width="1.2"/>
+          <path d="M12 31l5 12M52 31l-5 12" stroke="${p.glow}" stroke-width="1.6"/>`;
+        extras += `<path d="M24 9l-7 7M40 9l7 7" stroke="${p.glow}" stroke-width="1.4" opacity=".55"/>`;
+      } else {
+        weapon = `<path d="M44 32h13v3H44z" fill="${p.dark}" stroke="${p.plate}"/><circle cx="56" cy="33.5" r="2.4" fill="${p.glow}"/>`;
+      }
+    } else if (hive) {
+      body = `<path d="M32 24l12 7-3 18H23l-3-18z" fill="url(#body)" stroke="${p.plate}" stroke-width="1.1"/>
+        <path d="M23 31l-10-4 5 10M41 31l10-4-5 10M27 48l-4 9M37 48l4 9" stroke="${p.dark}" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M27 33h10M28 38h8" stroke="${p.glow}" stroke-width=".9" opacity=".5"/>`;
+      head = `<path d="M25 16l7-6 7 6-2 8H27z" fill="${p.plate}" stroke="${p.dark}" stroke-width="1"/>
+        <circle cx="29" cy="17" r="1.4" fill="${p.glow}"/><circle cx="35" cy="17" r="1.4" fill="${p.glow}"/><circle cx="32" cy="20" r="1.1" fill="${p.glow}"/>`;
+      extras = `<path d="M22 12l-5-5M42 12l5-5M25 9l-1-6M39 9l1-6" stroke="${p.plate}" stroke-width="1" opacity=".6"/>`;
+      if (type === 'thrall' || type === 'taken-thrall') {
+        weapon = `<path d="M19 33l-9 6M45 33l9 6M17 43l-6 4M47 43l6 4" stroke="${p.glow}" stroke-width="1.6" stroke-linecap="round"/>`;
+      } else if (type === 'acolyte' || type === 'taken-acolyte') {
+        weapon = `<path d="M45 30h15v3H45z" fill="${p.dark}" stroke="${p.plate}"/><path d="M58 28l4 3-4 3z" fill="${p.glow}"/>`;
+      } else {
+        weapon = `<path d="M45 28l8 19M48 30h6" stroke="${p.plate}" stroke-width="2"/><path d="M13 29c-6 7-6 16 0 23" fill="${p.dark}" stroke="${p.plate}"/>`;
+      }
+    } else if (fallen) {
+      body = `<path d="M32 25l13 8-4 17H23l-4-17z" fill="url(#body)" stroke="${p.plate}" stroke-width="1"/>
+        <path d="M23 29l-8-3-4 8M41 29l8-3 4 8M24 33l-7 8M40 33l7 8" stroke="${p.plate}" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M23 49l-4 9M41 49l4 9" stroke="${p.dark}" stroke-width="4"/>`;
+      head = `<path d="M24 17l8-6 8 6-1 7H25z" fill="${p.plate}" stroke="${p.dark}" stroke-width="1"/>
+        <path d="M27 18h10v3H27z" fill="${p.dark}" stroke="${p.glow}" stroke-width=".6"/>
+        <circle cx="42" cy="14" r="2.5" fill="${p.glow}" opacity=".7"/>`;
+      extras = `<path d="M18 25l-5-9M46 25l5-9M20 30l-8 2M44 30l8 2" stroke="${p.dark}" stroke-width="1.2" opacity=".7"/>`;
+      if (type === 'dreg') {
+        weapon = `<path d="M44 31h12v3H44z" fill="${p.dark}" stroke="${p.plate}"/><circle cx="55" cy="32.5" r="2" fill="${p.glow}"/>`;
+      } else if (type === 'vandal') {
+        weapon = `<path d="M44 29h15v3H44zM59 26h5v8h-5z" fill="${p.dark}" stroke="${p.plate}"/><path d="M57 30h3" stroke="${p.glow}"/>`;
+      } else {
+        weapon = `<path d="M45 28l8 20M49 29l8 18" stroke="${p.plate}" stroke-width="2" stroke-linecap="round"/>
+          <path d="M15 36c8-5 15-2 20 4" fill="none" stroke="${p.plate}" stroke-width="1.5"/>`;
+      }
+    } else if (scorn) {
+      body = `<path d="M32 23l12 8-4 19H24l-4-19z" fill="url(#body)" stroke="${p.plate}" stroke-width="1.1"/>
+        <path d="M24 32l-10-6 4 13M40 32l10-6-4 13M27 49l-5 9M37 49l5 9" stroke="${p.plate}" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M27 34h10M28 39h8M30 44h4" stroke="${p.glow}" stroke-width=".8" opacity=".55"/>`;
+      head = `<path d="M24 18l8-7 8 7-2 8H26z" fill="${p.plate}" stroke="${p.dark}" stroke-width="1"/>
+        <path d="M24 12l-5-6 2 9M40 12l5-6-2 9" stroke="${p.glow}" stroke-width="1.1" opacity=".8"/>
+        <circle cx="29" cy="18" r="1.3" fill="${p.glow}"/><circle cx="35" cy="18" r="1.3" fill="${p.glow}"/>`;
+      extras = `<path d="M17 26c-4 5-4 12 0 17M47 26c4 5 4 12 0 17" fill="none" stroke="${p.dark}" stroke-width="1.4"/>`;
+      if (type === 'raider') {
+        weapon = `<path d="M45 30h14v3H45z" fill="${p.dark}" stroke="${p.plate}"/><path d="M57 28l5 3-5 3z" fill="${p.glow}"/>`;
+      } else if (type === 'stalker') {
+        weapon = `<path d="M19 35l-8 7M45 35l8 7M17 43l-5 2M47 43l5 2" stroke="${p.glow}" stroke-width="1.6"/>`;
+      } else {
+        weapon = `<path d="M45 28l8 19M49 30h7" stroke="${p.plate}" stroke-width="2"/><path d="M13 35c-5 5-5 12 0 17" fill="${p.dark}" stroke="${p.glow}" stroke-width="1"/>`;
+      }
+    } else if (dread) {
+      body = `<path d="M32 22l11 9-5 19H26l-5-19z" fill="url(#body)" stroke="${p.plate}" stroke-width="1.1"/>
+        <path d="M24 31l-9-8 2 14M40 31l9-8-2 14M28 50l-5 9M36 50l5 9" stroke="${p.plate}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M32 29v14M27 35h10" stroke="${p.glow}" stroke-width="1" opacity=".7"/>`;
+      head = `<path d="M26 15l6-7 6 7-2 9h-8z" fill="${p.dark}" stroke="${p.plate}" stroke-width="1"/>
+        <circle cx="32" cy="17" r="2.2" fill="${p.glow}"><animate attributeName="opacity" values=".45;1;.45" dur="3s" repeatCount="indefinite"/></circle>`;
+      extras = `<path d="M19 10l-7-7M45 10l7-7M22 16l-6 1M42 16l6 1" stroke="${p.glow}" stroke-width=".9" opacity=".45"/>`;
+      if (type === 'grim') {
+        weapon = `<path d="M18 32l-8 8M46 32l8 8M16 42l-4 4M48 42l4 4" stroke="${p.glow}" stroke-width="1.4"/>`;
+      } else if (type === 'weaver') {
+        weapon = `<path d="M14 30c-5 10-5 17 0 25M50 30c5 10 5 17 0 25M20 33l-6 6M44 33l6 6" fill="none" stroke="${p.plate}" stroke-width="1.5"/>`;
+      } else {
+        weapon = `<path d="M45 24v31M40 28h10M42 39c6 5 8 10 4 16" fill="none" stroke="${p.plate}" stroke-width="1.8"/>`;
+      }
+    } else {
+      body = `<path d="M32 24l11 8-4 18H25l-4-18z" fill="url(#body)" stroke="${p.plate}" stroke-width="1.1"/>
+        <path d="M24 32l-9-5 3 12M40 32l9-5-3 12M28 50l-4 9M36 50l4 9" stroke="${p.dark}" stroke-width="3"/>
+        <path d="M27 34h10M28 39h8" stroke="${p.glow}" stroke-width=".9" opacity=".6"/>`;
+      head = `<path d="M25 17l7-6 7 6-2 8H27z" fill="${p.plate}" stroke="${p.dark}"/>
+        <circle cx="29" cy="17" r="1.4" fill="${p.glow}"/><circle cx="35" cy="17" r="1.4" fill="${p.glow}"/>`;
+      extras = `<path d="M20 13l-5-6M44 13l5-6" stroke="${p.glow}" stroke-width="1" opacity=".6"/>`;
+      weapon = `<path d="M45 30h14v3H45z" fill="${p.dark}" stroke="${p.plate}"/><path d="M57 28l5 3-5 3z" fill="${p.glow}"/>`;
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+      <defs>
+        <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop stop-color="${p.plate}"/><stop offset=".62" stop-color="${p.body}"/><stop offset="1" stop-color="${p.dark}"/></linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="1.4"/></filter>
+      </defs>
+      <ellipse cx="32" cy="58" rx="17" ry="4.2" fill="#000" opacity=".42"/>
+      <circle cx="32" cy="32" r="27" fill="${p.glow}" opacity="${taken ? '.035' : '.06'}" filter="url(#glow)"/>
+      ${body}${head}${weapon}${extras}
+      <path d="M22 57h20" stroke="${p.plate}" stroke-width="1" opacity=".35"/>
+    </svg>`;
+  }
+
+  function destinyGuardianSvg(classId = 'hunter', subclassId = 'solar', color = '#e9c078') {
+    const safeColor = color || '#e9c078';
+    const prismatic = subclassId === 'prismatic';
+    const trim = prismatic ? 'url(#prism)' : safeColor;
+    const hood = classId === 'warlock'
+      ? `<path d="M31 23 Q48 7 65 23 L62 37 Q48 31 34 37Z" fill="url(#cloth)" stroke="${trim}" stroke-width="1.2"/>
+         <path d="M38 20 Q48 13 58 20" fill="none" stroke="${trim}" stroke-width="1" opacity=".9"/>`
+      : classId === 'titan'
+        ? `<path d="M31 24 Q48 11 65 24 L62 38 Q48 34 34 38Z" fill="url(#armor)" stroke="${trim}" stroke-width="1.5"/>
+           <path d="M38 24h20" stroke="${trim}" stroke-width="1.3" opacity=".9"/>`
+        : `<path d="M33 23 Q48 9 63 23 L61 38 Q48 34 35 38Z" fill="url(#cloth)" stroke="${trim}" stroke-width="1.2"/>
+           <path d="M36 24 Q48 17 60 24" fill="none" stroke="${trim}" stroke-width="1" opacity=".9"/>`;
+    const cloak = classId === 'warlock'
+      ? `<path d="M32 38 L23 84 L74 84 L64 38Z" fill="url(#cloth)" opacity=".86" stroke="${trim}" stroke-width=".8"/>
+         <path d="M31 58 L66 58" stroke="${trim}" stroke-width="1" opacity=".55"/>`
+      : classId === 'titan'
+        ? `<path d="M25 38 L18 57 L29 67 L35 42Z" fill="url(#cloth)" opacity=".8"/><path d="M71 38 L78 57 L67 67 L61 42Z" fill="url(#cloth)" opacity=".8"/>`
+        : `<path d="M35 37 L23 77 L33 73 L39 43Z" fill="url(#cloth)" opacity=".9" stroke="${trim}" stroke-width=".7"/>
+           <path d="M61 37 L73 77 L63 73 L57 43Z" fill="url(#cloth)" opacity=".9" stroke="${trim}" stroke-width=".7"/>`;
+    const shoulders = classId === 'titan'
+      ? `<path d="M27 38 Q18 38 17 48 L30 52 L37 42Z" fill="url(#armor)" stroke="${trim}" stroke-width="1.2"/>
+         <path d="M69 38 Q78 38 79 48 L66 52 L59 42Z" fill="url(#armor)" stroke="${trim}" stroke-width="1.2"/>`
+      : `<path d="M31 40 Q24 42 25 49 L34 49Z" fill="url(#cloth)" stroke="${trim}" stroke-width=".8"/>
+         <path d="M65 40 Q72 42 71 49 L62 49Z" fill="url(#cloth)" stroke="${trim}" stroke-width=".8"/>`;
+    const legs = classId === 'titan'
+      ? `<path d="M35 63 L32 82 L44 82 L46 64Z" fill="url(#armor)"/><path d="M61 63 L64 82 L52 82 L50 64Z" fill="url(#armor)"/>
+         <path d="M33 79h13M50 79h13" stroke="${trim}" stroke-width="1.1" opacity=".8"/>`
+      : `<path d="M37 64 L35 82 L45 82 L47 65Z" fill="#20262b"/><path d="M59 64 L61 82 L51 82 L49 65Z" fill="#20262b"/>
+         <path d="M36 79h10M50 79h10" stroke="${trim}" stroke-width=".9" opacity=".75"/>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+      <defs>
+        <linearGradient id="armor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5e6b6d"/><stop offset=".5" stop-color="#343f43"/><stop offset="1" stop-color="#171d22"/></linearGradient>
+        <linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1"><stop stop-color="${safeColor}" stop-opacity=".82"/><stop offset=".55" stop-color="${safeColor}" stop-opacity=".32"/><stop offset="1" stop-color="#11161b" stop-opacity=".84"/></linearGradient>
+        <linearGradient id="prism" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe7ae"/><stop offset=".5" stop-color="#f1c4ff"/><stop offset="1" stop-color="#a87cff"/></linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="2.1"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <g>
+        ${cloak}
+        ${legs}
+        <path d="M34 40 Q48 32 62 40 L61 64 Q48 69 35 64Z" fill="url(#armor)" stroke="${trim}" stroke-width="1.2"/>
+        <path d="M39 44 Q48 40 57 44 L55 59 Q48 62 41 59Z" fill="#1c252a" stroke="${trim}" stroke-width=".8" opacity=".9"/>
+        <path d="M48 44v15M42 50h12" stroke="${trim}" stroke-width="1" opacity=".8"/>
+        ${shoulders}
+        <path d="M33 42 Q25 53 31 62 L37 58 L36 45Z" fill="#293338" stroke="${trim}" stroke-width=".8"/>
+        <path d="M63 42 Q71 53 65 62 L59 58 L60 45Z" fill="#293338" stroke="${trim}" stroke-width=".8"/>
+        ${hood}
+        <circle cx="48" cy="28" r="7.4" fill="#12191e" stroke="${trim}" stroke-width="1"/>
+        <path d="M42 27 Q48 23 54 27 L53 32 Q48 35 43 31Z" fill="${safeColor}" opacity=".92" filter="url(#glow)"/>
+        <path d="M36 44 Q48 40 60 44" fill="none" stroke="${trim}" stroke-width="1.5" opacity=".9" filter="url(#glow)"/>
+        <path d="M34 63 Q48 68 62 63" fill="none" stroke="${trim}" stroke-width="1.1" opacity=".7"/>
+        <g transform="translate(59 39)">
+          <rect x="0" y="-31" width="5" height="27" rx="1.4" fill="#171d20" stroke="${trim}" stroke-width=".8"/>
+          <rect x="1" y="-34" width="3" height="10" fill="#3a4447"/>
+          <path d="M-3 -2 L8 -2 L6 3 L-2 3Z" fill="#252e32" stroke="${trim}" stroke-width=".7"/>
+          <path d="M2 -26 L2 -10" stroke="${trim}" stroke-width=".8" opacity=".75"/>
+        </g>
+        <circle cx="25" cy="56" r="2.1" fill="${safeColor}" opacity=".8" filter="url(#glow)"/>
+      </g>
+    </svg>`;
+  }
+
+  const DESTINY_ENEMY_LABELS = {
+    legionary: '军团兵', phalanx: '方阵兵', incendior: '焚化者', gladiator: '角斗士', centurion: '百夫长',
+    goblin: '哥布林', hobgoblin: '鹰身女妖', minotaur: '牛头人',
+    thrall: '奴仆', acolyte: '侍僧', knight: '骑士',
+    raider: '掠夺者', stalker: '潜行者', chieftain: '酋长',
+    dreg: '苦工', vandal: '破坏者', captain: '船长',
+    grim: '阴魂', weaver: '织网者', subjugator: '镇压者',
+    'taken-thrall': '被夺奴仆', 'taken-acolyte': '被夺侍僧', 'taken-knight': '被夺骑士'
+  };
+
+  const DESTINY_STRIKES = [
+    { id: 'arms-dealer', title: '军火商', en: 'The Arms Dealer', location: 'EDZ // FIREBASE HADES', biome: 'edz', faction: 'cabal', factionCn: '红色军团', bossName: 'Bracus Zahn', bossKind: 'cabal', mechanic: 'pylons', objective: '摧毁军火商的防空节点并击败 Bracus Zahn', accent: '#e4a45e' },
+    { id: 'inverted-spire', title: '倒置尖塔', en: 'The Inverted Spire', location: 'NESSUS // THE INVERTED SPIRE', biome: 'nessus', faction: 'vex', factionCn: 'Vex', bossName: 'Protheon, Modular Mind', bossKind: 'vex', mechanic: 'capture', objective: '占领挖掘场控制点并击败 Protheon', accent: '#70d6c5' },
+    { id: 'exodus-crash', title: '出埃及记黑潮', en: 'Exodus Crash', location: 'NESSUS // EXODUS BLACK', biome: 'nessus', faction: 'fallen', factionCn: 'Fallen', bossName: 'Thaviks, the Depraved', bossKind: 'fallen', mechanic: 'terminals', objective: '重启 Exodus Black 终端并击败 Thaviks', accent: '#77b9e8' },
+    { id: 'pyramidion', title: '金字塔', en: 'The Pyramidion', location: 'IO // THE PYRAMIDION', biome: 'mercury', faction: 'vex', factionCn: 'Vex', bossName: 'Brakion, Genesis Mind', bossKind: 'vex', mechanic: 'pylons', objective: '关闭金字塔防御节点并击败 Brakion', accent: '#8be2ce' },
+    { id: 'lake-of-shadows', title: '暗影之湖', en: 'Lake of Shadows', location: 'EDZ // TROSTLAND', biome: 'edz', faction: 'taken', factionCn: 'Taken', bossName: 'Grask, the Consumed', bossKind: 'taken', mechanic: 'capture', objective: '净化暗影之湖并击败 Grask', accent: '#b5a1d8' },
+    { id: 'tree-of-probabilities', title: '概率之树', en: 'Tree of Probabilities', location: 'MERCURY // INFINITE FOREST', biome: 'vexforest', faction: 'vex', factionCn: 'Vex', bossName: 'Dendron, Root Mind', bossKind: 'vex', mechanic: 'terminals', objective: '稳定概率之树并击败 Dendron', accent: '#73e0ca' },
+    { id: 'strange-terrain', title: '奇异地形', en: 'Strange Terrain', location: 'MARS // ALTON DYNAMO', biome: 'warmind', faction: 'hive', factionCn: 'Hive', bossName: 'Nokris, Herald of Xol', bossKind: 'hive', mechanic: 'pylons', objective: '打断 Nokris 的仪式并击败他', accent: '#a7d58b' },
+    { id: 'warden-of-nothing', title: '无处可逃的守望者', en: 'Warden of Nothing', location: 'TANGLED SHORE // PRISON OF ELDERS', biome: 'prison', faction: 'cabal', factionCn: '监狱守卫', bossName: 'The Warden', bossKind: 'cabal', mechanic: 'capture', objective: '夺回长老监狱并击败守望者', accent: '#e0a56f' },
+    { id: 'the-corrupted', title: '腐化', en: 'The Corrupted', location: 'DREAMING CITY // TEMPLE OF ILIOL', biome: 'dreaming', faction: 'taken', factionCn: 'Taken', bossName: 'Sedia, the Corrupted', bossKind: 'taken', mechanic: 'terminals', objective: '净化腐化者并击败 Sedia', accent: '#c59ae8' },
+    { id: 'scarlet-keep', title: '猩红要塞', en: 'The Scarlet Keep', location: 'THE MOON // SCARLET KEEP', biome: 'scarlet', faction: 'hive', factionCn: 'Hive', bossName: 'Hashladûn, Daughter of Crota', bossKind: 'hive', mechanic: 'pylons', objective: '摧毁猩红要塞的虫群信标并击败 Hashladûn', accent: '#d58f7e' }
+  ];
+
+  const DESTINY_RAIDS = {
+    redwar: { id: 'scourge', name: '往日的灾祸', en: 'Scourge of the Past', location: 'EARTH // LAST CITY', encounters: 3, bossName: 'Insurrection Prime', bossKind: 'fallen', accent: '#d7a15f', brief: 'Fallen 的机械军团潜入最后的城市。穿过废弃隧道，关闭保险库，击败 Insurrection Prime。' },
+    'curse-of-osiris': { id: 'eater', name: '世界吞噬者', en: 'Eater of Worlds', location: 'MERCURY // LEVIATHAN ORBIT', encounters: 3, bossName: 'Argos, Planetary Core', bossKind: 'vex', accent: '#70ddc8', brief: '利维坦的消化系统被 Vex 占据。进入巨兽内部，摧毁 Argos 的核心。' },
+    warmind: { id: 'spire', name: '星之塔', en: 'Spire of Stars', location: 'MARS // LEVIATHAN ORBIT', encounters: 3, bossName: 'Val Ca’uor', bossKind: 'cabal', accent: '#e8b76c', brief: '红色军团在星之塔上点燃信标。穿过零重力平台，阻止 Val Ca’uor 召唤舰队。' },
+    nessus: { id: 'leviathan', name: '利维坦', en: 'Leviathan', location: 'NESSUS // LEVIATHAN', encounters: 4, bossName: 'Emperor Calus', bossKind: 'cabal', accent: '#d8b06b', brief: '卡鲁斯的金色巨兽停在涅索斯轨道。穿过花园、浴场与王座，觐见皇帝。' },
+    forsaken: { id: 'crown', name: '悲伤之冠', en: 'Crown of Sorrow', location: 'TANGLED SHORE // LEVIATHAN', encounters: 3, bossName: 'Gahlran, the Sorrow-Bearer', bossKind: 'hive', accent: '#c28fb8', brief: 'Hive 在利维坦上铸造悲伤之冠。打断仪式，击败 Gahlran。' },
+    'dreaming-city': { id: 'last-wish', name: '最后的愿望', en: 'Last Wish', location: 'DREAMING CITY // AWAKENING', encounters: 5, bossName: 'Riven of a Thousand Voices', bossKind: 'taken', accent: '#d2a8ef', brief: '幽梦之城的愿望被腐化。穿过觉醒者宫殿，在许愿墙前面对 Riven。' },
+    shadowkeep: { id: 'garden', name: '救赎花园', en: 'Garden of Salvation', location: 'THE MOON // BLACK GARDEN', encounters: 3, bossName: 'Sanctified Mind', bossKind: 'vex', accent: '#a8e2b0', brief: 'Vex 在黑色花园中建造了救赎之种。穿过花园，直面 Sanctified Mind。' },
+    'beyond-light': { id: 'deep-stone', name: '深石地窖', en: 'Deep Stone Crypt', location: 'EUROPA // DEEP STONE CRYPT', encounters: 4, bossName: 'Taniks, the Abomination', bossKind: 'fallen', accent: '#9fd8df', brief: 'Bray 的深石地窖被 Fallen 打开。穿越冰层与核聚变室，阻止 Taniks 的重生。' },
+    'witch-queen': { id: 'vow', name: '门徒誓言', en: 'Vow of the Disciple', location: 'THRONE WORLD // SUNKEN LAIR', encounters: 4, bossName: 'Rhulk, Disciple of the Witness', bossKind: 'dread', accent: '#c7e69a', brief: '萨瓦图恩的沉没巢穴里藏着门徒的誓言。穿过金字塔，面对 Rhulk。' },
+    lightfall: { id: 'root', name: '梦魇根源', en: 'Root of Nightmares', location: 'NEOMUNA // TYPHON IMPERATOR', encounters: 3, bossName: 'Nezarec, Final God of Pain', bossKind: 'dread', accent: '#ed9fcf', brief: '噩梦在泰丰号深处生根。穿过灵能领域，直面 Nezarec。' },
+    'final-shape': { id: 'salvation', name: '救赎边缘', en: 'Salvation’s Edge', location: 'PALE HEART // THE LAST HORIZON', encounters: 3, bossName: 'The Witness', bossKind: 'dread', accent: '#f1dc99', brief: '旅行者内部的道路走到尽头。与队友一起穿过见证者的领域，结束一切。' },
+    'edge-of-fate': { id: 'deserted-spire', name: '荒芜尖塔', en: 'The Deserted Spire', location: 'KEPLER // THE SINGULARITY', encounters: 3, bossName: 'The Spire Keeper', bossKind: 'vex', accent: '#c79cff', brief: '开普勒的尖塔吞掉了所有光线。穿过奇异点，夺取塔顶的信标。' },
+    renegades: { id: 'renegade-sanctum', name: '反叛者圣所', en: 'Renegade Sanctum', location: 'MARS // THARSIS OUTPOST', encounters: 3, bossName: 'Barant Imperator', bossKind: 'barant', accent: '#e2a35f', brief: 'Barant Imperium 在塔尔西斯建立了圣所。突破边疆防线，终结帝国的统治。' },
+    venus: { id: 'vault-of-glass', name: '玻璃拱顶', en: 'Vault of Glass', location: 'VENUS // ISHTAR SINK', encounters: 4, bossName: 'Atheon, Time’s Conflux', bossKind: 'vex', accent: '#e8d18a', brief: '金星地底的玻璃拱顶正在重写时间。穿过汇流、神谕与迷宫，在玻璃王座前面对 Atheon。' },
+    blackhole: { id: 'event-horizon', name: '事件视界', en: 'Event Horizon', location: 'SAGITTARIUS A* // TERMINUS', encounters: 4, bossName: 'The Singularity', bossKind: 'dread', accent: '#e7b96e', brief: '黑洞边缘的时空正在坍缩。穿过引力井与吸积盘，在奇点王座前结束这场末日观测。' }
+  };
+
+  const DESTINY_RAID_MECHANICS = {
+    scourge: ['suppressor', 'plates'],
+    eater: ['orbs', 'plates'],
+    spire: ['plates', 'orbs'],
+    leviathan: ['plates', 'orbs'],
+    crown: ['suppressor', 'lightdark'],
+    'last-wish': ['eyes', 'tether'],
+    garden: ['tether', 'orbs'],
+    'deep-stone': ['scan', 'nuclear'],
+    vow: ['scan', 'suppressor'],
+    root: ['lightdark', 'eyes'],
+    salvation: ['tether', 'lightdark'],
+    'deserted-spire': ['scan', 'plates'],
+    'renegade-sanctum': ['suppressor', 'nuclear'],
+    'vault-of-glass': ['plates', 'orbs', 'scan', 'suppressor'],
+    'event-horizon': ['lightdark', 'suppressor', 'nuclear', 'tether']
+  };
+
+  const DESTINY_RAID_ENCOUNTERS = {
+    scourge: [
+      { name: '城市外墙', mechanic: 'plates', bossName: null, bossKind: 'fallen' },
+      { name: '保险库', mechanic: 'suppressor', bossName: 'Berserker, Vault Guardian', bossKind: 'fallen' },
+      { name: '机械军团', mechanic: 'orbs', bossName: 'Insurrection Prime', bossKind: 'fallen' }
+    ],
+    eater: [
+      { name: '巨兽入口', mechanic: 'scan', bossName: null, bossKind: 'vex' },
+      { name: '消化腔', mechanic: 'orbs', bossName: 'Vex Gatekeeper', bossKind: 'vex' },
+      { name: '行星核心', mechanic: 'plates', bossName: 'Argos, Planetary Core', bossKind: 'vex' }
+    ],
+    spire: [
+      { name: '零重力码头', mechanic: 'plates', bossName: null, bossKind: 'cabal' },
+      { name: '星之塔中庭', mechanic: 'orbs', bossName: 'Imperial Centurion', bossKind: 'cabal' },
+      { name: '星之王座', mechanic: 'suppressor', bossName: 'Val Ca’uor', bossKind: 'cabal' }
+    ],
+    leviathan: [
+      { name: '登舰甲板', mechanic: 'scan', bossName: null, bossKind: 'cabal' },
+      { name: '皇家浴场', mechanic: 'plates', bossName: 'Royal Attendant', bossKind: 'cabal' },
+      { name: '角斗场', mechanic: 'orbs', bossName: 'Imperial Gladiator', bossKind: 'cabal' },
+      { name: '王座', mechanic: 'lightdark', bossName: 'Emperor Calus', bossKind: 'cabal' }
+    ],
+    crown: [
+      { name: '仪式入口', mechanic: 'lightdark', bossName: null, bossKind: 'hive' },
+      { name: '悲伤圣所', mechanic: 'suppressor', bossName: 'Gahlran’s Deception', bossKind: 'hive' },
+      { name: '悲伤之冠', mechanic: 'plates', bossName: 'Gahlran, the Sorrow-Bearer', bossKind: 'hive' }
+    ],
+    'last-wish': [
+      { name: '许愿墙', mechanic: 'plates', bossName: null, bossKind: 'taken' },
+      { name: '卡莉', mechanic: 'eyes', bossName: 'Kalli, the Corrupted', bossKind: 'taken' },
+      { name: '修罗琪', mechanic: 'tether', bossName: 'Shuro Chi, the Corrupted', bossKind: 'taken' },
+      { name: '莫尔格斯', mechanic: 'orbs', bossName: 'Morgeth, the Spirekeeper', bossKind: 'taken' },
+      { name: '里文', mechanic: 'scan', bossName: 'Riven of a Thousand Voices', bossKind: 'taken' }
+    ],
+    garden: [
+      { name: '黑色花园入口', mechanic: 'tether', bossName: null, bossKind: 'vex' },
+      { name: '神圣心智前厅', mechanic: 'orbs', bossName: 'Consecrated Mind', bossKind: 'vex' },
+      { name: '救赎之种', mechanic: 'plates', bossName: 'Sanctified Mind', bossKind: 'vex' }
+    ],
+    'deep-stone': [
+      { name: '冰层入口', mechanic: 'scan', bossName: null, bossKind: 'fallen' },
+      { name: '安全协议', mechanic: 'suppressor', bossName: 'Crypt Security', bossKind: 'fallen' },
+      { name: '核聚变室', mechanic: 'nuclear', bossName: 'Atraks-1', bossKind: 'fallen' },
+      { name: '深石核心', mechanic: 'tether', bossName: 'Taniks, the Abomination', bossKind: 'fallen' }
+    ],
+    vow: [
+      { name: '金字塔入口', mechanic: 'scan', bossName: null, bossKind: 'dread' },
+      { name: '遗弃者', mechanic: 'plates', bossName: 'Acquisition Caretaker', bossKind: 'dread' },
+      { name: '展览厅', mechanic: 'suppressor', bossName: 'Exhibition Caretaker', bossKind: 'dread' },
+      { name: '门徒', mechanic: 'eyes', bossName: 'Rhulk, Disciple of the Witness', bossKind: 'dread' }
+    ],
+    root: [
+      { name: '梦魇入口', mechanic: 'lightdark', bossName: null, bossKind: 'dread' },
+      { name: '灵能领域', mechanic: 'orbs', bossName: 'Zo’aurc, Explicator of Planets', bossKind: 'dread' },
+      { name: '行星核心', mechanic: 'eyes', bossName: 'Nezarec, Final God of Pain', bossKind: 'dread' }
+    ],
+    salvation: [
+      { name: '见证者领域', mechanic: 'tether', bossName: null, bossKind: 'dread' },
+      { name: '救赎之路', mechanic: 'lightdark', bossName: 'Subjugator of the Witness', bossKind: 'dread' },
+      { name: '最后地平线', mechanic: 'scan', bossName: 'The Witness', bossKind: 'dread' }
+    ],
+    'deserted-spire': [
+      { name: '尖塔基座', mechanic: 'scan', bossName: null, bossKind: 'vex' },
+      { name: '奇点回廊', mechanic: 'plates', bossName: 'Spire Sentinel', bossKind: 'vex' },
+      { name: '塔顶信标', mechanic: 'suppressor', bossName: 'The Spire Keeper', bossKind: 'vex' }
+    ],
+    'renegade-sanctum': [
+      { name: '边疆前哨', mechanic: 'suppressor', bossName: null, bossKind: 'barant' },
+      { name: '帝国圣所', mechanic: 'nuclear', bossName: 'Barant Champion', bossKind: 'barant' },
+      { name: '反叛王座', mechanic: 'plates', bossName: 'Barant Imperator', bossKind: 'barant' }
+    ],
+    'vault-of-glass': [
+      { name: '汇流平台', mechanic: 'plates', bossName: null, bossKind: 'vex' },
+      { name: '神谕大厅', mechanic: 'orbs', bossName: 'The Templar, the Oracle', bossKind: 'vex' },
+      { name: '戈耳工迷宫', mechanic: 'scan', bossName: 'Gorgon, Axis Mind', bossKind: 'vex' },
+      { name: '玻璃王座', mechanic: 'suppressor', bossName: 'Atheon, Time’s Conflux', bossKind: 'vex' }
+    ],
+    'event-horizon': [
+      { name: '引力井边缘', mechanic: 'lightdark', bossName: null, bossKind: 'dread' },
+      { name: '吸积盘航道', mechanic: 'suppressor', bossName: 'Tidal Warden', bossKind: 'dread' },
+      { name: '时间膨胀带', mechanic: 'nuclear', bossName: 'Chronal Devourer', bossKind: 'dread' },
+      { name: '奇点王座', mechanic: 'tether', bossName: 'The Singularity', bossKind: 'dread' }
+    ]
+  };
+
+  const DESTINY_RAID_SCRIPTS = {
+    scourge: [
+      {
+        kind: 'stand', visual: 'plate', label: '占领城市外墙共鸣石板',
+        hint: '站上三座共鸣石板，为突袭小队打开最后的城市外墙。',
+        layout: [[0.22, 0.35], [0.5, 0.31], [0.78, 0.35]]
+      },
+      {
+        kind: 'relay', visual: 'core', label: '将聚变核心送入保险库',
+        hint: '拾取保险库外泄的聚变核心，带回中央保险库门存入。',
+        layout: [[0.2, 0.42], [0.5, 0.26], [0.8, 0.42]], bank: { x: 0.5, y: 0.62 }
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '摧毁 Insurrection Prime 的护盾节点',
+        hint: '击碎首领周围三个发光弱点，解除机械军团的护盾。',
+        offsets: [[-0.17, 0.03], [0.17, 0.03], [0, 0.17]]
+      }
+    ],
+    eater: [
+      {
+        kind: 'sequence', visual: 'obelisk', label: '按顺序校准巨兽入口方尖碑',
+        hint: '观察方尖碑的闪烁顺序，按 2 → 3 → 1 依次站入。',
+        layout: [[0.22, 0.35], [0.5, 0.3], [0.78, 0.35]], order: [1, 2, 0]
+      },
+      {
+        kind: 'sweep', visual: 'stabilizer', label: '摧毁巨兽消化腔抽取器',
+        hint: '躲避旋转的 Vex 消化酸束，击碎三座能量抽取器。',
+        layout: [[0.22, 0.4], [0.5, 0.26], [0.78, 0.4]]
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎 Argos 的行星核心',
+        hint: 'Argos 的行星核心暴露时，摧毁三枚能量节点。',
+        offsets: [[-0.16, 0.02], [0.16, 0.02], [0, 0.18]]
+      }
+    ],
+    spire: [
+      {
+        kind: 'stand', visual: 'plate', label: '占领零重力码头',
+        hint: '在失重码头站上三座信标，稳定星之塔的轨道。',
+        layout: [[0.24, 0.37], [0.5, 0.3], [0.76, 0.37]]
+      },
+      {
+        kind: 'tether', visual: 'tether', label: '连接星之塔信标',
+        hint: '先站入左信标充能，再站入右信标完成连接。',
+        layout: [[0.3, 0.38], [0.7, 0.38]], order: [0, 1]
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '摧毁 Val Ca’uor 的护盾节点',
+        hint: '击碎星之王座周围的三枚护盾节点。',
+        offsets: [[-0.18, 0.04], [0.18, 0.04], [0, 0.17]]
+      }
+    ],
+    leviathan: [
+      {
+        kind: 'sequence', visual: 'obelisk', label: '校准登舰甲板的帝国信标',
+        hint: '按 1 → 3 → 2 的顺序站入信标，获得利维坦的接引。',
+        layout: [[0.22, 0.34], [0.5, 0.3], [0.78, 0.34]], order: [0, 2, 1]
+      },
+      {
+        kind: 'tether', visual: 'tether', label: '连接皇家浴场的导管',
+        hint: '站入左右导管，建立卡鲁斯的皇家供能回路。',
+        layout: [[0.28, 0.4], [0.72, 0.4]], order: [0, 1]
+      },
+      {
+        kind: 'relay', visual: 'core', label: '将角斗场核心送入王座',
+        hint: '收集角斗场中的能量核心，送回王座前的贡品台。',
+        layout: [[0.22, 0.4], [0.5, 0.27], [0.78, 0.4]], bank: { x: 0.5, y: 0.63 }
+      },
+      {
+        kind: 'lightdark', visual: 'lightdark', label: '在卡鲁斯王座平衡光暗',
+        hint: '先进入光之区域，再进入暗之区域，完成觐见仪式。',
+        layout: [[0.32, 0.36], [0.68, 0.36]], order: [0, 1]
+      }
+    ],
+    crown: [
+      {
+        kind: 'lightdark', visual: 'lightdark', label: '平衡悲伤仪式的光暗',
+        hint: '依次踏入光与暗祭坛，压制悲伤之冠的共鸣。',
+        layout: [[0.32, 0.36], [0.68, 0.36]], order: [0, 1]
+      },
+      {
+        kind: 'sequence', visual: 'obelisk', label: '按顺序熄灭仪式方尖碑',
+        hint: '按 3 → 1 → 2 的顺序站入方尖碑，打断 Gahlran 的仪式。',
+        layout: [[0.2, 0.35], [0.5, 0.3], [0.8, 0.35]], order: [2, 0, 1]
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎 Gahlran 的悲伤之冠',
+        hint: '击碎 Gahlran 王冠周围的三个共鸣弱点。',
+        offsets: [[-0.17, 0.04], [0.17, 0.04], [0, 0.17]]
+      }
+    ],
+    'last-wish': [
+      {
+        kind: 'sequence', visual: 'plate', label: '按许愿墙的预言踩亮石板',
+        hint: '按照许愿墙的提示，按 2 → 1 → 3 的顺序踩亮石板。',
+        layout: [[0.22, 0.35], [0.5, 0.3], [0.78, 0.35]], order: [1, 0, 2]
+      },
+      {
+        kind: 'stand', visual: 'plate', label: '在卡莉的骨阵中站稳',
+        hint: '同时站上卡莉骨阵的三块共鸣石板，逼她现身。',
+        layout: [[0.24, 0.36], [0.5, 0.3], [0.76, 0.36]]
+      },
+      {
+        kind: 'tether', visual: 'tether', label: '连接修罗琪的雕像',
+        hint: '先站入左侧雕像，再站入右侧雕像，完成音乐共鸣。',
+        layout: [[0.28, 0.4], [0.72, 0.4]], order: [0, 1]
+      },
+      {
+        kind: 'relay', visual: 'core', label: '将莫尔格斯的能量核心投入尖塔',
+        hint: '从尖塔周围收集能量核心，送回中央许愿池。',
+        layout: [[0.2, 0.4], [0.5, 0.27], [0.8, 0.4]], bank: { x: 0.5, y: 0.63 }
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎里文的千声之眼',
+        hint: '击碎里文周围三枚发光的眼睛，打断她的许愿。',
+        offsets: [[-0.18, 0.02], [0.18, 0.02], [0, 0.18]]
+      }
+    ],
+    garden: [
+      {
+        kind: 'tether', visual: 'tether', label: '连接黑色花园的节点',
+        hint: '先站入左节点，再站入右节点，恢复救赎之路的链接。',
+        layout: [[0.28, 0.38], [0.72, 0.38]], order: [0, 1]
+      },
+      {
+        kind: 'relay', visual: 'core', label: '将救赎之种送入神圣心智',
+        hint: '收集花园中的光能种子，送入中央救赎之种。',
+        layout: [[0.22, 0.4], [0.78, 0.4]], bank: { x: 0.5, y: 0.62 }
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎 Sanctified Mind 的弱点',
+        hint: '击碎神圣心智周围的三个光能弱点。',
+        offsets: [[-0.16, 0.03], [0.16, 0.03], [0, 0.17]]
+      }
+    ],
+    'deep-stone': [
+      {
+        kind: 'sequence', visual: 'terminal', label: '按顺序扫描 Bray 安全终端',
+        hint: '按 1 → 3 → 2 的顺序站入终端，解锁深石地窖。',
+        layout: [[0.22, 0.35], [0.5, 0.3], [0.78, 0.35]], order: [0, 2, 1]
+      },
+      {
+        kind: 'hunt', visual: 'hunt', label: '猎杀安全协议守护者',
+        hint: '击败被标记的 Bray 安全守护者，取得地窖权限。',
+        huntType: 'captain', huntName: 'Bray Security Praetorian'
+      },
+      {
+        kind: 'relay', visual: 'core', label: '将核芯送入深石地窖',
+        hint: '在核聚变室收集核芯，送回中央安全舱。',
+        layout: [[0.2, 0.4], [0.5, 0.27], [0.8, 0.4]], bank: { x: 0.5, y: 0.63 }
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎 Taniks 的机械核心',
+        hint: '击碎 Taniks 周围三个外露机械核心。',
+        offsets: [[-0.18, 0.03], [0.18, 0.03], [0, 0.18]]
+      }
+    ],
+    vow: [
+      {
+        kind: 'sequence', visual: 'obelisk', label: '按顺序点亮金字塔符文',
+        hint: '观察符文闪烁，按 2 → 3 → 1 的顺序站入。',
+        layout: [[0.22, 0.35], [0.5, 0.3], [0.78, 0.35]], order: [1, 2, 0]
+      },
+      {
+        kind: 'relay', visual: 'core', label: '将遗物送入 Acquisition 方尖碑',
+        hint: '搬运门徒的遗物，送入中央方尖碑的接收口。',
+        layout: [[0.24, 0.4], [0.76, 0.4]], bank: { x: 0.5, y: 0.62 }
+      },
+      {
+        kind: 'stand', visual: 'plate', label: '在展览厅守住三座展示台',
+        hint: '同时站上三座展示台，让门徒的展品失稳。',
+        layout: [[0.22, 0.36], [0.5, 0.3], [0.78, 0.36]]
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎 Rhulk 的共振弱点',
+        hint: '击碎 Rhulk 周围三个正在共振的弱点。',
+        offsets: [[-0.17, 0.02], [0.17, 0.02], [0, 0.18]]
+      }
+    ],
+    root: [
+      {
+        kind: 'lightdark', visual: 'lightdark', label: '在梦魇入口平衡光暗',
+        hint: '先进入光之区域，再进入暗之区域，稳定梦魇。',
+        layout: [[0.32, 0.36], [0.68, 0.36]], order: [0, 1]
+      },
+      {
+        kind: 'relay', visual: 'core', label: '将行星核心送入 Zo’aurc 的祭坛',
+        hint: '收集散落的行星核心，送回中央灵能祭坛。',
+        layout: [[0.22, 0.4], [0.5, 0.27], [0.78, 0.4]], bank: { x: 0.5, y: 0.62 }
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎 Nezarec 的梦魇之眼',
+        hint: '击碎 Nezarec 周围三枚梦魇之眼，终结痛苦。',
+        offsets: [[-0.18, 0.03], [0.18, 0.03], [0, 0.18]]
+      }
+    ],
+    salvation: [
+      {
+        kind: 'tether', visual: 'tether', label: '连接见证者领域',
+        hint: '先站入左共鸣点，再站入右共鸣点，建立通往见证者的路径。',
+        layout: [[0.28, 0.38], [0.72, 0.38]], order: [0, 1]
+      },
+      {
+        kind: 'lightdark', visual: 'lightdark', label: '在救赎之路平衡光暗',
+        hint: '依次进入光与暗区域，让见证者的道路失稳。',
+        layout: [[0.32, 0.36], [0.68, 0.36]], order: [0, 1]
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎见证者的弱点',
+        hint: '击碎见证者周围三个失去同步的弱点。',
+        offsets: [[-0.18, 0.02], [0.18, 0.02], [0, 0.18]]
+      }
+    ],
+    'deserted-spire': [
+      {
+        kind: 'sequence', visual: 'terminal', label: '按顺序校准尖塔基座',
+        hint: '按 3 → 1 → 2 的顺序站入基座，稳定开普勒奇点。',
+        layout: [[0.22, 0.35], [0.5, 0.3], [0.78, 0.35]], order: [2, 0, 1]
+      },
+      {
+        kind: 'stand', visual: 'plate', label: '占领奇点回廊',
+        hint: '同时站入三座回廊平台，开启通往塔顶的通道。',
+        layout: [[0.24, 0.36], [0.5, 0.3], [0.76, 0.36]]
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎尖塔守望者的弱点',
+        hint: '击碎 Spire Keeper 周围三个奇点弱点。',
+        offsets: [[-0.17, 0.03], [0.17, 0.03], [0, 0.18]]
+      }
+    ],
+    'renegade-sanctum': [
+      {
+        kind: 'shoot', visual: 'turret', label: '摧毁边疆前哨炮台',
+        hint: '击碎三门 Barant 自动炮台，打开圣所大门。',
+        layout: [[0.24, 0.33], [0.5, 0.23], [0.76, 0.33]]
+      },
+      {
+        kind: 'sequence', visual: 'obelisk', label: '按顺序点燃帝国圣所火盆',
+        hint: '按照边疆军团的印记，按 3 → 1 → 2 的顺序点燃火盆。',
+        layout: [[0.22, 0.35], [0.5, 0.3], [0.78, 0.35]], order: [2, 0, 1]
+      },
+      {
+        kind: 'lightdark', visual: 'lightdark', label: '在反叛王座平衡光暗',
+        hint: '依次踏入光与暗区域，打碎 Barant Imperator 的护盾。',
+        layout: [[0.32, 0.36], [0.68, 0.36]], order: [0, 1]
+      }
+    ],
+    'vault-of-glass': [
+      {
+        kind: 'stand', visual: 'plate', label: '占领汇流平台',
+        hint: '同时站入三座汇流平台，稳定玻璃拱顶的时间线。',
+        layout: [[0.22, 0.36], [0.5, 0.3], [0.78, 0.36]]
+      },
+      {
+        kind: 'shoot', visual: 'oracle', label: '击碎神谕水晶',
+        hint: '击碎三枚神谕水晶，阻止 Templar 改写时间。',
+        layout: [[0.24, 0.32], [0.5, 0.22], [0.76, 0.32]]
+      },
+      {
+        kind: 'hunt', visual: 'hunt', label: '猎杀戈耳工',
+        hint: '击败被标记的戈耳工，穿过迷宫。',
+        huntType: 'minotaur', huntName: 'Gorgon, Axis Mind'
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎 Atheon 的时间核心',
+        hint: '击碎 Atheon 周围三个时间核心，终结玻璃王座。',
+        offsets: [[-0.18, 0.02], [0.18, 0.02], [0, 0.18]]
+      }
+    ],
+    'event-horizon': [
+      {
+        kind: 'lightdark', visual: 'lightdark', label: '在引力井边缘平衡光暗',
+        hint: '依次进入光与暗区域，校准黑洞观测站。',
+        layout: [[0.32, 0.36], [0.68, 0.36]], order: [0, 1]
+      },
+      {
+        kind: 'sweep', visual: 'stabilizer', label: '关闭吸积盘稳定器',
+        hint: '躲避旋转引力束，击碎三座吸积盘稳定器。',
+        layout: [[0.2, 0.4], [0.5, 0.25], [0.8, 0.4]]
+      },
+      {
+        kind: 'relay', visual: 'core', label: '将奇点核心送入时间膨胀带',
+        hint: '收集奇点核心，送回中央观测台。',
+        layout: [[0.22, 0.4], [0.78, 0.4]], bank: { x: 0.5, y: 0.62 }
+      },
+      {
+        kind: 'weakpoints', visual: 'weakpoint', label: '击碎奇点的观测弱点',
+        hint: '击碎奇点周围三个现实薄弱点，关闭事件视界。',
+        offsets: [[-0.18, 0.03], [0.18, 0.03], [0, 0.18]]
+      }
+    ]
+  };
+
+  const DESTINY_MECHANIC_INFO = {
+    plates: { label: '占领共鸣石板', hint: '站上所有发光石板', kind: 'stand' },
+    orbs: { label: '收集并存入能量球', hint: '靠近能量球拾取，再站到中央存入', kind: 'orbs' },
+    scan: { label: '扫描方尖碑', hint: '靠近方尖碑完成扫描', kind: 'stand' },
+    tether: { label: '连接能量节点', hint: '靠近所有节点建立连接', kind: 'stand' },
+    suppressor: { label: '摧毁压制器', hint: '击碎三座压制器', kind: 'shoot' },
+    eyes: { label: '击碎弱点之眼', hint: '射击首领周围发光的弱点', kind: 'shoot' },
+    nuclear: { label: '搬运核芯', hint: '拾取核芯并带回中央存入', kind: 'orbs' },
+    lightdark: { label: '平衡光暗区域', hint: '依次进入光与暗区域', kind: 'stand' },
+    sequence: { label: '按顺序激活', hint: '按照提示顺序站入发光节点', kind: 'stand' },
+    relay: { label: '搬运能量核心', hint: '拾取核心并存入中央装置', kind: 'orbs' },
+    weakpoints: { label: '击碎首领弱点', hint: '射击首领周围的发光弱点', kind: 'shoot' },
+    hunt: { label: '猎杀标记目标', hint: '击败被标记的精英守卫', kind: 'hunt' },
+    sweep: { label: '关闭旋转稳定器', hint: '摧毁稳定器并躲避旋转光束', kind: 'shoot' }
+  };
+
+  const DESTINY_CLASSES = [
+    {
+      id: 'hunter', name: '猎人', en: 'HUNTER', glyph: '猎', color: '#9ed8b1', accent: '#58c98a',
+      role: '高机动 · 爆发伤害',
+      desc: '以敏捷和精准见长的守护者。闪身、飞刀与黄金枪，让猎人能在战场上来去自如。',
+      stats: { 机动: 9, 韧性: 4, 恢复: 6 }
+    },
+    {
+      id: 'warlock', name: '术士', en: 'WARLOCK', glyph: '术', color: '#a9b9ff', accent: '#7f8dff',
+      role: '恢复 · 支援 · 元素掌控',
+      desc: '研究光能与黑暗的学者。裂痕、新星炸弹与召唤物，让术士掌控战场的节奏。',
+      stats: { 机动: 5, 韧性: 4, 恢复: 9 }
+    },
+    {
+      id: 'titan', name: '泰坦', en: 'TITAN', glyph: '泰', color: '#f1a06b', accent: '#df744d',
+      role: '防御 · 近战 · 压制',
+      desc: '以路障和重拳推进战线的守护者。燃烧之锤、雷霆冲击与哨兵护盾，正面撕开敌阵。',
+      stats: { 机动: 4, 韧性: 9, 恢复: 5 }
+    }
+  ];
+
+  const DESTINY_CLASS_ABILITIES = {
+    hunter: {
+      solar: { super: '黄金枪', grenade: '燃烧手雷', melee: '投掷飞刀', classAbility: '赌徒闪身', aspect: '击倒他们' },
+      arc: { super: '电弧法杖', grenade: '跳跃手雷', melee: '组合打击', classAbility: '赌徒闪身', aspect: '致命电流' },
+      void: { super: '幽灵之刃', grenade: '涡流手雷', melee: '烟雾弹', classAbility: '赌徒闪身', aspect: '潜行追踪' },
+      stasis: { super: '沉默狂啸', grenade: '黄昏场手雷', melee: '枯萎之刃', classAbility: '赌徒闪身', aspect: '冷酷收割' },
+      strand: { super: '丝线之舞', grenade: '蜂群手雷', melee: '穿线飞刃', classAbility: '赌徒闪身', aspect: '编织者' },
+      prismatic: { super: '黄金枪', grenade: '涡流手雷', melee: '投掷飞刀', classAbility: '赌徒闪身', aspect: '超越' }
+    },
+    warlock: {
+      solar: { super: '黎明之刃', grenade: '太阳能手雷', melee: '天火掌', classAbility: '治愈裂痕', aspect: '灼热之触' },
+      arc: { super: '风暴使者', grenade: '电弧手雷', melee: '连锁闪电', classAbility: '治愈裂痕', aspect: '电光石火' },
+      void: { super: '新星炸弹', grenade: '涡流手雷', melee: '虚空投射', classAbility: '治愈裂痕', aspect: '混沌加速' },
+      stasis: { super: '寒冬之怒', grenade: '寒冰手雷', melee: '冰法杖', classAbility: '治愈裂痕', aspect: '冰霜之握' },
+      strand: { super: '织线者', grenade: '束缚手雷', melee: '魔法飞针', classAbility: '治愈裂痕', aspect: '编织者' },
+      prismatic: { super: '新星炸弹', grenade: '太阳能手雷', melee: '虚空之握', classAbility: '治愈裂痕', aspect: '超越' }
+    },
+    titan: {
+      solar: { super: '燃烧之锤', grenade: '燃烧手雷', melee: '投掷战锤', classAbility: '集结路障', aspect: '光辉余烬' },
+      arc: { super: '雷霆冲击', grenade: '脉冲手雷', melee: '地震打击', classAbility: '高耸路障', aspect: '风暴之冠' },
+      void: { super: '哨兵护盾', grenade: '磁性手雷', melee: '盾牌猛击', classAbility: '集结路障', aspect: '混沌加速' },
+      stasis: { super: '冰川震荡', grenade: '冰川手雷', melee: '冰矛', classAbility: '高耸路障', aspect: '冰霜之握' },
+      strand: { super: '巨兽', grenade: '悬挂手雷', melee: '狂怒之爪', classAbility: '高耸路障', aspect: '编织者' },
+      prismatic: { super: '燃烧之锤', grenade: '磁性手雷', melee: '投掷战锤', classAbility: '集结路障', aspect: '超越' }
+    }
+  };
+
+  const DESTINY_SUPERS = {
+    hunter: {
+      solar: { name: '黄金枪', kind: 'golden-gun', color: '#ffb35c', damage: 440, radius: 96, range: 1100 },
+      arc: { name: '电弧法杖', kind: 'aura', aura: 'arcstaff', color: '#79c9ff', duration: 5.2, radius: 116, damage: 48 },
+      void: { name: '幽灵之刃', kind: 'aura', aura: 'spectral', color: '#b28ae8', duration: 4.8, radius: 120, damage: 62 },
+      stasis: { name: '沉默狂啸', kind: 'storm', color: '#79bde8', duration: 30, radius: 142, damage: 26 },
+      strand: { name: '丝线之舞', kind: 'aura', aura: 'silkstrike', color: '#8ddb8a', duration: 4.8, radius: 124, damage: 54 }
+    },
+    warlock: {
+      solar: { name: '黎明之刃', kind: 'volley', color: '#f2a35c', count: 3, damage: 118, radius: 82 },
+      arc: { name: '风暴使者', kind: 'chainbeam', color: '#79c9ff', duration: 6, radius: 270, damage: 46 },
+      void: { name: '新星炸弹', kind: 'projectile', color: '#b28ae8', damage: 320, radius: 152 },
+      stasis: { name: '寒冬之怒', kind: 'freeze', color: '#79bde8', duration: 5, radius: 168, damage: 48 },
+      strand: { name: '织线者', kind: 'volley', color: '#8ddb8a', count: 5, damage: 58, radius: 64 }
+    },
+    titan: {
+      solar: { name: '燃烧之锤', kind: 'tornado', color: '#f2a35c', duration: 7, radius: 104, damage: 34 },
+      arc: { name: '雷霆冲击', kind: 'meteor', color: '#79c9ff', damage: 360, radius: 168 },
+      void: { name: '哨兵护盾', kind: 'projectile', color: '#b28ae8', damage: 220, radius: 126 },
+      stasis: { name: '冰川震荡', kind: 'icequake', color: '#79bde8', duration: 6, radius: 176, damage: 44 },
+      strand: { name: '巨兽', kind: 'wave', color: '#8ddb8a', damage: 300, radius: 190 }
+    }
+  };
+
+  const DESTINY_SUPER_LORE = {
+    '黄金枪': '召唤由烈日光能构成的黄金枪，发射贯穿战场的灼热光束；命中处会炸开太阳耀斑。',
+    '电弧法杖': '凝聚电弧法杖，在近身范围内持续释放连锁电击，电光会跳向周围敌人。',
+    '幽灵之刃': '抽出虚空双刃，以幽灵步态切入敌阵；每次挥砍都会留下吞噬光能的虚空痕迹。',
+    '沉默狂啸': '掷出冰影战镰，生成持续 30 秒的冷冻冰风暴；风暴会不断撕裂并减速其中的敌人。',
+    '丝线之舞': '甩出缚丝绳镖，在敌群之间穿梭切割，并把被命中的目标编织在一起。',
+    '黎明之刃': '召唤燃烧的黎明之刃，向目标区域连续投下三柄太阳火焰剑。',
+    '风暴使者': '进入风暴形态，从掌心射出连锁闪电，在多个目标之间跳跃。',
+    '新星炸弹': '将虚空光能压缩成一颗新星炸弹，投出后引爆并留下吞噬敌人的虚空涡流。',
+    '寒冬之怒': '举起冰影法杖，冻结前方区域；冰晶会持续生长并减缓所有被困目标。',
+    '织线者': '召唤缚丝织针，向目标齐射五枚追踪丝线飞针，并在命中后爆开。',
+    '燃烧之锤': '召唤燃烧之锤并砸向地面，形成持续燃烧的太阳火焰旋风。',
+    '雷霆冲击': '化作一道雷霆从空中坠落，撞击点会爆开电弧冲击波。',
+    '哨兵护盾': '投掷虚空哨兵护盾，护盾会向前推进并持续灼烧路径上的敌人。',
+    '冰川震荡': '猛击地面，抬起一圈冰川尖刺，冻结并击退周围的敌人。',
+    '巨兽': '释放缚丝巨兽之力，向前撕开一道冲击波，把敌人拖向力量中心。',
+    '棱镜超能': '融合光能与黑暗，释放一次棱镜能量爆发。'
+  };
+
+  const DESTINY_PRISMATIC_SLOTS = [
+    ['super', '超能', 'F'],
+    ['grenade', '手雷', 'Q'],
+    ['melee', '近战', 'C'],
+    ['classAbility', '职业技能', 'V']
+  ];
+
+  const DESTINY_SUBCLASSES = [
+    {
+      id: 'solar', name: '烈日', en: 'SOLAR', color: '#f2a35c',
+      super: '燃烧之锤', grenade: '烈日手雷', melee: '投掷战锤', classAbility: '火焰闪身',
+      aspect: '火焰之种', fragments: ['灼烧', '余烬', '慷慨']
+    },
+    {
+      id: 'arc', name: '电弧', en: 'ARC', color: '#79c9ff',
+      super: '雷霆冲击', grenade: '闪电手雷', melee: '电弧打击', classAbility: '电弧冲刺',
+      aspect: '风暴之冠', fragments: ['增幅', '离子', '冲击']
+    },
+    {
+      id: 'void', name: '虚空', en: 'VOID', color: '#b28ae8',
+      super: '新星炸弹', grenade: '涡流手雷', melee: '虚空之握', classAbility: '虚空闪身',
+      aspect: '混沌加速', fragments: ['不稳定', '吞噬', '收获']
+    },
+    {
+      id: 'stasis', name: '冰影', en: 'STASIS', color: '#79bde8',
+      super: '冰川震荡', grenade: '寒冰手雷', melee: '冰霜打击', classAbility: '停滞闪避',
+      aspect: '冰霜之握', fragments: ['束缚', '晶化', '忍耐']
+    },
+    {
+      id: 'strand', name: '缚丝', en: 'STRAND', color: '#8ddb8a',
+      super: '织线者', grenade: '穿针手雷', melee: '丝线打击', classAbility: '织网闪避',
+      aspect: '编织者', fragments: ['进化', '智慧', '保护']
+    },
+    {
+      id: 'prismatic', name: '棱镜', en: 'PRISMATIC', color: '#e9a8dc',
+      super: '棱镜超能', grenade: '棱镜手雷', melee: '棱镜打击', classAbility: '棱镜闪身',
+      aspect: '超越', fragments: ['光明', '黑暗', '和谐']
+    }
+  ];
+
+
+  const DESTINY_GEAR_SLOTS = [
+    { id: 'primary', label: '动能武器', kind: 'weapon' },
+    { id: 'energy', label: '能量武器', kind: 'weapon' },
+    { id: 'power', label: '威能武器', kind: 'weapon' },
+    { id: 'helmet', label: '头盔', kind: 'armor' },
+    { id: 'gauntlets', label: '臂铠', kind: 'armor' },
+    { id: 'chest', label: '胸甲', kind: 'armor' },
+    { id: 'legs', label: '腿甲', kind: 'armor' },
+    { id: 'classItem', label: '职业物品', kind: 'armor' }
+  ];
+
+  const DESTINY_WEAPON_SPECS = {
+    primary: {
+      slot: 'primary', number: 1, typeCn: '动能弹药', typeShort: '动能', typeEn: 'KINETIC', color: '#e6ece4',
+      mag: 32, reserve: 224, rate: 0.105, damage: 17, bulletColor: '#ffe5a6', bulletWidth: 1.4
+    },
+    energy: {
+      slot: 'energy', number: 2, typeCn: '能量弹药', typeShort: '能量', typeEn: 'ENERGY', color: '#87dda7',
+      mag: 24, reserve: 120, rate: 0.16, damage: 30, bulletColor: '#a8f0c4', bulletWidth: 1.7
+    },
+    power: {
+      slot: 'power', number: 3, typeCn: '威能弹药', typeShort: '威能', typeEn: 'POWER', color: '#c8a4ef',
+      mag: 6, reserve: 12, rate: 0.52, damage: 96, bulletColor: '#ddbaff', bulletWidth: 2.7
+    }
+  };
+
+  const DESTINY_ELEMENTS = {
+    kinetic: { name: '动能', en: 'KINETIC', color: '#e6ece4' },
+    solar: { name: '烈日', en: 'SOLAR', color: '#f2a35c' },
+    arc: { name: '电弧', en: 'ARC', color: '#79c9ff' },
+    void: { name: '虚空', en: 'VOID', color: '#b28ae8' },
+    stasis: { name: '冰影', en: 'STASIS', color: '#79bde8' },
+    strand: { name: '缚丝', en: 'STRAND', color: '#8ddb8a' }
+  };
+
+  const DESTINY_WEAPON_ARCHETYPES = {
+    primary: [
+      { id: 'auto', label: '自动步枪', mag: 36, reserve: 252, rate: 0.095, damage: 14, bulletWidth: 1.3, speed: 1080, life: 1.0 },
+      { id: 'scout', label: '侦察步枪', mag: 15, reserve: 150, rate: 0.42, damage: 32, bulletWidth: 1.6, speed: 1450, life: 1.1 },
+      { id: 'pulse', label: '脉冲步枪', mag: 27, reserve: 189, rate: 0.36, damage: 16, burst: 3, spread: 0.018, bulletWidth: 1.4, speed: 1200, life: 1.0 },
+      { id: 'handcannon', label: '手炮', mag: 10, reserve: 100, rate: 0.5, damage: 44, bulletWidth: 1.8, speed: 1350, life: 1.1 },
+      { id: 'sidearm', label: '手枪', mag: 20, reserve: 200, rate: 0.13, damage: 11, bulletWidth: 1.2, speed: 1100, life: 0.85 },
+      { id: 'smg', label: '冲锋枪', mag: 45, reserve: 315, rate: 0.075, damage: 8, bulletWidth: 1.2, speed: 1050, life: 0.8 },
+      { id: 'bow', label: '弓', mag: 1, reserve: 24, rate: 0.8, damage: 105, bulletWidth: 2.0, speed: 1750, life: 1.2 },
+      { id: 'grenade', label: '榴弹发射器', mag: 6, reserve: 36, rate: 0.75, damage: 26, explosive: true, explosionRadius: 54, bulletWidth: 2.2, speed: 760, life: 1.2, projectileType: 'grenade' }
+    ],
+    energy: [
+      { id: 'auto', label: '自动步枪', mag: 36, reserve: 216, rate: 0.1, damage: 15, bulletWidth: 1.3, speed: 1080, life: 1.0 },
+      { id: 'pulse', label: '脉冲步枪', mag: 27, reserve: 171, rate: 0.36, damage: 17, burst: 3, spread: 0.018, bulletWidth: 1.4, speed: 1200, life: 1.0 },
+      { id: 'scout', label: '侦察步枪', mag: 15, reserve: 135, rate: 0.42, damage: 34, bulletWidth: 1.6, speed: 1450, life: 1.1 },
+      { id: 'handcannon', label: '手炮', mag: 10, reserve: 90, rate: 0.5, damage: 48, bulletWidth: 1.8, speed: 1350, life: 1.1 },
+      { id: 'sidearm', label: '手枪', mag: 20, reserve: 180, rate: 0.13, damage: 12, bulletWidth: 1.2, speed: 1100, life: 0.85 },
+      { id: 'smg', label: '冲锋枪', mag: 45, reserve: 270, rate: 0.075, damage: 8, bulletWidth: 1.2, speed: 1050, life: 0.8 },
+      { id: 'bow', label: '弓', mag: 1, reserve: 24, rate: 0.8, damage: 112, bulletWidth: 2.0, speed: 1750, life: 1.2 },
+      { id: 'fusion', label: '融合步枪', mag: 7, reserve: 35, rate: 0.64, damage: 22, pellets: 5, spread: 0.11, bulletWidth: 1.2, speed: 1250, life: 0.8 },
+      { id: 'micro', label: '微型榴弹发射器', mag: 5, reserve: 30, rate: 0.55, damage: 30, explosive: true, explosionRadius: 46, bulletWidth: 2.0, speed: 800, life: 1.0, projectileType: 'grenade' },
+      { id: 'wave', label: '波形榴弹发射器', mag: 6, reserve: 30, rate: 0.8, damage: 36, explosive: true, explosionRadius: 64, bulletWidth: 2.2, speed: 720, life: 1.2, projectileType: 'grenade' }
+    ],
+    power: [
+      { id: 'rocket', label: '火箭筒', mag: 1, reserve: 8, rate: 1.05, damage: 160, explosive: true, explosionRadius: 110, bulletWidth: 3.0, speed: 620, life: 1.6, projectileType: 'rocket' },
+      { id: 'heavygl', label: '重型榴弹发射器', mag: 6, reserve: 24, rate: 0.64, damage: 52, explosive: true, explosionRadius: 82, bulletWidth: 2.4, speed: 760, life: 1.4, projectileType: 'grenade' },
+      { id: 'linear', label: '线性融合步枪', mag: 5, reserve: 20, rate: 0.95, damage: 130, bulletWidth: 2.6, speed: 1900, life: 1.2, projectileType: 'beam' },
+      { id: 'machinegun', label: '机枪', mag: 60, reserve: 240, rate: 0.08, damage: 17, bulletWidth: 1.5, speed: 1150, life: 1.0 },
+      { id: 'heavybow', label: '威能弓', mag: 1, reserve: 16, rate: 1.0, damage: 180, bulletWidth: 2.6, speed: 1800, life: 1.3 }
+    ]
+  };
+
+  const DESTINY_WEAPON_PREFIXES = ['失落', '旧城', '星火', '深渊', '寂静', '破晓', '黄昏', '虚空', '冰霜', '黎明', '赤潮', '环城'];
+
+  const DESTINY_GEAR_NAMES = {
+    primary: ['第七炽天使自动步枪', '维斯特恩侧铣', '苏罗斯政权', '命运使者', '破晓'],
+    energy: ['虚空脉冲步枪', '伊卡洛斯融合步枪', '星火手炮', '日冕'],
+    power: ['机灵之怒', '陨落者火箭筒', '破碎王座'],
+    helmet: ['朝圣者头盔', '深岩兜帽', '星图头盔'],
+    gauntlets: ['旅者臂铠', '铁旗护手', '虚空之握'],
+    chest: ['城市胸甲', '深岩胸甲', '曙光胸甲'],
+    legs: ['巡礼者腿甲', '冰原腿甲', '星图长裤'],
+    classItem: ['守护者印记', '流浪者斗篷', '曙光臂章']
+  };
+
+  const DESTINY_GEAR_PERKS = ['爆破专家', '维持', '快速拔枪', '狂乱', '事不过四', '精准连击', '元素电容', '重装弹药', '恢复', '敏捷', '守护之光', '反屏障'];
+  const DESTINY_RARITY = {
+    common: { label: '普通', color: '#9aa5a8' },
+    rare: { label: '稀有', color: '#5b9bd5' },
+    legendary: { label: '传说', color: '#b184e0' },
+    exotic: { label: '异域', color: '#e3b04b' }
+  };
+
+
+  const DESTINY_EXOTICS = {
+    weapons: {
+      anarchy: {
+        id: 'anarchy', name: '无政府', en: 'Anarchy', slot: 'power',
+        weaponType: 'heavygl', element: 'arc', source: 'raid', sourceKey: 'scourge', sourceLabel: '往日的灾祸',
+        abilityName: '粘性电弧陷阱', ability: '榴弹会附着在目标与地面上，持续释放电弧冲击。',
+        effect: { type: 'trap', radius: 96, ratio: 0.7, color: '#79c9ff' },
+        overrides: { damage: 62, mag: 6, reserve: 24, rate: 0.72, explosive: true, explosionRadius: 58, projectileType: 'grenade', speed: 820, bulletWidth: 2.5 }
+      },
+      telesto: {
+        id: 'telesto', name: '泰勒斯托', en: 'Telesto', slot: 'energy',
+        weaponType: 'fusion', element: 'void', source: 'raid', sourceKey: 'eater', sourceLabel: '世界吞噬者',
+        abilityName: '虚空引信', ability: '弹丸附着在目标上，延迟后爆裂成一团虚空能量。',
+        effect: { type: 'splash', radius: 74, ratio: 0.55, color: '#b28ae8' },
+        overrides: { damage: 32, mag: 7, reserve: 35, rate: 0.62, pellets: 5, spread: 0.1, bulletWidth: 1.3, speed: 1250 }
+      },
+      wardcliff: {
+        id: 'wardcliff', name: '沃德克里夫线圈', en: 'Wardcliff Coil', slot: 'power',
+        weaponType: 'rocket', element: 'arc', source: 'raid', sourceKey: 'spire', sourceLabel: '星之塔',
+        abilityName: '线圈过载', ability: '每次开火倾泻一串不稳定火箭，覆盖一片区域。',
+        effect: { type: 'volley', color: '#79c9ff' },
+        overrides: { damage: 42, mag: 1, reserve: 8, rate: 1.05, burst: 5, spread: 0.16, explosive: true, explosionRadius: 52, projectileType: 'rocket', speed: 620, bulletWidth: 2.2 }
+      },
+      acrius: {
+        id: 'acrius', name: '阿克里俄斯传说', en: 'Legend of Acrius', slot: 'energy',
+        weaponType: 'fusion', element: 'arc', source: 'raid', sourceKey: 'leviathan', sourceLabel: '利维坦',
+        abilityName: '帝国重炮', ability: '近距离双联重弹，命中后掀起电弧冲击。',
+        effect: { type: 'splash', radius: 60, ratio: 0.45, color: '#79c9ff' },
+        overrides: { damage: 58, mag: 4, reserve: 20, rate: 0.82, burst: 2, spread: 0.04, bulletWidth: 2.6, speed: 1100 }
+      },
+      tarrabah: {
+        id: 'tarrabah', name: '塔拉巴', en: 'Tarrabah', slot: 'energy',
+        weaponType: 'smg', element: 'solar', source: 'raid', sourceKey: 'crown', sourceLabel: '悲伤之冠',
+        abilityName: '贪婪之兽', ability: '持续命中会点燃目标，并让武器愈发狂暴。',
+        effect: { type: 'burn', ratio: 0.32, color: '#f2a35c' },
+        overrides: { damage: 12, mag: 45, reserve: 315, rate: 0.072, bulletWidth: 1.3, speed: 1080 }
+      },
+      thousand: {
+        id: 'thousand', name: '千语', en: 'One Thousand Voices', slot: 'power',
+        weaponType: 'linear', element: 'solar', source: 'raid', sourceKey: 'last-wish', sourceLabel: '最后的愿望',
+        abilityName: '千声低语', ability: '光束在目标处炸裂成一片太阳火海。',
+        effect: { type: 'splash', radius: 104, ratio: 0.8, color: '#f2a35c' },
+        overrides: { damage: 155, mag: 5, reserve: 20, rate: 0.95, bulletWidth: 2.8, speed: 1900, projectileType: 'beam' }
+      },
+      divinity: {
+        id: 'divinity', name: '神性', en: 'Divinity', slot: 'energy',
+        weaponType: 'fusion', element: 'arc', source: 'raid', sourceKey: 'garden', sourceLabel: '救赎花园',
+        abilityName: '审判之笼', ability: '命中会标记目标，使其承受更多伤害。',
+        effect: { type: 'mark', ratio: 0.24, color: '#79c9ff' },
+        overrides: { damage: 26, mag: 7, reserve: 35, rate: 0.6, pellets: 1, bulletWidth: 2.2, speed: 1600, projectileType: 'beam' }
+      },
+      eyes: {
+        id: 'eyes', name: '明日之眼', en: 'Eyes of Tomorrow', slot: 'power',
+        weaponType: 'rocket', element: 'solar', source: 'raid', sourceKey: 'deep-stone', sourceLabel: '深石地窖',
+        abilityName: '自适应军械', ability: '锁定多个目标并齐射多枚追踪火箭。',
+        effect: { type: 'volley', color: '#f2a35c' },
+        overrides: { damage: 38, mag: 1, reserve: 6, rate: 1.0, burst: 4, spread: 0.18, explosive: true, explosionRadius: 54, projectileType: 'rocket', speed: 650 }
+      },
+      collective: {
+        id: 'collective', name: '集体义务', en: 'Collective Obligation', slot: 'energy',
+        weaponType: 'pulse', element: 'void', source: 'raid', sourceKey: 'vow', sourceLabel: '门徒誓言',
+        abilityName: '记忆泄漏', ability: '吸取目标的减益，并向周围敌人释放虚空连锁。',
+        effect: { type: 'chain', radius: 180, ratio: 0.42, color: '#b28ae8' },
+        overrides: { damage: 22, mag: 27, reserve: 189, rate: 0.34, burst: 3, spread: 0.018, bulletWidth: 1.5, speed: 1250 }
+      },
+      conditional: {
+        id: 'conditional', name: '条件终局', en: 'Conditional Finality', slot: 'energy',
+        weaponType: 'fusion', element: 'stasis', source: 'raid', sourceKey: 'root', sourceLabel: '梦魇根源',
+        abilityName: '双重终局', ability: '交替释放烈日与冰影弹丸，冻结并灼烧目标。',
+        effect: { type: 'freeze', duration: 3.2, color: '#79bde8' },
+        overrides: { damage: 48, mag: 4, reserve: 20, rate: 0.8, burst: 2, spread: 0.045, bulletWidth: 2.2, speed: 1200 }
+      },
+      euphony: {
+        id: 'euphony', name: '和谐', en: 'Euphony', slot: 'power',
+        weaponType: 'linear', element: 'strand', source: 'raid', sourceKey: 'salvation', sourceLabel: '救赎边缘',
+        abilityName: '共振织线', ability: '命中会编织目标，并把伤害传导给附近敌人。',
+        effect: { type: 'chain', radius: 210, ratio: 0.48, color: '#8ddb8a' },
+        overrides: { damage: 145, mag: 5, reserve: 20, rate: 0.92, bulletWidth: 2.7, speed: 1900, projectileType: 'beam' }
+      },
+      mythoclast: {
+        id: 'mythoclast', name: '维克斯神话破灭', en: 'Vex Mythoclast', slot: 'energy',
+        weaponType: 'fusion', element: 'solar', source: 'raid', sourceKey: 'vault-of-glass', sourceLabel: '玻璃拱顶',
+        abilityName: '时间回溯', ability: '连续命中的最后一发会引爆时间余烬。',
+        effect: { type: 'burn', ratio: 0.45, color: '#f2a35c' },
+        overrides: { damage: 30, mag: 7, reserve: 35, rate: 0.55, pellets: 1, bulletWidth: 1.8, speed: 1500 }
+      },
+      keplerVerdict: {
+        id: 'keplerVerdict', name: '开普勒裁决', en: 'Kepler’s Verdict', slot: 'power',
+        weaponType: 'linear', element: 'arc', source: 'raid', sourceKey: 'deserted-spire', sourceLabel: '荒芜尖塔',
+        abilityName: '奇点导线', ability: '光束在多个目标之间跳跃，并在终点留下电弧爆炸。',
+        effect: { type: 'chain', radius: 170, ratio: 0.4, color: '#79c9ff' },
+        overrides: { damage: 150, mag: 5, reserve: 20, rate: 0.95, bulletWidth: 2.6, speed: 1900, projectileType: 'beam' }
+      },
+      renegadeOath: {
+        id: 'renegadeOath', name: '叛徒誓言', en: 'Renegade’s Oath', slot: 'primary',
+        weaponType: 'handcannon', element: 'solar', source: 'raid', sourceKey: 'renegade-sanctum', sourceLabel: '反叛者圣所',
+        abilityName: '帝国裂痕', ability: '精准命中会在目标脚下炸开烈日裂痕。',
+        effect: { type: 'splash', radius: 72, ratio: 0.5, color: '#f2a35c' },
+        overrides: { damage: 62, mag: 10, reserve: 100, rate: 0.48, bulletWidth: 2.0, speed: 1380 }
+      },
+      singularity: {
+        id: 'singularity', name: '奇点引擎', en: 'Singularity Engine', slot: 'power',
+        weaponType: 'heavygl', element: 'void', source: 'raid', sourceKey: 'event-horizon', sourceLabel: '事件视界',
+        abilityName: '事件坍缩', ability: '弹丸坍缩成微型奇点，持续拖拽并减速附近敌人。',
+        effect: { type: 'vortex', radius: 108, ratio: 0.55, color: '#b28ae8' },
+        overrides: { damage: 78, mag: 5, reserve: 20, rate: 0.82, explosive: true, explosionRadius: 74, projectileType: 'grenade', bulletWidth: 2.6 }
+      },
+      hawkmoon: {
+        id: 'hawkmoon', name: '鹰月', en: 'Hawkmoon', slot: 'primary',
+        weaponType: 'handcannon', element: 'solar', source: 'quest', sourceKey: 'redwar', sourceLabel: '异域任务 · 鹰月的回声',
+        abilityName: '希望之种', ability: '精准命中会积累希望之种，最后一发造成额外伤害。',
+        effect: { type: 'mark', ratio: 0.3, color: '#f2a35c' },
+        overrides: { damage: 52, mag: 9, reserve: 90, rate: 0.46, bulletWidth: 1.9, speed: 1380 }
+      },
+      polaris: {
+        id: 'polaris', name: '北极星长矛', en: 'Polaris Lance', slot: 'primary',
+        weaponType: 'scout', element: 'solar', source: 'quest', sourceKey: 'curse-of-osiris', sourceLabel: '异域任务 · 无限之径',
+        abilityName: '完美第五发', ability: '连续精准命中会点燃目标并引发烈日爆炸。',
+        effect: { type: 'burn', ratio: 0.4, color: '#f2a35c' },
+        overrides: { damage: 46, mag: 15, reserve: 150, rate: 0.4, bulletWidth: 1.8, speed: 1500 }
+      },
+      sleeper: {
+        id: 'sleeper', name: '沉睡者模拟', en: 'Sleeper Simulant', slot: 'power',
+        weaponType: 'linear', element: 'solar', source: 'quest', sourceKey: 'warmind', sourceLabel: '异域任务 · 沉睡者协议',
+        abilityName: '过载穿透', ability: '高能光束穿透目标并在反弹处爆炸。',
+        effect: { type: 'splash', radius: 90, ratio: 0.6, color: '#f2a35c' },
+        overrides: { damage: 175, mag: 4, reserve: 16, rate: 1.0, bulletWidth: 3.0, speed: 2000, projectileType: 'beam' }
+      },
+      ace: {
+        id: 'ace', name: '黑桃 A', en: 'Ace of Spades', slot: 'primary',
+        weaponType: 'handcannon', element: 'kinetic', source: 'quest', sourceKey: 'forsaken', sourceLabel: '异域任务 · 黑桃',
+        abilityName: '萤火', ability: '击杀会装填高伤萤火弹，并回复部分弹药。',
+        effect: { type: 'splash', radius: 66, ratio: 0.5, color: '#ffe0a0', refund: 0.25 },
+        overrides: { damage: 54, mag: 13, reserve: 130, rate: 0.48, bulletWidth: 2.0, speed: 1380 }
+      },
+      deathbringer: {
+        id: 'deathbringer', name: '死亡使者', en: 'Deathbringer', slot: 'power',
+        weaponType: 'rocket', element: 'void', source: 'quest', sourceKey: 'shadowkeep', sourceLabel: '异域任务 · 死亡低语',
+        abilityName: '暗影之球', ability: '火箭在目标上方释放虚空球体，持续追踪并爆炸。',
+        effect: { type: 'vortex', radius: 100, ratio: 0.65, color: '#b28ae8' },
+        overrides: { damage: 132, mag: 1, reserve: 8, rate: 1.1, explosive: true, explosionRadius: 90, projectileType: 'rocket', speed: 600, bulletWidth: 3.0 }
+      },
+      salvationsGrip: {
+        id: 'salvationsGrip', name: '救赎之握', en: 'Salvation’s Grip', slot: 'power',
+        weaponType: 'heavygl', element: 'stasis', source: 'quest', sourceKey: 'beyond-light', sourceLabel: '异域任务 · 冰封救赎',
+        abilityName: '冰川先锋', ability: '冻结弹丸在落点生成冰墙，并冻住附近目标。',
+        effect: { type: 'freeze', duration: 3.6, color: '#79bde8' },
+        overrides: { damage: 68, mag: 5, reserve: 20, rate: 0.88, explosive: true, explosionRadius: 112, projectileType: 'grenade', bulletWidth: 2.8 }
+      },
+      parasite: {
+        id: 'parasite', name: '寄生虫', en: 'Parasite', slot: 'power',
+        weaponType: 'heavygl', element: 'solar', source: 'quest', sourceKey: 'witch-queen', sourceLabel: '异域任务 · 寄生虫',
+        abilityName: '虫群增殖', ability: '击杀会增大下一发弹丸，并造成更大范围的烈日爆炸。',
+        effect: { type: 'burn', ratio: 0.55, color: '#f2a35c' },
+        overrides: { damage: 88, mag: 4, reserve: 16, rate: 0.9, explosive: true, explosionRadius: 96, projectileType: 'grenade', bulletWidth: 3.0 }
+      },
+      winterbite: {
+        id: 'winterbite', name: '冰噬', en: 'Winterbite', slot: 'power',
+        weaponType: 'heavygl', element: 'stasis', source: 'quest', sourceKey: 'lightfall', sourceLabel: '异域任务 · 寒冬之噬',
+        abilityName: '霜巨人之握', ability: '弹丸释放冰影冲击波，冻结并击退目标。',
+        effect: { type: 'slow', ratio: 0.45, duration: 2.8, color: '#79bde8' },
+        overrides: { damage: 82, mag: 6, reserve: 24, rate: 0.8, explosive: true, explosionRadius: 86, projectileType: 'grenade', bulletWidth: 2.7 }
+      },
+      stillHunt: {
+        id: 'stillHunt', name: '静猎', en: 'Still Hunt', slot: 'energy',
+        weaponType: 'fusion', element: 'solar', source: 'quest', sourceKey: 'final-shape', sourceLabel: '异域任务 · 静默狩猎',
+        abilityName: '猎手之眼', ability: '精准命中会标记目标并提升下一发的暴击伤害。',
+        effect: { type: 'mark', ratio: 0.28, color: '#ffe1a0' },
+        overrides: { damage: 128, mag: 5, reserve: 20, rate: 0.85, pellets: 1, spread: 0, bulletWidth: 2.2, speed: 2100, projectileType: 'beam' }
+      },
+      keplerLantern: {
+        id: 'keplerLantern', name: '开普勒提灯', en: 'Kepler’s Lantern', slot: 'energy',
+        weaponType: 'fusion', element: 'arc', source: 'quest', sourceKey: 'edge-of-fate', sourceLabel: '异域任务 · 开普勒提灯',
+        abilityName: '星火折射', ability: '融合弹丸命中后向附近目标折射电弧。',
+        effect: { type: 'chain', radius: 150, ratio: 0.36, color: '#79c9ff' },
+        overrides: { damage: 34, mag: 7, reserve: 35, rate: 0.62, pellets: 5, spread: 0.09, bulletWidth: 1.4, speed: 1350 }
+      },
+      frontiersEdge: {
+        id: 'frontiersEdge', name: '边疆之刃', en: 'Frontier’s Edge', slot: 'primary',
+        weaponType: 'handcannon', element: 'kinetic', source: 'quest', sourceKey: 'renegades', sourceLabel: '异域任务 · 边疆之刃',
+        abilityName: '边疆法则', ability: '击杀返还弹药，并在目标位置留下灼烧印记。',
+        effect: { type: 'refund', ratio: 0.3, color: '#e2a35f' },
+        overrides: { damage: 58, mag: 11, reserve: 110, rate: 0.46, bulletWidth: 2.0, speed: 1400 }
+      },
+      wishEnder: {
+        id: 'wishEnder', name: '愿望终结者', en: 'Wish-Ender', slot: 'primary',
+        weaponType: 'bow', element: 'void', source: 'quest', sourceKey: 'dreaming-city', sourceLabel: '异域任务 · 愿望终结',
+        abilityName: '穿透之愿', ability: '满蓄力箭矢穿透目标并标记被我看见的敌人。',
+        effect: { type: 'pierce', ratio: 0.45, color: '#b28ae8' },
+        overrides: { damage: 140, mag: 1, reserve: 24, rate: 0.78, bulletWidth: 2.6, speed: 1900 }
+      },
+      riskrunner: {
+        id: 'riskrunner', name: '风险奔跑者', en: 'Riskrunner', slot: 'energy',
+        weaponType: 'smg', element: 'arc', source: 'quest', sourceKey: 'nessus', sourceLabel: '异域任务 · 风险奔跑',
+        abilityName: '电弧导体', ability: '受到电弧伤害后进入超导状态，命中的电弧会连锁跳跃。',
+        effect: { type: 'chain', radius: 170, ratio: 0.38, color: '#79c9ff' },
+        overrides: { damage: 11, mag: 45, reserve: 270, rate: 0.072, bulletWidth: 1.3, speed: 1100 }
+      },
+      vexcalibur: {
+        id: 'vexcalibur', name: '维克斯之剑', en: 'Vexcalibur', slot: 'energy',
+        weaponType: 'fusion', element: 'void', source: 'quest', sourceKey: 'venus', sourceLabel: '异域任务 · 维克斯之剑',
+        abilityName: '虚空护幕', ability: '近战命中或击杀会为守护者提供虚空护盾。',
+        effect: { type: 'shield', ratio: 0.35, color: '#b28ae8' },
+        overrides: { damage: 30, mag: 6, reserve: 30, rate: 0.68, pellets: 5, spread: 0.1, bulletWidth: 1.4, speed: 1250 }
+      },
+      gravitysAnswer: {
+        id: 'gravitysAnswer', name: '引力答案', en: 'Gravity’s Answer', slot: 'power',
+        weaponType: 'linear', element: 'void', source: 'quest', sourceKey: 'blackhole', sourceLabel: '异域任务 · 引力答案',
+        abilityName: '视界回响', ability: '光束在终点制造引力涡流，持续拉拽并削弱敌人。',
+        effect: { type: 'vortex', radius: 110, ratio: 0.6, color: '#b28ae8' },
+        overrides: { damage: 155, mag: 5, reserve: 20, rate: 0.95, bulletWidth: 2.8, speed: 1950, projectileType: 'beam' }
+      }
+    },
+    armor: {
+      actium: {
+        id: 'actium', name: '阿克提姆战争机架', en: 'Actium War Rig', slot: 'chest',
+        source: 'story', sourceKey: 'redwar', exclusive: true, abilityName: '战争机器',
+        ability: '自动步枪持续命中时自动装填，并提高自动步枪伤害。',
+        effect: { type: 'weaponDamage', weaponType: 'auto', multiplier: 1.18 }
+      },
+      sunbracers: {
+        id: 'sunbracers', name: '太阳护腕', en: 'Sunbracers', slot: 'gauntlets',
+        source: 'story', sourceKey: 'curse-of-osiris', exclusive: true, abilityName: '太阳余烬',
+        ability: '手雷伤害提高，手雷命中后加快近战充能。',
+        effect: { type: 'grenadeDamage', multiplier: 1.25 }
+      },
+      wormhusk: {
+        id: 'wormhusk', name: '虫壳王冠', en: 'Wormhusk Crown', slot: 'helmet',
+        source: 'story', sourceKey: 'warmind', exclusive: true, abilityName: '虫群复苏',
+        ability: '使用职业技能时恢复生命与护盾。',
+        effect: { type: 'classHeal', value: 70 }
+      },
+      galanor: {
+        id: 'galanor', name: '加拉诺碎片', en: 'Shards of Galanor', slot: 'gauntlets',
+        source: 'story', sourceKey: 'forsaken', exclusive: true, abilityName: '刀锋之舞',
+        ability: '击杀会额外回复超能能量。',
+        effect: { type: 'superGain', multiplier: 1.35 }
+      },
+      cowl: {
+        id: 'cowl', name: '刺客兜帽', en: 'Assassin’s Cowl', slot: 'helmet',
+        source: 'story', sourceKey: 'shadowkeep', exclusive: true, abilityName: '暗影伪装',
+        ability: '近战击杀后恢复生命并短暂降低受到的伤害。',
+        effect: { type: 'healOnKill', value: 34 }
+      },
+      icefall: {
+        id: 'icefall', name: '冰瀑披风', en: 'Icefall Mantle', slot: 'chest',
+        source: 'story', sourceKey: 'beyond-light', exclusive: true, abilityName: '冰霜壁垒',
+        ability: '受到的伤害降低，冰影技能充能更快。',
+        effect: { type: 'damageResist', value: 0.16 }
+      },
+      osmiomancy: {
+        id: 'osmiomancy', name: '奥斯米曼西手套', en: 'Osmiomancy Gloves', slot: 'gauntlets',
+        source: 'story', sourceKey: 'witch-queen', exclusive: true, abilityName: '冰影回响',
+        ability: '手雷充能速度大幅提高。',
+        effect: { type: 'abilityRegen', multiplier: 1.45 }
+      },
+      cyrtarachne: {
+        id: 'cyrtarachne', name: '蛛网面甲', en: 'Cyrtarachne’s Facade', slot: 'helmet',
+        source: 'story', sourceKey: 'lightfall', exclusive: true, abilityName: '织网者护幕',
+        ability: '受伤后获得短暂的织网减伤。',
+        effect: { type: 'damageResist', value: 0.12 }
+      },
+      hazardous: {
+        id: 'hazardous', name: '危险推进器', en: 'Hazardous Propulsion', slot: 'chest',
+        source: 'story', sourceKey: 'final-shape', exclusive: true, abilityName: '火箭齐射',
+        ability: '火箭筒伤害提高，换弹速度加快。',
+        effect: { type: 'weaponDamage', weaponType: 'rocket', multiplier: 1.22 }
+      },
+      keplerAegis: {
+        id: 'keplerAegis', name: '开普勒神盾', en: 'Kepler Aegis', slot: 'classItem',
+        source: 'story', sourceKey: 'edge-of-fate', exclusive: true, abilityName: '奇点护持',
+        ability: '所有职业技能的冷却速度加快。',
+        effect: { type: 'abilityRegen', multiplier: 1.3 }
+      },
+      imperialWard: {
+        id: 'imperialWard', name: '帝国壁垒', en: 'Imperial Ward', slot: 'legs',
+        source: 'story', sourceKey: 'renegades', exclusive: true, abilityName: '边疆铁律',
+        ability: '生命低于一半时获得额外减伤。',
+        effect: { type: 'damageResist', value: 0.14 }
+      },
+      ophidia: {
+        id: 'ophidia', name: '蛇怪胸甲', en: 'Ophidia Spathe', slot: 'chest',
+        source: 'story', sourceKey: 'dreaming-city', exclusive: true, abilityName: '双蛇之刃',
+        ability: '近战伤害提高，近战击杀回复职业技能能量。',
+        effect: { type: 'meleeDamage', multiplier: 1.24 }
+      },
+      verity: {
+        id: 'verity', name: '真理之眉', en: 'Verity’s Brow', slot: 'helmet',
+        source: 'story', sourceKey: 'nessus', exclusive: true, abilityName: '死亡之歌',
+        ability: '手雷伤害提高。',
+        effect: { type: 'grenadeDamage', multiplier: 1.2 }
+      },
+      battleHarmony: {
+        id: 'battleHarmony', name: '战斗和谐', en: 'Battle Harmony', slot: 'chest',
+        source: 'story', sourceKey: 'venus', exclusive: true, abilityName: '元素共鸣',
+        ability: '击杀会额外积累超能能量。',
+        effect: { type: 'superGain', multiplier: 1.3 }
+      },
+      manacles: {
+        id: 'manacles', name: '虚空镣铐', en: 'Nothing Manacles', slot: 'gauntlets',
+        source: 'story', sourceKey: 'blackhole', exclusive: true, abilityName: '引力手雷',
+        ability: '手雷伤害提高，命中后短暂减速目标。',
+        effect: { type: 'grenadeDamage', multiplier: 1.25 }
+      },
+      inmost: {
+        id: 'inmost', name: '内光之心', en: 'Heart of Inmost Light', slot: 'chest',
+        source: 'world', exclusive: false, abilityName: '内在光辉',
+        ability: '技能命中会加快其他技能的充能。',
+        effect: { type: 'abilityRegen', multiplier: 1.3 }
+      },
+      necrotic: {
+        id: 'necrotic', name: '坏死之握', en: 'Necrotic Grip', slot: 'gauntlets',
+        source: 'world', exclusive: false, abilityName: '腐蚀之握',
+        ability: '近战伤害提高，并让目标持续灼烧。',
+        effect: { type: 'meleeDamage', multiplier: 1.2 }
+      },
+      orpheus: {
+        id: 'orpheus', name: '俄耳甫斯之缚', en: 'Orpheus Rig', slot: 'legs',
+        source: 'world', exclusive: false, abilityName: '无尽束缚',
+        ability: '击杀目标会额外回复超能能量。',
+        effect: { type: 'superGain', multiplier: 1.28 }
+      },
+      starfire: {
+        id: 'starfire', name: '星火协议', en: 'Starfire Protocol', slot: 'chest',
+        source: 'world', exclusive: false, abilityName: '聚变反应',
+        ability: '手雷充能速度提高。',
+        effect: { type: 'abilityRegen', multiplier: 1.32 }
+      },
+      synthoceps: {
+        id: 'synthoceps', name: '合成臂铠', en: 'Synthoceps', slot: 'gauntlets',
+        source: 'world', exclusive: false, abilityName: '生物增强',
+        ability: '近战伤害显著提高。',
+        effect: { type: 'meleeDamage', multiplier: 1.3 }
+      },
+      tempests: {
+        id: 'tempests', name: '风暴之冠', en: 'Crown of Tempests', slot: 'helmet',
+        source: 'world', exclusive: false, abilityName: '风暴汇聚',
+        ability: '电弧击杀会加快技能充能。',
+        effect: { type: 'abilityRegen', multiplier: 1.22 }
+      },
+      luckyPants: {
+        id: 'luckyPants', name: '幸运裤', en: 'Lucky Pants', slot: 'legs',
+        source: 'world', exclusive: false, abilityName: '非法改装',
+        ability: '手炮伤害提高，换弹速度加快。',
+        effect: { type: 'weaponDamage', weaponType: 'handcannon', multiplier: 1.2 }
+      },
+      ophidian: {
+        id: 'ophidian', name: '蛇神之视', en: 'Ophidian Aspect', slot: 'gauntlets',
+        source: 'world', exclusive: false, abilityName: '蛇之迅捷',
+        ability: '所有武器换弹速度加快，操控性提高。',
+        effect: { type: 'reload', multiplier: 1.25 }
+      }
+    },
+    quests: {
+      redwar: { id: 'quest-hawkmoon', destination: 'redwar', name: '鹰月的回声', en: 'Echo of the Hawkmoon', weapon: 'hawkmoon', bossName: '鹰月守卫', bossKind: 'cabal', brief: '一段来自最后城市的旧信号指向鹰月。追踪信号，击败守卫，取回这把烈日手炮。' },
+      'curse-of-osiris': { id: 'quest-polaris', destination: 'curse-of-osiris', name: '无限之径', en: 'The Infinite Path', weapon: 'polaris', bossName: '无限守卫', bossKind: 'vex', brief: '水星的无限森林记录着一次未发生的射击。沿着光迹前进，找到北极星长矛。' },
+      warmind: { id: 'quest-sleeper', destination: 'warmind', name: '沉睡者协议', en: 'The Sleeper Protocol', weapon: 'sleeper', bossName: '协议看守', bossKind: 'cabal', brief: '拉斯普京的武器库深处还有一把沉睡的重炮。重启协议，带走它。' },
+      forsaken: { id: 'quest-ace', destination: 'forsaken', name: '黑桃', en: 'The Ace', weapon: 'ace', bossName: '牌桌守卫', bossKind: 'scorn', brief: '一张黑桃被留在纷争海岸的牌桌上。沿着弹壳和旧账本找到它的主人。' },
+      shadowkeep: { id: 'quest-deathbringer', destination: 'shadowkeep', name: '死亡低语', en: 'Whispers of Death', weapon: 'deathbringer', bossName: '低语者', bossKind: 'hive', brief: '月球的红色堡垒里传来低语。跟随死亡使者留下的暗影，找到那枚火箭。' },
+      'beyond-light': { id: 'quest-salvation', destination: 'beyond-light', name: '冰封救赎', en: 'Salvation in Ice', weapon: 'salvationsGrip', bossName: '冰原守卫', bossKind: 'fallen', brief: '木卫二的冰层下埋着一门冰影武器。打开布雷技术核心，取回救赎之握。' },
+      'witch-queen': { id: 'quest-parasite', destination: 'witch-queen', name: '寄生虫', en: 'The Parasite', weapon: 'parasite', bossName: '虫群宿主', bossKind: 'hive', brief: '萨瓦图恩的王座世界里有一只饥饿的虫群武器。喂饱它，然后带走它。' },
+      lightfall: { id: 'quest-winterbite', destination: 'lightfall', name: '寒冬之噬', en: 'Winter’s Bite', weapon: 'winterbite', bossName: '内欧姆那守卫', bossKind: 'dread', brief: '内欧姆那的冰影矿脉正在冻结街区。清理矿脉，夺回冰噬。' },
+      'final-shape': { id: 'quest-stillhunt', destination: 'final-shape', name: '静默狩猎', en: 'Still Hunt', weapon: 'stillHunt', bossName: '苍白之心守卫', bossKind: 'dread', brief: '旅行者内部传来一声枪响。沿着光的裂纹抵达苍白之心，找到静猎。' },
+      'edge-of-fate': { id: 'quest-lantern', destination: 'edge-of-fate', name: '开普勒提灯', en: 'The Kepler Lantern', weapon: 'keplerLantern', bossName: '中央学院看守', bossKind: 'vex', brief: '开普勒的奇异点里漂着一盏灯。关闭它的引力锚，取回开普勒提灯。' },
+      renegades: { id: 'quest-frontier', destination: 'renegades', name: '边疆之刃', en: 'The Frontier’s Edge', weapon: 'frontiersEdge', bossName: '边疆行刑者', bossKind: 'barant', brief: '塔尔西斯的边疆集市里，一把旧手炮正等待新的主人。击败行刑者，带走边疆之刃。' },
+      'dreaming-city': { id: 'quest-wish', destination: 'dreaming-city', name: '愿望终结', en: 'The Wish Ender', weapon: 'wishEnder', bossName: '许愿守卫', bossKind: 'taken', brief: '幽梦之城的许愿墙记录着一个未完成的愿望。穿过破碎的许愿回廊，取回愿望终结者。' },
+      nessus: { id: 'quest-riskrunner', destination: 'nessus', name: '风险奔跑', en: 'Riskrunner', weapon: 'riskrunner', bossName: '电弧监工', bossKind: 'fallen', brief: '涅索斯的电弧风暴正在吞噬一支流亡者小队。关闭风暴线圈，取回风险奔跑者。' },
+      venus: { id: 'quest-vexcalibur', destination: 'venus', name: '维克斯之剑', en: 'Vexcalibur', weapon: 'vexcalibur', bossName: '深谷守卫', bossKind: 'vex', brief: '金星深谷的 Vex 正在铸造一把不属于这个时代的武器。打断铸造，取回维克斯之剑。' },
+      blackhole: { id: 'quest-gravity', destination: 'blackhole', name: '引力答案', en: 'Gravity’s Answer', weapon: 'gravitysAnswer', bossName: '视界守卫', bossKind: 'dread', brief: '黑洞观测站记录到一段来自事件视界的回声。稳定观测站，取回引力答案。' }
+    }
+  };
+
+  const DESTINY_EXOTIC_ARMOR_CLASSES = {
+    actium: 'titan', sunbracers: 'warlock', wormhusk: 'hunter', galanor: 'hunter',
+    cowl: 'hunter', icefall: 'titan', osmiomancy: 'warlock', cyrtarachne: 'hunter',
+    hazardous: 'titan', keplerAegis: 'warlock', imperialWard: 'titan', ophidia: 'hunter',
+    verity: 'warlock', battleHarmony: 'warlock', manacles: 'warlock',
+    inmost: 'titan', necrotic: 'warlock', orpheus: 'hunter', starfire: 'warlock',
+    synthoceps: 'titan', tempests: 'warlock', luckyPants: 'hunter', ophidian: 'warlock'
+  };
+
+  const DESTINY_EXOTIC_ARMOR_EXTRA = [
+    {
+      id: 'nighthawk', name: '天选之鹰', en: 'Celestial Nighthawk', slot: 'helmet',
+      source: 'story', sourceKey: 'redwar', classId: 'hunter', exclusive: true,
+      abilityName: '一枪毙命', ability: '超能击杀会返还大量超能能量。',
+      effect: { type: 'superGain', multiplier: 1.35 }
+    },
+    {
+      id: 'phoenixProtocol', name: '凤凰协议', en: 'Phoenix Protocol', slot: 'chest',
+      source: 'story', sourceKey: 'redwar', classId: 'warlock', exclusive: true,
+      abilityName: '浴火重生', ability: '技能充能速度提高，手雷击杀可恢复生命。',
+      effect: { type: 'abilityRegen', multiplier: 1.32 }
+    },
+    {
+      id: 'ahamkaraSpine', name: '阿罕卡拉之脊', en: 'Young Ahamkara’s Spine', slot: 'gauntlets',
+      source: 'story', sourceKey: 'curse-of-osiris', classId: 'hunter', exclusive: true,
+      abilityName: '蛇之馈赠', ability: '手雷伤害提高。',
+      effect: { type: 'grenadeDamage', multiplier: 1.22 }
+    },
+    {
+      id: 'ashenWake', name: '灰烬苏醒', en: 'Ashen Wake', slot: 'gauntlets',
+      source: 'story', sourceKey: 'curse-of-osiris', classId: 'titan', exclusive: true,
+      abilityName: '余烬冲击', ability: '手雷伤害提高，爆炸范围更大。',
+      effect: { type: 'grenadeDamage', multiplier: 1.26 }
+    },
+    {
+      id: 'chromaticFire', name: '多彩之火', en: 'Chromatic Fire', slot: 'chest',
+      source: 'story', sourceKey: 'warmind', classId: 'warlock', exclusive: true,
+      abilityName: '元素扩散', ability: '自动步枪命中会引发元素爆破。',
+      effect: { type: 'weaponDamage', weaponType: 'auto', multiplier: 1.16 }
+    },
+    {
+      id: 'hallowfire', name: '圣火之心', en: 'Hallowfire Heart', slot: 'chest',
+      source: 'story', sourceKey: 'warmind', classId: 'titan', exclusive: true,
+      abilityName: '圣火余温', ability: '技能冷却速度提高。',
+      effect: { type: 'abilityRegen', multiplier: 1.28 }
+    },
+    {
+      id: 'contraverse', name: '逆流之握', en: 'Contraverse Hold', slot: 'gauntlets',
+      source: 'story', sourceKey: 'forsaken', classId: 'warlock', exclusive: true,
+      abilityName: '虚空回流', ability: '手雷充能速度提高。',
+      effect: { type: 'abilityRegen', multiplier: 1.3 }
+    },
+    {
+      id: 'ursaFuriosa', name: '狂暴熊臂', en: 'Ursa Furiosa', slot: 'gauntlets',
+      source: 'story', sourceKey: 'forsaken', classId: 'titan', exclusive: true,
+      abilityName: '守护怒火', ability: '击杀会额外回复超能能量。',
+      effect: { type: 'superGain', multiplier: 1.38 }
+    },
+    {
+      id: 'felwinterHelm', name: '费尔温特之盔', en: 'Felwinter’s Helm', slot: 'helmet',
+      source: 'story', sourceKey: 'shadowkeep', classId: 'warlock', exclusive: true,
+      abilityName: '领主威压', ability: '近战伤害提高。',
+      effect: { type: 'meleeDamage', multiplier: 1.22 }
+    },
+    {
+      id: 'doomFang', name: '厄运之牙', en: 'Doom Fang Pauldron', slot: 'gauntlets',
+      source: 'story', sourceKey: 'shadowkeep', classId: 'titan', exclusive: true,
+      abilityName: '深渊之牙', ability: '超能击杀额外回复超能能量。',
+      effect: { type: 'superGain', multiplier: 1.34 }
+    },
+    {
+      id: 'bakris', name: '巴克瑞斯面具', en: 'Mask of Bakris', slot: 'helmet',
+      source: 'story', sourceKey: 'beyond-light', classId: 'hunter', exclusive: true,
+      abilityName: '闪现猎手', ability: '受到的伤害降低。',
+      effect: { type: 'damageResist', value: 0.13 }
+    },
+    {
+      id: 'clawsAhamkara', name: '阿罕卡拉之爪', en: 'Claws of Ahamkara', slot: 'gauntlets',
+      source: 'story', sourceKey: 'beyond-light', classId: 'warlock', exclusive: true,
+      abilityName: '双生之爪', ability: '近战伤害提高。',
+      effect: { type: 'meleeDamage', multiplier: 1.26 }
+    },
+    {
+      id: 'renewalGrasps', name: '重生之握', en: 'Renewal Grasps', slot: 'gauntlets',
+      source: 'story', sourceKey: 'witch-queen', classId: 'hunter', exclusive: true,
+      abilityName: '暮光壁垒', ability: '受到的伤害降低。',
+      effect: { type: 'damageResist', value: 0.15 }
+    },
+    {
+      id: 'hoarfrost', name: '霜冻-Z', en: 'Hoarfrost-Z', slot: 'chest',
+      source: 'story', sourceKey: 'witch-queen', classId: 'titan', exclusive: true,
+      abilityName: '冰川工事', ability: '职业技能冷却速度提高。',
+      effect: { type: 'abilityRegen', multiplier: 1.3 }
+    },
+    {
+      id: 'swarmers', name: '虫群之拥', en: 'Swarmers', slot: 'legs',
+      source: 'story', sourceKey: 'lightfall', classId: 'warlock', exclusive: true,
+      abilityName: '织丝虫群', ability: '手雷伤害提高。',
+      effect: { type: 'grenadeDamage', multiplier: 1.24 }
+    },
+    {
+      id: 'cadmus', name: '卡德摩斯之脊', en: 'Cadmus Ridge Lancecap', slot: 'helmet',
+      source: 'story', sourceKey: 'lightfall', classId: 'titan', exclusive: true,
+      abilityName: '冰脊长枪', ability: '受到的伤害降低。',
+      effect: { type: 'damageResist', value: 0.12 }
+    },
+    {
+      id: 'giftedConviction', name: '天赋定罪', en: 'Gifted Conviction', slot: 'gauntlets',
+      source: 'story', sourceKey: 'final-shape', classId: 'hunter', exclusive: true,
+      abilityName: '裁决之刃', ability: '近战伤害提高。',
+      effect: { type: 'meleeDamage', multiplier: 1.3 }
+    },
+    {
+      id: 'speakersSight', name: '代言者之视', en: 'Speaker’s Sight', slot: 'helmet',
+      source: 'story', sourceKey: 'final-shape', classId: 'warlock', exclusive: true,
+      abilityName: '机灵祝福', ability: '击杀会恢复生命。',
+      effect: { type: 'healOnKill', value: 32 }
+    },
+    {
+      id: 'knucklehead', name: '指关节雷达', en: 'Knucklehead Radar', slot: 'helmet',
+      source: 'story', sourceKey: 'edge-of-fate', classId: 'hunter', exclusive: true,
+      abilityName: '猎手雷达', ability: '换弹速度提高。',
+      effect: { type: 'reload', multiplier: 1.22 }
+    },
+    {
+      id: 'peregrine', name: '游隼胫甲', en: 'Peregrine Greaves', slot: 'legs',
+      source: 'story', sourceKey: 'edge-of-fate', classId: 'titan', exclusive: true,
+      abilityName: '游隼俯冲', ability: '近战伤害显著提高。',
+      effect: { type: 'meleeDamage', multiplier: 1.32 }
+    },
+    {
+      id: 'luckyRaspberry', name: '幸运覆盆子', en: 'Lucky Raspberry', slot: 'chest',
+      source: 'story', sourceKey: 'renegades', classId: 'hunter', exclusive: true,
+      abilityName: '幸运连锁', ability: '手雷充能速度提高。',
+      effect: { type: 'abilityRegen', multiplier: 1.32 }
+    },
+    {
+      id: 'astrocyte', name: '星细胞之诗', en: 'Astrocyte Verse', slot: 'helmet',
+      source: 'story', sourceKey: 'renegades', classId: 'warlock', exclusive: true,
+      abilityName: '星界步态', ability: '受到的伤害降低。',
+      effect: { type: 'damageResist', value: 0.1 }
+    },
+    {
+      id: 'nezarecSin', name: '涅扎雷克之罪', en: 'Nezarec’s Sin', slot: 'helmet',
+      source: 'story', sourceKey: 'dreaming-city', classId: 'warlock', exclusive: true,
+      abilityName: '深渊收割', ability: '击杀会大幅加快技能充能。',
+      effect: { type: 'abilityRegen', multiplier: 1.38 }
+    },
+    {
+      id: 'stronghold', name: '要塞臂铠', en: 'Stronghold', slot: 'gauntlets',
+      source: 'story', sourceKey: 'dreaming-city', classId: 'titan', exclusive: true,
+      abilityName: '铁壁守御', ability: '受到的伤害降低。',
+      effect: { type: 'damageResist', value: 0.15 }
+    },
+    {
+      id: 'gravitonForfeit', name: '重力失效', en: 'Graviton Forfeit', slot: 'helmet',
+      source: 'story', sourceKey: 'nessus', classId: 'hunter', exclusive: true,
+      abilityName: '虚空潜行', ability: '技能充能速度提高。',
+      effect: { type: 'abilityRegen', multiplier: 1.28 }
+    },
+    {
+      id: 'peacekeepers', name: '维和者', en: 'Peacekeepers', slot: 'legs',
+      source: 'story', sourceKey: 'nessus', classId: 'titan', exclusive: true,
+      abilityName: '自动装填', ability: '换弹速度提高。',
+      effect: { type: 'reload', multiplier: 1.26 }
+    },
+    {
+      id: 'starEaters', name: '吞星者之鳞', en: 'Star-Eater Scales', slot: 'legs',
+      source: 'story', sourceKey: 'venus', classId: 'hunter', exclusive: true,
+      abilityName: '星食', ability: '击杀会额外回复超能能量。',
+      effect: { type: 'superGain', multiplier: 1.4 }
+    },
+    {
+      id: 'fallingStar', name: '陨星胸甲', en: 'Cuirass of the Falling Star', slot: 'chest',
+      source: 'story', sourceKey: 'venus', classId: 'titan', exclusive: true,
+      abilityName: '陨星坠击', ability: '超能击杀额外回复超能能量。',
+      effect: { type: 'superGain', multiplier: 1.36 }
+    },
+    {
+      id: 'omnioculus', name: '全知之眼', en: 'Omnioculus', slot: 'chest',
+      source: 'story', sourceKey: 'blackhole', classId: 'hunter', exclusive: true,
+      abilityName: '群体隐匿', ability: '受到的伤害降低。',
+      effect: { type: 'damageResist', value: 0.15 }
+    },
+    {
+      id: 'quietOne', name: '静默者面具', en: 'Mask of the Quiet One', slot: 'helmet',
+      source: 'story', sourceKey: 'blackhole', classId: 'titan', exclusive: true,
+      abilityName: '静默回响', ability: '击杀会恢复生命。',
+      effect: { type: 'healOnKill', value: 28 }
+    },
+    {
+      id: 'raidenFlux', name: '雷电通量', en: 'Raiden Flux', slot: 'chest',
+      source: 'world', classId: 'hunter', exclusive: false,
+      abilityName: '电弧延展', ability: '击杀会额外回复超能能量。',
+      effect: { type: 'superGain', multiplier: 1.3 }
+    },
+    {
+      id: 'stomp335', name: '践踏者 335', en: 'ST0MP-EE5', slot: 'legs',
+      source: 'world', classId: 'hunter', exclusive: false,
+      abilityName: '液压推进', ability: '技能充能速度提高。',
+      effect: { type: 'abilityRegen', multiplier: 1.22 }
+    },
+    {
+      id: 'liarsHandshake', name: '骗子握手', en: 'Liar’s Handshake', slot: 'gauntlets',
+      source: 'world', classId: 'hunter', exclusive: false,
+      abilityName: '交叉反击', ability: '近战伤害提高。',
+      effect: { type: 'meleeDamage', multiplier: 1.3 }
+    },
+    {
+      id: 'karnstein', name: '卡恩斯坦护腕', en: 'Karnstein Armlets', slot: 'gauntlets',
+      source: 'world', classId: 'warlock', exclusive: false,
+      abilityName: '吸血之触', ability: '击杀会恢复生命。',
+      effect: { type: 'healOnKill', value: 30 }
+    },
+    {
+      id: 'sanguine', name: '血色炼金', en: 'Sanguine Alchemy', slot: 'chest',
+      source: 'world', classId: 'warlock', exclusive: false,
+      abilityName: '血色仪式', ability: '技能充能速度提高。',
+      effect: { type: 'abilityRegen', multiplier: 1.24 }
+    },
+    {
+      id: 'vesper', name: '暮光半径', en: 'Vesper of Radius', slot: 'chest',
+      source: 'world', classId: 'warlock', exclusive: false,
+      abilityName: '半径冲击', ability: '手雷伤害提高。',
+      effect: { type: 'grenadeDamage', multiplier: 1.2 }
+    },
+    {
+      id: 'skullfort', name: '不屈之颅', en: 'An Insurmountable Skullfort', slot: 'helmet',
+      source: 'world', classId: 'titan', exclusive: false,
+      abilityName: '不屈冲锋', ability: '近战伤害提高。',
+      effect: { type: 'meleeDamage', multiplier: 1.26 }
+    },
+    {
+      id: 'dunemarchers', name: '沙丘行者', en: 'Dunemarchers', slot: 'legs',
+      source: 'world', classId: 'titan', exclusive: false,
+      abilityName: '静电传导', ability: '近战伤害提高。',
+      effect: { type: 'meleeDamage', multiplier: 1.24 }
+    },
+    {
+      id: 'citans', name: '西坦壁垒', en: 'Citan’s Ramparts', slot: 'gauntlets',
+      source: 'world', classId: 'titan', exclusive: false,
+      abilityName: '前线壁垒', ability: '受到的伤害降低。',
+      effect: { type: 'damageResist', value: 0.12 }
+    }
+  ];
+
+  Object.entries(DESTINY_EXOTIC_ARMOR_CLASSES).forEach(([id, classId]) => {
+    if (DESTINY_EXOTICS.armor[id]) DESTINY_EXOTICS.armor[id].classId = classId;
+  });
+  DESTINY_EXOTIC_ARMOR_EXTRA.forEach((entry) => {
+    DESTINY_EXOTICS.armor[entry.id] = entry;
+  });
+
+  const DESTINY_RAID_EXOTIC_IDS = {};
+  const DESTINY_STORY_EXOTIC_IDS = {};
+  Object.values(DESTINY_EXOTICS.weapons).forEach((item) => {
+    if (item.source === 'raid') DESTINY_RAID_EXOTIC_IDS[item.sourceKey] = item.id;
+  });
+  Object.values(DESTINY_EXOTICS.armor).forEach((item) => {
+    if (item.source === 'story') {
+      if (!DESTINY_STORY_EXOTIC_IDS[item.sourceKey]) DESTINY_STORY_EXOTIC_IDS[item.sourceKey] = {};
+      DESTINY_STORY_EXOTIC_IDS[item.sourceKey][item.classId || 'any'] = item.id;
+    }
+  });
+
+  const DESTINY_SAVE_KEY = 'aisniper.destiny2.progress.v1';
+
+  class Destiny2RedWar extends MiniGameBase {
+    constructor(manager) {
+      super(manager);
+      this.audio = new DestinyAudio();
+      this.missions = DESTINY_MISSIONS;
+      this.missionIndex = 0;
+      this.mission = this.missions[0];
+      this.screen = 'orbit';
+      this.currentMode = 'orbit';
+      this.activityId = null;
+      this.dlcConfig = null;
+      this.dlcModes = DESTINY_DLC_MODES.map((entry) => ({ ...entry, missions: buildDlcMissions(entry) }));
+      this.directorSelected = 'redwar';
+      this.directorPanelOpen = false;
+      this.directorHover = null;
+      this.directorHits = [];
+      this.campaignProgress = 0;
+      this.dlcProgress = {};
+      this.sceneAssets = {};
+      this.sceneOrder = [];
+      this.directorStars = null;
+      this.enemyAssets = null;
+      this.playerAssets = null;
+      this.raidWorldScale = 1.65;
+      this.viewW = 1080;
+      this.viewH = 680;
+      this.gearInitialized = false;
+      this.gearSlots = [];
+      this.equipment = {};
+      this.inventory = [];
+      this.exoticCollection = {};
+      this.raidExoticAwarded = {};
+      this.storyExoticAwarded = {};
+      this.exoticQuestCompleted = {};
+      this.worldExoticPity = 0;
+      this.exoticQuestConfig = null;
+      this.exoticQuestWeaponId = null;
+      this.lootDrops = [];
+      this.lootSeq = 0;
+      this.ammoDrops = [];
+      this.ammoDropTimer = 0;
+      this.ammoSeq = 0;
+      this.fieldObjective = null;
+      this.inventoryOpen = false;
+      this.inventoryTab = 'character';
+      this.vortexes = [];
+      this.chainBolts = [];
+      this.rifts = [];
+      this.barricades = [];
+      this.superEffects = [];
+      this.superBeams = [];
+      this.subclassId = 'solar';
+      this.classId = null;
+      this.classHover = null;
+      this.classHits = [];
+      this.classSelectTime = 0;
+      this.prismaticChoices = {};
+      this.prismaticSlot = 'super';
+      this.transcendenceTime = 0;
+      this.transcendenceLight = 0;
+      this.transcendenceDark = 0;
+      this.transcendenceHold = -1;
+      this.vanguardIndex = 0;
+      this.raidConfig = null;
+      this.raidStageBanner = null;
+      this.strikeConfig = null;
+      this.raidCleared = {};
+      this.encounter = null;
+      this.hazards = [];
+      this.inventoryHover = null;
+      this.inventoryPage = 0;
+      this.selectedGearId = null;
+      this.detailPinned = false;
+      this.activeWeaponSlot = 'primary';
+      this.weaponAmmo = {};
+      this.orbitTime = 0;
+      this.dlcRefresh = 0;
+      this.crucible = null;
+      this.gambit = null;
+      this.dlcBoss = null;
+      this.player = null;
+      this.enemies = [];
+      this.bullets = [];
+      this.enemyBullets = [];
+      this.grenades = [];
+      this.hammers = [];
+      this.telegraphs = [];
+      this.rifts = [];
+      this.barricades = [];
+      this.superEffects = [];
+      this.superBeams = [];
+      this.encounter = null;
+      this.hazards = [];
+      this.conduits = [];
+      this.generators = [];
+      this.boss = null;
+      this.elite = null;
+      this.shard = null;
+      this.extraction = null;
+      this.intro = null;
+      this.transition = null;
+      this.wave = 0;
+      this.spawnTimer = 1.2;
+      this.phase = 'combat';
+      this.eliteSpawned = false;
+      this.kills = 0;
+      this.superUses = 0;
+      this.grenadeUses = 0;
+      this.shake = 0;
+      this.progressLoaded = false;
+      this.progressToastShown = false;
+      this.lastClassId = null;
+      this.lastSavedAt = 0;
+      this.saveWarningShown = false;
+      this.loadProgress();
+      this.bindProgressSave();
+      this.ensureEnemyAssets();
+      this.ensurePlayerAssets();
+      this.ensureBossAssets();
+    }
+
+    ensureEnemyAssets() {
+      if (this.enemyAssets) return;
+      this.enemyAssets = {};
+      if (typeof Image === 'undefined') return;
+      const keys = new Set();
+      Object.keys(DESTINY_ENEMY_LABELS).forEach((type) => {
+        const faction = DESTINY_ENEMY_FACTION[type] || 'cabal';
+        keys.add(`${faction}:${type}`);
+        if (faction === 'cabal') {
+          keys.add(`shadow:${type}`);
+          keys.add(`barant:${type}`);
+        }
+      });
+      keys.forEach((key) => {
+        const [faction, type] = key.split(':');
+        const image = new Image();
+        image.decoding = 'async';
+        image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(destinyEnemySvg(type, faction))}`;
+        this.enemyAssets[key] = image;
+      });
+    }
+
+    ensurePlayerAssets() {
+      if (this.playerAssets) return;
+      this.playerAssets = {};
+      if (typeof Image === 'undefined') return;
+      DESTINY_CLASSES.forEach((classEntry) => {
+        DESTINY_SUBCLASSES.forEach((subclass) => {
+          const key = `${classEntry.id}:${subclass.id}`;
+          const image = new Image();
+          image.decoding = 'async';
+          image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(destinyGuardianSvg(classEntry.id, subclass.id, subclass.color))}`;
+          this.playerAssets[key] = image;
+        });
+      });
+    }
+
+    playerAssetFor() {
+      if (!this.playerAssets) return null;
+      const key = `${this.classId || 'hunter'}:${this.subclassId || 'solar'}`;
+      return this.playerAssets[key] || this.playerAssets['hunter:solar'] || null;
+    }
+
+    enemyAssetFor(enemy) {
+      if (!this.enemyAssets || !enemy) return null;
+      const faction = enemy.faction || DESTINY_ENEMY_FACTION[enemy.type] || 'cabal';
+      return this.enemyAssets[`${faction}:${enemy.type}`] || this.enemyAssets[`cabal:${enemy.type}`] || null;
+    }
+
+    ensureBossAssets() {
+      if (this.bossAssets) return;
+      this.bossAssets = {};
+      if (typeof Image === 'undefined') return;
+      const bosses = [
+        ['cabal', 'centurion'], ['shadow', 'centurion'], ['barant', 'centurion'],
+        ['vex', 'minotaur'], ['hive', 'knight'], ['fallen', 'captain'],
+        ['scorn', 'chieftain'], ['dread', 'subjugator'], ['taken', 'taken-knight']
+      ];
+      bosses.forEach(([faction, type]) => {
+        const key = `${faction}:${type}`;
+        const image = new Image();
+        image.decoding = 'async';
+        const svg = destinyEnemySvg(type, faction).replace('width="64" height="64"', 'width="320" height="320"');
+        image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+        this.bossAssets[key] = image;
+      });
+    }
+
+    bossAssetFor(boss) {
+      if (!boss || typeof Image === 'undefined') return null;
+      const faction = boss.faction || DESTINY_ENEMY_FACTION[boss.type] || 'cabal';
+      const key = `${faction}:${boss.type || 'centurion'}`;
+      if (!this.bossAssets) this.bossAssets = {};
+      if (!this.bossAssets[key]) {
+        const image = new Image();
+        image.decoding = 'async';
+        const svg = destinyEnemySvg(boss.type || 'centurion', faction)
+          .replace('width="64" height="64"', 'width="320" height="320"');
+        image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+        this.bossAssets[key] = image;
+      }
+      return this.bossAssets[key];
+    }
+
+    bindProgressSave() {
+      if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+      window.__destinyActiveSave = () => this.saveProgress();
+      if (window.__destinyProgressHookInstalled) return;
+      window.__destinyProgressHookInstalled = true;
+      window.addEventListener('pagehide', () => {
+        try { window.__destinyActiveSave?.(); } catch (error) { /* ignore */ }
+      });
+      if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState !== 'hidden') return;
+          try { window.__destinyActiveSave?.(); } catch (error) { /* ignore */ }
+        });
+      }
+    }
+
+    loadProgress() {
+      try {
+        const raw = localStorage.getItem(DESTINY_SAVE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (!saved || saved.version !== 1) return;
+        if (DESTINY_CLASSES.some((entry) => entry.id === saved.classId)) this.classId = saved.classId;
+        this.lastClassId = this.classId;
+        if (DESTINY_SUBCLASSES.some((entry) => entry.id === saved.subclassId)) this.subclassId = saved.subclassId;
+        if (Number.isFinite(saved.campaignProgress)) {
+          this.campaignProgress = clamp(Math.floor(saved.campaignProgress), 0, DESTINY_MISSIONS.length);
+        }
+        if (saved.dlcProgress && typeof saved.dlcProgress === 'object') {
+          this.dlcProgress = {};
+          Object.entries(saved.dlcProgress).forEach(([key, value]) => {
+            if (Number.isFinite(value) && value >= 0) this.dlcProgress[key] = Math.floor(value);
+          });
+        }
+        if (saved.raidCleared && typeof saved.raidCleared === 'object') {
+          this.raidCleared = {};
+          Object.entries(saved.raidCleared).forEach(([key, value]) => {
+            if (value === true) this.raidCleared[key] = true;
+          });
+        }
+        if (saved.exoticCollection && typeof saved.exoticCollection === 'object') {
+          this.exoticCollection = {};
+          Object.entries(saved.exoticCollection).forEach(([key, value]) => {
+            if (value === true) this.exoticCollection[key] = true;
+          });
+        }
+        if (saved.raidExoticAwarded && typeof saved.raidExoticAwarded === 'object') {
+          this.raidExoticAwarded = {};
+          Object.entries(saved.raidExoticAwarded).forEach(([key, value]) => {
+            if (value === true) this.raidExoticAwarded[key] = true;
+          });
+        }
+        if (saved.storyExoticAwarded && typeof saved.storyExoticAwarded === 'object') {
+          this.storyExoticAwarded = {};
+          Object.entries(saved.storyExoticAwarded).forEach(([key, value]) => {
+            if (value === true) this.storyExoticAwarded[key] = true;
+          });
+        }
+        if (saved.exoticQuestCompleted && typeof saved.exoticQuestCompleted === 'object') {
+          this.exoticQuestCompleted = {};
+          Object.entries(saved.exoticQuestCompleted).forEach(([key, value]) => {
+            if (value === true) this.exoticQuestCompleted[key] = true;
+          });
+        }
+        if (Number.isFinite(saved.worldExoticPity)) this.worldExoticPity = Math.max(0, Math.floor(saved.worldExoticPity));
+        if (Number.isFinite(saved.vanguardIndex)) this.vanguardIndex = Math.max(0, Math.floor(saved.vanguardIndex));
+        if (typeof saved.directorSelected === 'string') {
+          if (DESTINY_RAIDS[saved.directorSelected]) {
+            this.directorSelected = saved.directorSelected;
+          } else {
+            const destination = Object.entries(DESTINY_RAIDS).find(([, raid]) => raid.id === saved.directorSelected);
+            if (destination) this.directorSelected = destination[0];
+          }
+        }
+        if (this.classId) {
+          this.refreshPrismaticChoices();
+          const choices = saved.prismaticChoices;
+          if (choices && typeof choices === 'object') {
+            Object.entries(choices).forEach(([slot, entry]) => {
+              if (!this.prismaticChoices[slot] || !entry) return;
+              if (DESTINY_SUBCLASSES.some((item) => item.id === entry.subclassId && item.id !== 'prismatic')) {
+                this.prismaticChoices[slot] = { subclassId: entry.subclassId };
+              }
+            });
+          }
+        }
+        const gear = saved.gear;
+        if (gear && gear.equipment && typeof gear.equipment === 'object') {
+          const slots = DESTINY_GEAR_SLOTS.map((slot) => ({ ...slot }));
+          const complete = slots.every((slot) => gear.equipment[slot.id] && typeof gear.equipment[slot.id] === 'object');
+          if (complete) {
+            this.gearSlots = slots;
+            this.equipment = {};
+            slots.forEach((slot) => { this.equipment[slot.id] = gear.equipment[slot.id]; });
+            this.inventory = Array.isArray(gear.inventory)
+              ? gear.inventory.filter((item) => item && typeof item === 'object' && typeof item.id === 'string')
+              : [];
+            this.lootSeq = Number.isFinite(gear.lootSeq) ? Math.max(0, Math.floor(gear.lootSeq)) : 0;
+            this.gearInitialized = true;
+            this.trimInventory();
+            this.selectedGearId = gear.selectedGearId && this.gearById(gear.selectedGearId)
+              ? gear.selectedGearId
+              : this.equipment.primary?.id || null;
+            this.playerLight = this.currentLight();
+          }
+        }
+        this.normalizeGearExotics();
+        this.rebuildExoticCollection();
+        this.progressLoaded = Boolean(
+          this.classId
+          || this.gearInitialized
+          || this.campaignProgress > 0
+          || Object.keys(this.dlcProgress || {}).length
+          || Object.keys(this.raidCleared || {}).length
+        );
+      } catch (error) {
+        this.progressLoaded = false;
+      }
+    }
+
+    saveProgress() {
+      try {
+        const payload = {
+          version: 1,
+          updatedAt: Date.now(),
+          classId: this.classId || this.lastClassId || null,
+          subclassId: this.subclassId || 'solar',
+          campaignProgress: this.campaignProgress || 0,
+          dlcProgress: this.dlcProgress || {},
+          raidCleared: this.raidCleared || {},
+          vanguardIndex: this.vanguardIndex || 0,
+          directorSelected: this.directorSelected || 'redwar',
+          prismaticChoices: this.prismaticChoices || {},
+          exoticCollection: this.exoticCollection || {},
+          raidExoticAwarded: this.raidExoticAwarded || {},
+          storyExoticAwarded: this.storyExoticAwarded || {},
+          exoticQuestCompleted: this.exoticQuestCompleted || {},
+          worldExoticPity: this.worldExoticPity || 0,
+          gear: this.gearInitialized ? {
+            equipment: this.equipment,
+            inventory: this.inventory,
+            lootSeq: this.lootSeq || 0,
+            selectedGearId: this.selectedGearId || null
+          } : null
+        };
+        localStorage.setItem(DESTINY_SAVE_KEY, JSON.stringify(payload));
+        this.lastSavedAt = payload.updatedAt;
+        return true;
+      } catch (error) {
+        if (!this.saveWarningShown) {
+          this.saveWarningShown = true;
+          this.toast('浏览器本地存储不可用，进度无法自动保存', 'danger');
+        }
+        return false;
+      }
+    }
+
+    start() {
+      this.kills = 0;
+      this.superUses = 0;
+      this.grenadeUses = 0;
+      if (!this.gearInitialized) this.initGear();
+      if (!this.classId) {
+        this.screen = 'classSelect';
+        this.classSelectTime = 0;
+        this.classHover = null;
+        this.menuOpen = false;
+        if (this.manager.hud) this.manager.hud.hidden = true;
+        this.manager.canvas?.classList.remove('is-inventory-open');
+        return;
+      }
+      if (this.progressLoaded && !this.progressToastShown) {
+        this.progressToastShown = true;
+        const raidCount = Object.values(this.raidCleared || {}).filter(Boolean).length;
+        this.toast(`已读取本地存档 · 光等 ${this.currentLight()} · 战役 ${this.campaignProgress}/${DESTINY_MISSIONS.length} · 突袭 ${raidCount}`, 'success');
+      }
+      this.unequipInvalidExoticArmor();
+      this.syncExoticRewards();
+      this.showOrbit();
+    }
+
+    refreshDlcState() {
+      let remote = null;
+      try {
+        remote = this.manager.host?.getDlcState?.('destiny2');
+      } catch (error) {
+        remote = null;
+      }
+      this.dlcModes = DESTINY_DLC_MODES.map((base) => {
+        const found = Array.isArray(remote) ? remote.find((entry) => entry.id === base.id) : null;
+        const merged = { ...base, ...(found || {}), installed: found ? Boolean(found.installed) : base.installed };
+        merged.missions = buildDlcMissions(merged);
+        return merged;
+      }).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    }
+
+    showOrbit() {
+      const returnTo = this.dlcConfig?.id || this.directorSelected || 'redwar';
+      this.screen = 'orbit';
+      this.currentMode = 'orbit';
+      this.activityId = null;
+      this.dlcConfig = null;
+      this.raidConfig = null;
+      this.strikeConfig = null;
+      this.raidBoss = null;
+      this.raidState = null;
+      this.raidStageBanner = null;
+      this.directorSelected = returnTo;
+      this.directorPanelOpen = false;
+      this.missions = DESTINY_MISSIONS;
+      this.player = null;
+      this.enemies = [];
+      this.bullets = [];
+      this.enemyBullets = [];
+      this.grenades = [];
+      this.hammers = [];
+      this.telegraphs = [];
+      this.rifts = [];
+      this.barricades = [];
+      this.superEffects = [];
+      this.superBeams = [];
+      this.encounter = null;
+      this.hazards = [];
+      this.conduits = [];
+      this.generators = [];
+      this.boss = null;
+      this.elite = null;
+      this.shard = null;
+      this.extraction = null;
+      this.intro = null;
+      this.transition = null;
+      this.deathState = null;
+      this.crucible = null;
+      this.gambit = null;
+      this.dlcBoss = null;
+      this.inventoryOpen = false;
+      this.manager.canvas?.classList.remove('is-inventory-open');
+      this.lootDrops = [];
+      this.ammoDrops = [];
+      this.ammoDropTimer = 0;
+      this.fieldObjective = null;
+      this.transcendenceTime = 0;
+      this.transcendenceLight = 0;
+      this.transcendenceDark = 0;
+      this.transcendenceHold = -1;
+      this.directorHover = null;
+      this.directorHits = [];
+      this.orbitTime = 0;
+      this.dlcRefresh = 0;
+      this.ensurePlanetAssets();
+      this.refreshDlcState();
+      this.saveProgress();
+      if (this.manager.hud) this.manager.hud.hidden = true;
+    }
+
+    ensureDirectorStars() {
+      if (this.directorStars) return;
+      this.directorStars = Array.from({ length: 190 }, (_, index) => ({
+        x: Math.random(),
+        y: Math.random(),
+        depth: rand(0.18, 1),
+        size: rand(0.35, 1.05),
+        phase: rand(0, Math.PI * 2),
+        twinkle: rand(0.7, 2.2),
+        vx: rand(-0.0035, 0.0035),
+        vy: rand(-0.002, 0.002),
+        alpha: rand(0.45, 0.96),
+        suction: 0,
+        warm: index % 14 === 0
+      }));
+    }
+
+    directorBlackHolePosition(w, h) {
+      const mapW = w * 0.64;
+      const node = this.directorLayout(w, h).nodes.find((entry) => entry.id === 'blackhole');
+      if (!node) return { x: mapW * 0.887, y: h * 0.16, node: null };
+      return { x: node.x, y: node.y, node };
+    }
+
+    updateDirectorStars(dt) {
+      this.ensureDirectorStars();
+      const w = this.w || 1080;
+      const h = this.h || 680;
+      const blackHole = this.directorBlackHolePosition(w, h);
+      const influence = Math.min(w, h) * 0.34;
+      this.directorStars.forEach((star) => {
+        star.phase += dt * star.twinkle;
+        const sx = star.x * w;
+        const sy = star.y * h;
+        const dx = blackHole.x - sx;
+        const dy = blackHole.y - sy;
+        const distance = Math.hypot(dx, dy);
+        if (distance < influence) {
+          const pull = clamp(1 - distance / influence, 0, 1);
+          const speed = (24 + pull * 136) * (0.55 + star.depth * 0.65);
+          star.suction = Math.max(star.suction, pull);
+          const swirl = pull * 0.48;
+          star.x += ((dx / (distance || 1)) - (dy / (distance || 1)) * swirl) * speed * dt / w;
+          star.y += ((dy / (distance || 1)) + (dx / (distance || 1)) * swirl) * speed * dt / h;
+          star.alpha = clamp(1 - pull * 0.72, 0.04, 1);
+          if (distance < 12 + star.size * 4) this.respawnStar(star, blackHole, influence);
+        } else {
+          star.suction = Math.max(0, star.suction - dt * 1.25);
+          star.alpha = clamp(star.alpha + dt * 0.35, 0.35, 0.98);
+          star.x += star.vx * dt;
+          star.y += star.vy * dt;
+          if (star.x < -0.02) star.x = 1.02;
+          if (star.x > 1.02) star.x = -0.02;
+          if (star.y < -0.02) star.y = 1.02;
+          if (star.y > 1.02) star.y = -0.02;
+        }
+      });
+    }
+
+    respawnStar(star, blackHole, influence) {
+      const w = this.w || 1080;
+      const h = this.h || 680;
+      const angle = rand(0, Math.PI * 2);
+      const distance = influence * rand(1.25, 2.2);
+      star.x = (blackHole.x + Math.cos(angle) * distance) / w;
+      star.y = (blackHole.y + Math.sin(angle) * distance) / h;
+      if (star.x < 0.02 || star.x > 0.98 || star.y < 0.02 || star.y > 0.98) {
+        star.x = rand(0.03, 0.97);
+        star.y = rand(0.03, 0.9);
+      }
+      star.alpha = rand(0.55, 1);
+      star.suction = 0;
+    }
+
+    drawDirectorEarth(ctx, layout, w, h) {
+      // A huge Earth horizon: only the upper quarter of the circumference is
+      // visible, while the planet still spans most of the lower map width.
+      const radius = Math.max(h * 1.02, layout.mapW * 0.47);
+      const earthX = layout.mapW * 0.5;
+      const earthY = h + radius * Math.SQRT1_2;
+      const top = earthY - radius;
+      const time = this.orbitTime || 0;
+      const spin = time * 0.011;
+      const seed = (n) => {
+        const value = Math.sin(n * 12.9898 + 4.1414) * 43758.5453;
+        return value - Math.floor(value);
+      };
+      ctx.save();
+
+      // Broad atmospheric scattering beyond the limb.
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const halo = ctx.createRadialGradient(earthX, earthY, radius * 0.78, earthX, earthY, radius * 1.38);
+      halo.addColorStop(0, 'rgba(26, 92, 157, 0)');
+      halo.addColorStop(0.5, 'rgba(33, 118, 186, .045)');
+      halo.addColorStop(0.7, 'rgba(55, 166, 231, .1)');
+      halo.addColorStop(0.86, 'rgba(85, 205, 255, .18)');
+      halo.addColorStop(1, 'rgba(37, 112, 198, 0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(earthX, earthY, radius * 1.38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(earthX, earthY, radius, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Deep ocean with a cool sunlit upper limb.
+      const ocean = ctx.createRadialGradient(
+        earthX - radius * 0.2, top + radius * 0.015, radius * 0.012,
+        earthX - radius * 0.04, top + radius * 0.15, radius * 1.06
+      );
+      ocean.addColorStop(0, '#e5fbff');
+      ocean.addColorStop(0.12, '#97def3');
+      ocean.addColorStop(0.3, '#4aa4cb');
+      ocean.addColorStop(0.5, '#216b99');
+      ocean.addColorStop(0.71, '#0d3d61');
+      ocean.addColorStop(0.88, '#051d35');
+      ocean.addColorStop(1, '#010a16');
+      ctx.fillStyle = ocean;
+      ctx.fillRect(earthX - radius, earthY - radius, radius * 2, radius * 2);
+
+      // Warm sunlight wash from the upper-left.
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const sun = ctx.createRadialGradient(
+        earthX - radius * 0.3, top + radius * 0.035, radius * 0.01,
+        earthX - radius * 0.2, top + radius * 0.08, radius * 0.7
+      );
+      sun.addColorStop(0, 'rgba(255, 245, 209, .24)');
+      sun.addColorStop(0.35, 'rgba(255, 220, 154, .075)');
+      sun.addColorStop(1, 'rgba(255, 190, 120, 0)');
+      ctx.fillStyle = sun;
+      ctx.fillRect(earthX - radius, top - radius * 0.15, radius * 2, radius * 0.9);
+      ctx.restore();
+
+      // Landmasses. They rotate slowly around the planet center.
+      ctx.save();
+      ctx.translate(earthX, earthY);
+      ctx.rotate(spin);
+      ctx.translate(-earthX, -earthY);
+      const traceLand = (points) => {
+        const shape = points.map(([u, v]) => ({ x: earthX + u * radius, y: top + v * radius }));
+        const mid = (a, b) => ({ x: (a.x + b.x) * 0.5, y: (a.y + b.y) * 0.5 });
+        const first = mid(shape[0], shape[1]);
+        ctx.beginPath();
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i <= shape.length; i += 1) {
+          const current = shape[i % shape.length];
+          const next = shape[(i + 1) % shape.length];
+          const middle = mid(current, next);
+          ctx.quadraticCurveTo(current.x, current.y, middle.x, middle.y);
+        }
+        ctx.closePath();
+      };
+      const landGradient = ctx.createLinearGradient(0, top + radius * 0.015, 0, top + radius * 0.32);
+      landGradient.addColorStop(0, 'rgba(107, 133, 112, .78)');
+      landGradient.addColorStop(0.26, 'rgba(84, 114, 98, .84)');
+      landGradient.addColorStop(0.54, 'rgba(123, 113, 88, .78)');
+      landGradient.addColorStop(0.78, 'rgba(65, 88, 76, .86)');
+      landGradient.addColorStop(1, 'rgba(37, 58, 54, .9)');
+      const landShapes = [
+        {
+          alpha: 0.76,
+          points: [[-0.44, 0.07], [-0.39, 0.04], [-0.33, 0.028], [-0.27, 0.038], [-0.21, 0.055],
+            [-0.16, 0.075], [-0.14, 0.102], [-0.17, 0.125], [-0.12, 0.15], [-0.15, 0.185],
+            [-0.11, 0.218], [-0.16, 0.245], [-0.23, 0.232], [-0.27, 0.198], [-0.31, 0.172],
+            [-0.36, 0.145], [-0.39, 0.108]]
+        },
+        {
+          alpha: 0.82,
+          points: [[0.005, 0.052], [0.065, 0.032], [0.13, 0.028], [0.185, 0.043], [0.245, 0.032],
+            [0.305, 0.052], [0.34, 0.082], [0.295, 0.104], [0.23, 0.093], [0.19, 0.122],
+            [0.135, 0.136], [0.085, 0.12], [0.04, 0.145], [-0.005, 0.124], [-0.035, 0.09],
+            [-0.02, 0.068]]
+        },
+        {
+          alpha: 0.74,
+          points: [[-0.07, 0.192], [0.0, 0.178], [0.07, 0.19], [0.12, 0.215], [0.17, 0.248],
+            [0.14, 0.282], [0.07, 0.312], [0.0, 0.298], [-0.06, 0.272], [-0.11, 0.242],
+            [-0.12, 0.213]]
+        },
+        {
+          alpha: 0.62,
+          points: [[0.395, 0.112], [0.45, 0.098], [0.5, 0.118], [0.53, 0.148], [0.49, 0.172],
+            [0.44, 0.162], [0.4, 0.14]]
+        },
+        {
+          alpha: 0.52,
+          points: [[-0.23, 0.014], [-0.18, 0.005], [-0.13, 0.012], [-0.1, 0.028], [-0.14, 0.04],
+            [-0.2, 0.036]]
+        }
+      ];
+      landShapes.forEach((land, index) => {
+        traceLand(land.points);
+        ctx.globalAlpha = land.alpha;
+        ctx.fillStyle = landGradient;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(205, 238, 198, .2)';
+        ctx.lineWidth = Math.max(0.8, radius * 0.0015);
+        ctx.stroke();
+        ctx.save();
+        traceLand(land.points);
+        ctx.clip();
+        const center = land.points.reduce((sum, point) => ({ x: sum.x + point[0], y: sum.y + point[1] }), { x: 0, y: 0 });
+        center.x /= land.points.length;
+        center.y /= land.points.length;
+        for (let i = 0; i < 8; i += 1) {
+          const angle = seed(index * 17 + i) * Math.PI * 2;
+          const distance = (0.015 + seed(index * 29 + i) * 0.065) * radius;
+          const px = earthX + center.x * radius + Math.cos(angle) * distance;
+          const py = top + center.y * radius + Math.sin(angle) * distance * 0.55;
+          ctx.fillStyle = i % 3 === 0 ? 'rgba(196, 190, 133, .075)' : 'rgba(44, 78, 63, .1)';
+          ctx.beginPath();
+          ctx.ellipse(px, py, radius * (0.008 + seed(i * 13 + index) * 0.024), radius * (0.005 + seed(i * 31 + index) * 0.012), angle, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+      ctx.restore();
+
+      // Cloud bands, rotating slightly faster than the surface.
+      ctx.save();
+      ctx.translate(earthX, earthY);
+      ctx.rotate(spin * 1.28 + 0.12);
+      ctx.translate(-earthX, -earthY);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.lineCap = 'round';
+      const cloudBands = [
+        { v: 0.028, amp: 0.01, width: 0.011, alpha: 0.36, phase: 0.2 },
+        { v: 0.058, amp: 0.017, width: 0.017, alpha: 0.32, phase: 1.4 },
+        { v: 0.096, amp: 0.012, width: 0.009, alpha: 0.28, phase: 2.7 },
+        { v: 0.138, amp: 0.021, width: 0.02, alpha: 0.26, phase: 4.1 },
+        { v: 0.184, amp: 0.015, width: 0.012, alpha: 0.22, phase: 5.3 },
+        { v: 0.228, amp: 0.019, width: 0.016, alpha: 0.18, phase: 1.9 },
+        { v: 0.27, amp: 0.011, width: 0.009, alpha: 0.14, phase: 3.3 }
+      ];
+      cloudBands.forEach((band, index) => {
+        const wobble = Math.sin(time * 0.11 + band.phase) * radius * 0.004;
+        const y = top + band.v * radius + wobble;
+        const drift = Math.sin(time * 0.07 + band.phase) * radius * 0.018;
+        const leftX = earthX - radius * 0.9 + drift;
+        const rightX = earthX + radius * 0.9 + drift;
+        ctx.strokeStyle = `rgba(242, 252, 255, ${band.alpha})`;
+        ctx.lineWidth = radius * band.width;
+        ctx.shadowColor = 'rgba(196, 238, 255, .45)';
+        ctx.shadowBlur = radius * 0.012;
+        ctx.beginPath();
+        ctx.moveTo(leftX, y + Math.sin(index) * radius * 0.005);
+        ctx.bezierCurveTo(
+          earthX - radius * 0.44, y - band.amp * radius,
+          earthX - radius * 0.02, y + band.amp * radius,
+          earthX + radius * 0.36, y - band.amp * radius * 0.35
+        );
+        ctx.bezierCurveTo(
+          earthX + radius * 0.58, y - band.amp * radius * 0.8,
+          earthX + radius * 0.78, y + band.amp * radius * 0.4,
+          rightX, y
+        );
+        ctx.stroke();
+        ctx.globalAlpha = 0.42;
+        ctx.lineWidth = radius * band.width * 0.38;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      });
+      for (let i = 0; i < 4; i += 1) {
+        const u = -0.34 + i * 0.19 + Math.sin(time * 0.06 + i) * 0.025;
+        const v = 0.06 + (i % 3) * 0.058;
+        ctx.strokeStyle = 'rgba(236, 250, 255, .13)';
+        ctx.lineWidth = radius * (0.003 + (i % 2) * 0.002);
+        ctx.shadowBlur = radius * 0.016;
+        ctx.beginPath();
+        ctx.arc(earthX + u * radius, top + v * radius, radius * (0.045 + (i % 3) * 0.014), 0.4, Math.PI * 1.45);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Night side and warm city lights.
+      const night = ctx.createLinearGradient(earthX - radius * 0.22, top, earthX + radius * 0.62, top + radius * 0.24);
+      night.addColorStop(0, 'rgba(0, 3, 10, 0)');
+      night.addColorStop(0.42, 'rgba(0, 4, 13, .14)');
+      night.addColorStop(0.72, 'rgba(0, 3, 10, .48)');
+      night.addColorStop(1, 'rgba(0, 1, 7, .84)');
+      ctx.fillStyle = night;
+      ctx.fillRect(earthX - radius, top - 2, radius * 2, radius * 0.7);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const cities = [
+        { u: 0.17, v: 0.1, spread: 0.075, count: 26 },
+        { u: 0.29, v: 0.16, spread: 0.06, count: 20 },
+        { u: 0.39, v: 0.12, spread: 0.045, count: 14 },
+        { u: 0.46, v: 0.21, spread: 0.04, count: 10 },
+        { u: 0.03, v: 0.2, spread: 0.055, count: 12 }
+      ];
+      cities.forEach((city, cityIndex) => {
+        const cx = earthX + city.u * radius;
+        const cy = top + city.v * radius;
+        const glow = ctx.createRadialGradient(cx, cy, 1, cx, cy, radius * city.spread);
+        glow.addColorStop(0, 'rgba(255, 203, 124, .14)');
+        glow.addColorStop(0.4, 'rgba(255, 175, 83, .045)');
+        glow.addColorStop(1, 'rgba(255, 160, 70, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * city.spread, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < city.count; i += 1) {
+          const angle = seed(cityIndex * 61 + i * 3.1) * Math.PI * 2;
+          const distance = Math.sqrt(seed(cityIndex * 89 + i * 7.3)) * city.spread;
+          const px = earthX + (city.u + Math.cos(angle) * distance) * radius;
+          const py = top + (city.v + Math.sin(angle) * distance * 0.58) * radius;
+          const light = seed(cityIndex * 113 + i * 11.7);
+          ctx.fillStyle = `rgba(255, ${188 + Math.floor(light * 48)}, ${104 + Math.floor(light * 48)}, ${0.3 + light * 0.55})`;
+          ctx.beginPath();
+          ctx.arc(px, py, radius * (0.0008 + light * 0.0015), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      ctx.restore();
+
+      // Inner atmospheric haze near the limb.
+      const inner = ctx.createRadialGradient(earthX, earthY, radius * 0.82, earthX, earthY, radius);
+      inner.addColorStop(0, 'rgba(79, 186, 255, 0)');
+      inner.addColorStop(0.76, 'rgba(83, 193, 247, .03)');
+      inner.addColorStop(1, 'rgba(130, 229, 255, .17)');
+      ctx.fillStyle = inner;
+      ctx.fillRect(earthX - radius, earthY - radius, radius * 2, radius * 2);
+      ctx.restore();
+
+      // Luminous atmospheric rim.
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      const limbWidth = Math.max(2, Math.min(6.5, radius * 0.007));
+      ctx.strokeStyle = 'rgba(63, 171, 242, .34)';
+      ctx.lineWidth = limbWidth * 2.15;
+      ctx.shadowColor = '#53c8ff';
+      ctx.shadowBlur = radius * 0.075;
+      ctx.beginPath();
+      ctx.arc(earthX, earthY, radius - limbWidth * 0.4, Math.PI * 0.94, Math.PI * 2.06);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(214, 248, 255, .9)';
+      ctx.lineWidth = Math.max(1, limbWidth * 0.28);
+      ctx.shadowBlur = radius * 0.04;
+      ctx.beginPath();
+      ctx.arc(earthX, earthY, radius - limbWidth * 0.9, Math.PI * 0.97, Math.PI * 2.03);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255, 225, 170, .25)';
+      ctx.lineWidth = Math.max(1, limbWidth * 0.2);
+      ctx.shadowBlur = radius * 0.025;
+      ctx.beginPath();
+      ctx.arc(earthX, earthY, radius - limbWidth * 1.4, Math.PI * 1.02, Math.PI * 1.46);
+      ctx.stroke();
+      ctx.restore();
+
+      // Darken the very bottom so the planet merges into the map.
+      const veil = ctx.createLinearGradient(0, h * 0.64, 0, h);
+      veil.addColorStop(0, 'rgba(3, 7, 12, 0)');
+      veil.addColorStop(0.48, 'rgba(3, 7, 12, .14)');
+      veil.addColorStop(1, 'rgba(2, 5, 10, .5)');
+      ctx.fillStyle = veil;
+      ctx.fillRect(0, h * 0.64, layout.mapW, h * 0.36);
+      ctx.restore();
+    }
+
+    drawDirectorStarfield(ctx, w, h) {
+      this.ensureDirectorStars();
+      const blackHole = this.directorBlackHolePosition(w, h);
+      const stars = this.directorStars.slice().sort((a, b) => a.depth - b.depth);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const nebula = ctx.createRadialGradient(w * 0.72, h * 0.28, 12, w * 0.72, h * 0.28, w * 0.5);
+      nebula.addColorStop(0, 'rgba(105, 93, 190, .032)');
+      nebula.addColorStop(0.42, 'rgba(53, 105, 140, .018)');
+      nebula.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = nebula;
+      ctx.fillRect(0, 0, w, h);
+      const nebula2 = ctx.createRadialGradient(w * 0.18, h * 0.68, 8, w * 0.18, h * 0.68, w * 0.42);
+      nebula2.addColorStop(0, 'rgba(168, 88, 149, .018)');
+      nebula2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = nebula2;
+      ctx.fillRect(0, 0, w, h);
+      stars.forEach((star) => {
+        const x = star.x * w;
+        const y = star.y * h;
+        const depth = star.depth;
+        const twinkle = 0.74 + Math.sin(star.phase) * 0.26;
+        const alpha = clamp(star.alpha * twinkle * (0.35 + depth * 0.7), 0, 1);
+        if (alpha <= 0.015) return;
+        const suction = star.suction;
+        const dx = blackHole.x - x;
+        const dy = blackHole.y - y;
+        const distance = Math.hypot(dx, dy) || 1;
+        if (suction > 0.1) {
+          const tail = 2 + suction * 17 * (0.65 + depth * 0.6);
+          ctx.globalAlpha = alpha * 0.52;
+          ctx.strokeStyle = star.warm ? 'rgba(255, 227, 173, .8)' : 'rgba(198, 224, 255, .72)';
+          ctx.lineWidth = Math.max(0.55, star.size * depth * 0.72);
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + (dx / distance) * tail, y + (dy / distance) * tail);
+          ctx.stroke();
+          if (suction > 0.5) {
+            ctx.globalAlpha = alpha * 0.55;
+            ctx.fillStyle = star.warm ? '#ffe9b7' : '#dff2ff';
+            ctx.beginPath();
+            ctx.arc(x + (dx / distance) * tail * 0.35, y + (dy / distance) * tail * 0.35, star.size * 0.42, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = star.warm ? '#ffe4ad' : (depth > 0.72 ? '#e4f4ff' : '#c4dced');
+          const size = Math.max(0.38, star.size * (0.55 + depth * 0.55));
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fill();
+          if (star.size > 0.86 && depth > 0.68) {
+            ctx.globalAlpha = alpha * 0.34;
+            ctx.strokeStyle = star.warm ? 'rgba(255, 228, 174, .8)' : 'rgba(222, 244, 255, .8)';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(x - size * 2.6, y);
+            ctx.lineTo(x + size * 2.6, y);
+            ctx.moveTo(x, y - size * 2.6);
+            ctx.lineTo(x, y + size * 2.6);
+            ctx.stroke();
+          }
+        }
+      });
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.restore();
+    }
+
+    ensurePlanetAssets() {
+      if (this.planetAssets) return;
+      this.planetAssets = {};
+      if (typeof Image === 'undefined') return;
+      Object.keys(DESTINY_PLANET_SVG).forEach((key) => {
+        const image = new Image();
+        image.decoding = 'async';
+        // The giant Director horizon needs Earth's three layers decoded at a
+        // higher resolution. Node-sized planets keep the original 96px atlas.
+        const hiRes = key === 'earth' || key === 'earth-night' || key === 'earth-clouds';
+        const size = hiRes ? 1024 : 96;
+        const svg = DESTINY_PLANET_SVG[key].replace('<svg ', `<svg width="${size}" height="${size}" `);
+        image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+        this.planetAssets[key] = image;
+      });
+    }
+
+    planetArtKey(destination) {
+      return DESTINY_PLANET_BY_BIOME[destination?.biome] || 'earth';
+    }
+
+    destinationById(id) {
+      if (id === 'redwar') return DESTINY_RED_WAR_DESTINATION;
+      if (id === 'dreaming-city') {
+        const forsaken = this.dlcModes.find((entry) => entry.id === 'forsaken');
+        return { ...DESTINY_DREAMING_CITY, installed: Boolean(forsaken?.installed) };
+      }
+      if (id === 'nessus') return DESTINY_NESSUS_DESTINATION;
+      if (id === 'venus') return DESTINY_VENUS_DESTINATION;
+      if (id === 'blackhole') return DESTINY_BLACKHOLE_DESTINATION;
+      return this.dlcModes.find((entry) => entry.id === id) || null;
+    }
+
+    destinationMissions(destination) {
+      if (!destination) return [];
+      if (destination.id === 'redwar') return DESTINY_MISSIONS;
+      if (destination.id === 'dreaming-city') return buildDlcMissions(destination);
+      if (destination.id === 'nessus') return buildDlcMissions(destination);
+      if (destination.id === 'venus' || destination.id === 'blackhole') return buildDlcMissions(destination);
+      return destination.missions?.length ? destination.missions : buildDlcMissions(destination);
+    }
+
+    destinationProgress(destination) {
+      if (!destination) return 0;
+      if (destination.id === 'redwar') return this.campaignProgress || 0;
+      return this.dlcProgress[destination.id] || 0;
+    }
+
+    destinationRaid(destination) {
+      return destination ? DESTINY_RAIDS[destination.id] || null : null;
+    }
+
+    raidUnlocked(destination) {
+      if (!destination || !this.destinationRaid(destination)) return false;
+      const missions = this.destinationMissions(destination);
+      return missions.length > 0 && this.destinationProgress(destination) >= missions.length;
+    }
+
+    nextVanguardStrike() {
+      if (!DESTINY_STRIKES.length) return null;
+      const strike = DESTINY_STRIKES[this.vanguardIndex % DESTINY_STRIKES.length];
+      this.vanguardIndex += 1;
+      return strike;
+    }
+
+    startStrike(strike) {
+      if (!strike) return;
+      const mission = {
+        id: `strike:${strike.id}`,
+        chapter: '先锋打击',
+        title: strike.title,
+        en: strike.en,
+        location: strike.location,
+        brief: `${strike.brief || ''} 完成${strike.objective}。`,
+        objective: strike.objective,
+        biome: strike.biome,
+        faction: strike.faction,
+        factionCn: strike.factionCn,
+        type: 'strike',
+        boss: true,
+        bossName: strike.bossName,
+        bossKind: strike.bossKind,
+        accent: strike.accent,
+        mechanic: strike.mechanic
+      };
+      this.strikeConfig = strike;
+      this.raidConfig = null;
+      this.missions = [mission];
+      this.currentMode = 'strike';
+      this.activityId = 'vanguard';
+      this.screen = 'play';
+      this.startMission(0, { mode: 'strike', mission });
+    }
+
+    startRaid(destination) {
+      const raid = this.destinationRaid(destination);
+      if (!raid) {
+        this.toast('该目的地没有可用的突袭。');
+        return;
+      }
+      if (!this.raidUnlocked(destination)) {
+        this.toast(`完成 ${destination.planetCn || destination.title} 的主线后才能解锁突袭。`, 'danger');
+        return;
+      }
+      const encounterList = DESTINY_RAID_ENCOUNTERS[raid.id] || [{ name: '开门关', mechanic: 'plates', bossName: null, bossKind: raid.bossKind }];
+      const mission = {
+        id: `raid:${raid.id}`,
+        chapter: '突袭',
+        title: raid.name,
+        en: raid.en,
+        location: raid.location,
+        brief: raid.brief,
+        objective: `完成 ${encounterList.length} 个关卡并击败最终首领`,
+        biome: destination.biome,
+        faction: destination.faction,
+        factionCn: destination.factionCn,
+        type: 'raid',
+        boss: true,
+        bossName: raid.bossName,
+        bossKind: raid.bossKind,
+        accent: raid.accent || destination.accent,
+        encounters: encounterList.length
+      };
+      this.raidConfig = raid;
+      this.strikeConfig = null;
+      this.missions = [mission];
+      this.currentMode = 'raid';
+      this.activityId = `raid:${raid.id}`;
+      this.directorSelected = destination.id;
+      this.screen = 'play';
+      this.startMission(0, { mode: 'raid', mission });
+    }
+
+    startDestination(destination, missionIndex = null) {
+      if (!destination) return;
+      if (destination.id === 'redwar') {
+        this.startActivity('campaign', null, missionIndex);
+        return;
+      }
+      this.startActivity('dlc', destination, missionIndex);
+    }
+
+    startActivity(id, dlc = null, missionIndex = null) {
+      if (id === 'campaign') {
+        this.directorSelected = 'redwar';
+        this.currentMode = 'campaign';
+        this.activityId = 'campaign';
+        this.missions = DESTINY_MISSIONS;
+        const startIndex = missionIndex === null
+          ? (this.campaignProgress >= DESTINY_MISSIONS.length ? 0 : this.campaignProgress)
+          : Math.max(0, Math.min(DESTINY_MISSIONS.length - 1, missionIndex));
+        this.screen = 'play';
+        this.startMission(startIndex, { mode: 'campaign', mission: DESTINY_MISSIONS[startIndex] });
+        return;
+      }
+      if (id === 'dlc') {
+        if (!dlc) return;
+        if (!dlc.installed) {
+          this.toast(`《${dlc.title}》尚未安装，请先在 Steam 的 DLC 页面安装。`, 'danger');
+          return;
+        }
+        const missions = this.destinationMissions(dlc);
+        if (!missions.length) return;
+        this.directorSelected = dlc.id;
+        this.missions = missions;
+        this.screen = 'play';
+        this.currentMode = 'dlc';
+        this.dlcConfig = dlc;
+        this.activityId = `dlc:${dlc.id}`;
+        const progress = this.destinationProgress(dlc);
+        const startIndex = missionIndex === null
+          ? (progress >= missions.length ? 0 : progress)
+          : Math.max(0, Math.min(missions.length - 1, missionIndex));
+        this.startMission(startIndex, { mode: 'dlc', mission: missions[startIndex], dlc, activityId: `dlc:${dlc.id}` });
+        return;
+      }
+      if (id === 'vanguard') {
+        this.startStrike(this.nextVanguardStrike());
+        return;
+      }
+      const activity = DESTINY_ACTIVITIES[id];
+      if (!activity) return;
+      this.screen = 'play';
+      this.currentMode = id;
+      this.activityId = id;
+      this.startMission(0, { mode: id, mission: activity });
+    }
+
+    startMission(index, options = {}) {
+      this.screen = 'play';
+      this.currentMode = options.mode || 'campaign';
+      this.dlcConfig = options.dlc || null;
+      this.activityId = options.activityId || (this.currentMode === 'campaign' ? 'campaign' : this.currentMode);
+      this.missionIndex = index;
+      this.mission = options.mission || this.missions[index] || this.missions[0];
+      this.mission.faction = this.mission.faction || 'cabal';
+      this.mission.factionCn = this.mission.factionCn || this.factionName(this.mission.faction);
+      this.prepareMissionScene(this.mission);
+      this.inventoryOpen = false;
+      this.manager.canvas?.classList.remove('is-inventory-open');
+      this.lootDrops = [];
+      this.player = {
+        x: 0.5, y: this.mission.type === 'raid' ? 0.72 : 0.79, hp: 200, maxHp: 200, shield: 100, maxShield: 100,
+        ammo: 32, mag: 32, reserve: 224, reserveMax: 224, fireCd: 0, reload: 0, grenadeCd: 0, superCharge: 0,
+        dashCd: 0, dashTime: 0, dashX: 0, dashY: 0, invuln: 0, flash: 0,
+        classCd: 0, classCdMax: 5, shieldTimer: 0, muzzle: 0, meleeCd: 0, meleeCdMax: 3.2, hazardCd: 0
+      };
+      this.resetWeaponAmmo('primary');
+      this.ammoDrops = [];
+      this.ammoDropTimer = rand(6, 10);
+      this.transcendenceTime = 0;
+      this.transcendenceLight = 0;
+      this.transcendenceDark = 0;
+      this.transcendenceHold = -1;
+      this.enemies = [];
+      this.bullets = [];
+      this.enemyBullets = [];
+      this.grenades = [];
+      this.hammers = [];
+      this.telegraphs = [];
+      this.conduits = [];
+      this.generators = [];
+      this.boss = null;
+      this.elite = null;
+      this.shard = null;
+      this.extraction = null;
+      this.transition = null;
+      this.eliteSpawned = false;
+      this.wave = 0;
+      this.spawnTimer = 1.1;
+      this.phase = this.mission.type === 'waves' ? 'waves' : 'combat';
+      this.shake = 0;
+      this.missionCleared = false;
+      this.deathState = null;
+      this.crucible = null;
+      this.gambit = null;
+      this.dlcBoss = null;
+      this.raidBoss = null;
+      this.raidState = null;
+
+      if (this.mission.type === 'shard') {
+        this.shard = { x: 0.5, y: 0.33, charge: 0 };
+      } else if (this.mission.type === 'conduits') {
+        [
+          [0.22, 0.28], [0.5, 0.2], [0.78, 0.29]
+        ].forEach(([x, y], i) => {
+          this.conduits.push({ x, y, hp: 150, maxHp: 150, alive: true, phase: i * 0.8 });
+        });
+      } else if (this.mission.type === 'generators') {
+        [
+          [0.25, 0.32], [0.5, 0.2], [0.75, 0.32]
+        ].forEach(([x, y], i) => {
+          this.generators.push({ x, y, hp: 180, maxHp: 180, alive: true, phase: i * 0.7 });
+        });
+      } else if (this.mission.type === 'boss') {
+        this.boss = {
+          x: 0.5, y: 0.28, hp: 2400, maxHp: 2400, phase: 1, radius: 36,
+          attackTimer: 2.2, flash: 0, dead: false, step: 0
+        };
+      } else if (this.mission.type === 'crucible') {
+        this.crucible = { playerScore: 0, enemyScore: 0, timeLeft: 120, spawnTimer: 0.6 };
+        this.phase = 'active';
+      } else if (this.mission.type === 'gambit') {
+        this.gambit = { motes: 0, banked: 0, target: 25, bank: { x: 0.5, y: 0.35 }, primeval: null };
+        this.spawnTimer = 1.2;
+        this.phase = 'active';
+      } else if (this.mission.type === 'reckoning') {
+        this.phase = 'waves';
+        this.spawnTimer = 1.2;
+      } else if (this.mission.type === 'dlc' || this.mission.type === 'strike') {
+        this.phase = 'waves';
+        this.spawnTimer = 1.1;
+      } else if (this.mission.type === 'raid') {
+        this.phase = 'raid';
+        this.spawnTimer = 1.2;
+      } else if (this.mission.type === 'range') {
+        this.phase = 'range';
+      } else if (this.mission.type === 'exoticQuest') {
+        this.phase = 'waves';
+        this.spawnTimer = 1.1;
+      }
+
+      this.waveTarget = this.mission.type === 'raid' ? (this.mission.encounters || 3) : 3;
+      this.encounter = null;
+      this.hazards = [];
+      this.fieldObjective = null;
+      this.encounterWarned = false;
+
+      if (this.mission.type === 'raid') {
+        this.setupRaid();
+      } else if (this.mission.type === 'range') {
+        this.encounter = null;
+        this.hazards = [];
+        this.setupRange();
+      }
+      if (this.currentMode === 'dlc' || this.currentMode === 'strike') {
+        this.setupFieldObjective();
+      }
+      if (!['crucible', 'gambit', 'range'].includes(this.mission.type)) {
+        this.spawnAmmoBox();
+        this.spawnAmmoBox();
+      }
+
+      this.intro = {
+        time: this.currentMode === 'campaign' ? 2.9 : 2.4,
+        max: this.currentMode === 'campaign' ? 2.9 : 2.4,
+        chapter: this.mission.chapter,
+        title: this.mission.title,
+        location: this.mission.location,
+        brief: this.mission.brief,
+        objective: this.mission.objective
+      };
+      if (this.manager.hud) this.manager.hud.hidden = true;
+      this.updateHUD();
+    }
+
+    factionName(faction) {
+      return {
+        cabal: '红色军团', shadow: '暗影军团', barant: 'Barant Imperium', vex: 'Vex', hive: 'Hive', scorn: 'Scorn',
+        fallen: 'Fallen', dread: 'Dread', taken: 'Taken'
+      }[faction] || '敌对目标';
+    }
+
+    initGear() {
+      this.gearSlots = DESTINY_GEAR_SLOTS.map((slot) => ({ ...slot }));
+      this.equipment = {};
+      this.inventory = [];
+      this.lootSeq = 0;
+      const starters = {
+        primary: { name: '失落的自动步枪', weaponType: 'auto', element: 'kinetic' },
+        energy: { name: '旧城脉冲步枪', weaponType: 'pulse', element: 'arc' },
+        power: { name: '锈蚀火箭筒', weaponType: 'rocket', element: 'stasis' },
+        helmet: { name: '流浪者头盔' },
+        gauntlets: { name: '流浪者臂铠' },
+        chest: { name: '流浪者胸甲' },
+        legs: { name: '流浪者腿甲' },
+        classItem: { name: '破损守护者印记' }
+      };
+      this.gearSlots.forEach((slot) => {
+        this.equipment[slot.id] = this.makeGear(slot, 0, { rarity: 'common', ...starters[slot.id] });
+      });
+      this.gearInitialized = true;
+      this.playerLight = 0;
+      this.selectedGearId = this.equipment.primary?.id || null;
+      this.saveProgress();
+    }
+
+    exoticWeaponDef(id) {
+      return id ? DESTINY_EXOTICS.weapons[id] || null : null;
+    }
+
+    exoticArmorDef(id) {
+      return id ? DESTINY_EXOTICS.armor[id] || null : null;
+    }
+
+    makeExoticItem(def, light = null) {
+      if (!def) return null;
+      const isWeapon = Boolean(DESTINY_EXOTICS.weapons[def.id]);
+      const slot = DESTINY_GEAR_SLOTS.find((entry) => entry.id === def.slot);
+      if (!slot) return null;
+      let hash = 0;
+      for (let i = 0; i < def.id.length; i += 1) hash = (hash * 31 + def.id.charCodeAt(i)) >>> 0;
+      const statNames = isWeapon ? ['伤害', '射程', '稳定', '操控'] : ['机动', '韧性', '恢复', '纪律'];
+      const stats = statNames.map((label, index) => ({
+        label, value: clamp(64 + ((hash >> (index * 5)) % 34), 1, 100)
+      }));
+      const archetype = isWeapon
+        ? (DESTINY_WEAPON_ARCHETYPES[slot.id] || []).find((entry) => entry.id === def.weaponType)
+        : null;
+      const element = isWeapon ? (DESTINY_ELEMENTS[def.element] || DESTINY_ELEMENTS.kinetic) : null;
+      const classId = isWeapon ? 'any' : (def.classId || 'any');
+      const classLabel = classId === 'any' ? '全职业' : (DESTINY_CLASSES.find((entry) => entry.id === classId)?.name || classId);
+      const sourceLabel = def.sourceLabel
+        || (def.source === 'story' ? `${this.destinationById(def.sourceKey)?.planetCn || def.sourceKey}主线 · 专属` : def.source === 'world' ? '世界掉落' : '');
+      return {
+        id: `exotic-${def.id}`,
+        slot: slot.id,
+        slotLabel: slot.label,
+        kind: isWeapon ? 'weapon' : 'armor',
+        name: def.name,
+        rarity: 'exotic',
+        rarityLabel: '异域',
+        color: DESTINY_RARITY.exotic.color,
+        light: Number.isFinite(light) ? Math.max(0, Math.round(light)) : Math.max(10, this.currentLight() + 10),
+        stats,
+        perks: [def.abilityName],
+        weaponType: isWeapon ? def.weaponType : null,
+        typeLabel: archetype?.label || null,
+        element: isWeapon ? def.element : null,
+        elementLabel: element?.name || null,
+        elementColor: element?.color || null,
+        exoticId: def.id,
+        exoticKind: isWeapon ? 'weapon' : 'armor',
+        classId,
+        classLabel,
+        abilityName: def.abilityName,
+        ability: def.ability,
+        effect: def.effect,
+        source: def.source,
+        sourceKey: def.sourceKey,
+        sourceLabel,
+        exclusive: Boolean(def.exclusive),
+        class: 'any'
+      };
+    }
+
+    rebuildExoticCollection() {
+      const next = {};
+      Object.keys(this.exoticCollection || {}).forEach((id) => {
+        if (DESTINY_EXOTICS.weapons[id] || DESTINY_EXOTICS.armor[id]) next[id] = true;
+      });
+      const scan = (item) => {
+        if (item?.exoticId && (DESTINY_EXOTICS.weapons[item.exoticId] || DESTINY_EXOTICS.armor[item.exoticId])) {
+          next[item.exoticId] = true;
+        }
+      };
+      this.gearSlots.forEach((slot) => scan(this.equipment[slot.id]));
+      this.inventory.forEach(scan);
+      this.exoticCollection = next;
+    }
+
+    normalizeGearExotics() {
+      const normalize = (item) => {
+        if (!item || typeof item !== 'object') return;
+        if (item.rarity === 'exotic' && !item.exoticId) {
+          item.rarity = 'legendary';
+          item.rarityLabel = DESTINY_RARITY.legendary.label;
+          item.color = DESTINY_RARITY.legendary.color;
+          item.perks = (item.perks || []).slice(0, 2);
+        }
+        if (item.exoticId && !this.exoticWeaponDef(item.exoticId) && !this.exoticArmorDef(item.exoticId)) {
+          item.rarity = 'legendary';
+          item.rarityLabel = DESTINY_RARITY.legendary.label;
+          item.color = DESTINY_RARITY.legendary.color;
+          delete item.exoticId;
+          delete item.abilityName;
+          delete item.ability;
+          delete item.effect;
+        }
+      };
+      this.gearSlots.forEach((slot) => normalize(this.equipment[slot.id]));
+      this.inventory.forEach(normalize);
+    }
+
+    exoticOwned(id) {
+      if (!id) return false;
+      if (this.exoticCollection?.[id]) return true;
+      const scan = (item) => item?.exoticId === id;
+      if (this.gearSlots.some((slot) => scan(this.equipment[slot.id]))) return true;
+      return this.inventory.some(scan);
+    }
+
+    equippedExoticWeapon() {
+      return ['primary', 'energy', 'power']
+        .map((slot) => this.equipment[slot])
+        .find((item) => item?.exoticId) || null;
+    }
+
+    equippedExoticArmor() {
+      return ['helmet', 'gauntlets', 'chest', 'legs', 'classItem']
+        .map((slot) => this.equipment[slot])
+        .find((item) => item?.exoticId) || null;
+    }
+
+    exoticEquipConflict(item) {
+      if (!item?.exoticId) return null;
+      const equipped = item.kind === 'weapon' ? this.equippedExoticWeapon() : this.equippedExoticArmor();
+      if (!equipped || equipped.id === item.id || equipped.slot === item.slot) return null;
+      return equipped;
+    }
+
+    armorClassMismatch(item) {
+      if (!item || item.kind !== 'armor' || !item.exoticId) return false;
+      return Boolean(item.classId && item.classId !== 'any' && item.classId !== (this.classId || 'hunter'));
+    }
+
+    unequipInvalidExoticArmor() {
+      const armor = this.equippedExoticArmor();
+      if (!armor || !this.armorClassMismatch(armor)) return;
+      const slotId = armor.slot;
+      this.inventory.push(armor);
+      let replacement = this.inventory.find((item) => item.slot === slotId && !item.exoticId);
+      if (!replacement) {
+        const slot = DESTINY_GEAR_SLOTS.find((entry) => entry.id === slotId);
+        replacement = this.makeGear(slot, this.currentLight(), { rarity: 'common' });
+      } else {
+        this.inventory = this.inventory.filter((item) => item.id !== replacement.id);
+      }
+      this.equipment[slotId] = replacement;
+      this.trimInventory();
+      this.rebuildExoticCollection();
+      this.saveProgress();
+      this.toast(`职业变更 · ${armor.name} 已放回背包`);
+    }
+
+    grantExotic(defId, light = null) {
+      const weapon = this.exoticWeaponDef(defId);
+      const armor = this.exoticArmorDef(defId);
+      const def = weapon || armor;
+      if (!def) return null;
+      if (this.exoticOwned(def.id)) {
+        this.toast(`已拥有异域${weapon ? '武器' : '装备'} · ${def.name}`);
+        return null;
+      }
+      const item = this.makeExoticItem(def, light);
+      if (!item) return null;
+      this.inventory.push(item);
+      this.exoticCollection[def.id] = true;
+      this.selectedGearId = item.id;
+      this.trimInventory();
+      this.audio?.play('loot');
+      this.saveProgress();
+      const source = def.source === 'raid' ? `突袭掉落 · ${item.sourceLabel || ''}`
+        : def.source === 'story' ? `主线专属 · ${item.sourceLabel || ''}`
+          : def.source === 'quest' ? '异域任务奖励' : '世界掉落';
+      this.toast(`异域${weapon ? '武器' : '装备'}入手 · ${def.name} · ${source}`, 'success');
+      return item;
+    }
+
+    awardRaidExotic(raidKey) {
+      if (!raidKey || this.raidExoticAwarded[raidKey]) return null;
+      const defId = DESTINY_RAID_EXOTIC_IDS[raidKey];
+      if (!defId) return null;
+      this.raidExoticAwarded[raidKey] = true;
+      const item = this.grantExotic(defId, Math.max(140, this.currentLight() + 20));
+      if (item) {
+        this.toast(`突袭异域武器掉落 · ${item.name} · 已存入背包`, 'success');
+      }
+      return item;
+    }
+
+    awardStoryExotic(destinationId) {
+      if (!destinationId) return null;
+      const classId = this.classId || 'hunter';
+      const awardKey = `${destinationId}:${classId}`;
+      if (this.storyExoticAwarded[awardKey]) return null;
+      const storyMap = DESTINY_STORY_EXOTIC_IDS[destinationId];
+      const defId = typeof storyMap === 'string' ? storyMap : storyMap?.[classId];
+      if (!defId) return null;
+      this.storyExoticAwarded[awardKey] = true;
+      const item = this.grantExotic(defId, Math.max(120, this.currentLight() + 10));
+      if (item) {
+        const quest = this.exoticQuestForDestination(destinationId);
+        this.toast(`主线专属异域装备 · ${item.name}${quest ? ` · 异域任务「${quest.name}」已解锁` : ''}`, 'success');
+      }
+      return item;
+    }
+
+    syncExoticRewards() {
+      if (!this.gearInitialized) return;
+      this.destinations().forEach((destination) => {
+        if (destination && this.destinationStoryComplete(destination.id)) {
+          this.awardStoryExotic(destination.id);
+        }
+      });
+      this.destinations().forEach((destination) => {
+        if (!destination) return;
+        const raid = this.destinationRaid(destination);
+        if (!raid) return;
+        if (!this.raidCleared?.[destination.id] && !this.raidCleared?.[raid.id]) return;
+        this.awardRaidExotic(raid.id);
+      });
+    }
+
+    destinationStoryComplete(destinationId) {
+      const destination = this.destinationById(destinationId);
+      if (!destination) return false;
+      const missions = this.destinationMissions(destination);
+      return missions.length > 0 && this.destinationProgress(destination) >= missions.length;
+    }
+
+    exoticQuestForDestination(destinationId) {
+      return DESTINY_EXOTICS.quests[destinationId] || null;
+    }
+
+    exoticQuestUnlocked(destinationId) {
+      const quest = this.exoticQuestForDestination(destinationId);
+      return Boolean(quest && this.destinationStoryComplete(destinationId) && !this.exoticQuestCompleted[quest.id]);
+    }
+
+    startExoticQuest(destinationId) {
+      const quest = this.exoticQuestForDestination(destinationId);
+      const destination = this.destinationById(destinationId);
+      if (!quest || !destination) return;
+      if (!this.destinationStoryComplete(destinationId)) {
+        this.toast('先完成该星球主线，才能解锁异域任务。', 'danger');
+        return;
+      }
+      if (this.exoticQuestCompleted[quest.id]) {
+        this.toast('这个异域任务已经完成。');
+        return;
+      }
+      const sourceMissions = this.destinationMissions(destination);
+      const sourceMission = sourceMissions[0] || {};
+      const mission = {
+        id: `exotic:${quest.id}`,
+        chapter: '异域任务',
+        title: quest.name,
+        en: quest.en,
+        location: destination.location || sourceMission.location || destination.planetEn || 'DESTINY 2',
+        brief: quest.brief,
+        objective: `完成 ${quest.name} 的追猎，击败 ${quest.bossName}`,
+        biome: destination.biome || sourceMission.biome || 'edz',
+        faction: destination.faction || sourceMission.faction || 'cabal',
+        factionCn: destination.factionCn || sourceMission.factionCn || this.factionName(destination.faction || 'cabal'),
+        type: 'exoticQuest',
+        boss: true,
+        bossName: quest.bossName,
+        bossKind: quest.bossKind || destination.faction || 'cabal',
+        accent: '#e3b04b',
+        exoticQuestId: quest.id,
+        exoticWeaponId: quest.weapon
+      };
+      this.exoticQuestConfig = quest;
+      this.exoticQuestWeaponId = quest.weapon;
+      this.directorSelected = destinationId;
+      this.raidConfig = null;
+      this.strikeConfig = null;
+      this.dlcConfig = null;
+      this.missions = [mission];
+      this.currentMode = 'exoticQuest';
+      this.activityId = `exotic:${quest.id}`;
+      this.screen = 'play';
+      this.startMission(0, { mode: 'exoticQuest', mission });
+      this.directorPanelOpen = false;
+    }
+
+    completeExoticQuest() {
+      const quest = this.exoticQuestConfig;
+      if (!quest) return;
+      this.exoticQuestCompleted[quest.id] = true;
+      this.grantExotic(this.exoticQuestWeaponId, Math.max(150, this.currentLight() + 20));
+      this.exoticQuestConfig = null;
+      this.exoticQuestWeaponId = null;
+      this.audio?.play('victory');
+      this.saveProgress();
+      this.finishActivity(true, `异域任务完成 · ${quest.name}`, `你从${quest.name}的追猎中带回了${this.exoticWeaponDef(quest.weapon)?.name || '异域武器'}。`);
+    }
+
+    rollWorldExotic(source = {}, elite = false, autoAward = false) {
+      if (!this.gearInitialized) return null;
+      if (this.currentMode === 'range' || this.currentMode === 'crucible') return null;
+      const classId = this.classId || 'hunter';
+      const pool = Object.values(DESTINY_EXOTICS.armor).filter((def) => def.source === 'world' && def.classId === classId && !this.exoticOwned(def.id));
+      if (!pool.length) return null;
+      this.worldExoticPity += 1;
+      const chance = elite ? 0.06 : 0.015;
+      if (this.worldExoticPity < 60 && Math.random() > chance) return null;
+      this.worldExoticPity = 0;
+      const def = pick(pool);
+      if (this.lootDrops.some((drop) => drop.item?.exoticId === def.id)) return null;
+      const item = this.makeExoticItem(def, Math.max(120, this.currentLight() + 10));
+      if (!item) return null;
+      if (autoAward) {
+        return this.grantExotic(def.id, item.light);
+      }
+      this.lootDrops.push({
+        id: `loot-${++this.lootSeq}`,
+        x: clamp((source.x ?? 0.5) + rand(-0.03, 0.03), 0.06, 0.94),
+        y: clamp((source.y ?? 0.5) + rand(-0.03, 0.03), 0.1, 0.9),
+        item,
+        phase: rand(0, Math.PI * 2),
+        exoticWorld: true
+      });
+      if (this.lootDrops.length > 9) this.lootDrops.shift();
+      this.toast(`世界异域装备出现 · ${def.name} · 靠近拾取`, 'success');
+      return item;
+    }
+
+    exoticArmorEffect(type) {
+      const armor = this.equippedExoticArmor();
+      if (!armor?.effect) return null;
+      return armor.effect.type === type ? armor.effect : null;
+    }
+
+    exoticWeaponMultiplier(spec) {
+      const effect = this.exoticArmorEffect('weaponDamage');
+      if (!effect) return 1;
+      if (effect.weaponType && effect.weaponType !== spec?.id) return 1;
+      return effect.multiplier || 1;
+    }
+
+    exoticArmorMultiplier(type) {
+      const effect = this.exoticArmorEffect(type);
+      return effect?.multiplier || 1;
+    }
+
+    exoticDamageResist() {
+      const effect = this.exoticArmorEffect('damageResist');
+      return clamp(effect?.value || 0, 0, 0.35);
+    }
+
+    exoticSuperMultiplier() {
+      const effect = this.exoticArmorEffect('superGain');
+      return effect?.multiplier || 1;
+    }
+
+    exoticHealOnKill() {
+      const effect = this.exoticArmorEffect('healOnKill');
+      return effect?.value || 0;
+    }
+
+    exoticReloadMultiplier() {
+      const effect = this.exoticArmorEffect('reload');
+      return effect?.multiplier || 1;
+    }
+
+    exoticAbilityMultiplier() {
+      const effect = this.exoticArmorEffect('abilityRegen');
+      return effect?.multiplier || 1;
+    }
+
+    exoticClassHeal() {
+      const effect = this.exoticArmorEffect('classHeal');
+      return effect?.value || 0;
+    }
+
+    applyExoticHit(target, amount, source) {
+      const effect = source?.exoticEffect;
+      if (!effect || !target) return;
+      const x = target.x * this.w;
+      const y = target.y * this.h;
+      const color = effect.color || '#e3b04b';
+      if (effect.type === 'splash' || effect.type === 'trap' || effect.type === 'vortex') {
+        const radius = effect.radius || 90;
+        const ratio = effect.ratio ?? 0.5;
+        const nearby = this.enemies.filter((enemy) => enemy !== target && enemy.alive && dist(x, y, enemy.x * this.w, enemy.y * this.h) < radius);
+        nearby.slice(0, 8).forEach((enemy) => {
+          this.damageEnemy(enemy, amount * ratio);
+          if (effect.type !== 'splash') enemy.slowTimer = Math.max(enemy.slowTimer || 0, 2.4);
+        });
+        this.fx.ring(x, y, color, radius * 0.9, 0.42, 2.4);
+        this.fx.burst(x, y, color, 12, 150, 2.2);
+      } else if (effect.type === 'chain') {
+        const radius = effect.radius || 160;
+        const ratio = effect.ratio ?? 0.35;
+        const nearby = this.enemies
+          .filter((enemy) => enemy !== target && enemy.alive)
+          .sort((a, b) => dist(x, y, a.x * this.w, a.y * this.h) - dist(x, y, b.x * this.w, b.y * this.h))
+          .filter((enemy) => dist(x, y, enemy.x * this.w, enemy.y * this.h) < radius)
+          .slice(0, 3);
+        nearby.forEach((enemy) => {
+          this.chainBolts.push({
+            x1: x, y1: y, x2: enemy.x * this.w, y2: enemy.y * this.h,
+            time: 0.28, max: 0.28, color
+          });
+          this.damageEnemy(enemy, amount * ratio);
+        });
+        this.fx.ring(x, y, color, 38, 0.3, 1.4);
+      } else if (effect.type === 'freeze' || effect.type === 'slow') {
+        target.slowTimer = Math.max(target.slowTimer || 0, effect.duration || 3);
+        this.fx.ring(x, y, color, 48, 0.45, 2.2);
+        this.fx.burst(x, y, color, 8, 100, 2);
+      } else if (effect.type === 'mark') {
+        target.exoticMarkUntil = this.time + 4;
+        target.exoticMarkMult = 1 + (effect.ratio || 0.2);
+        this.fx.ring(x, y, color, 34, 0.3, 1.4);
+      } else if (effect.type === 'heal') {
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + (effect.value || 18));
+        this.fx.ring(this.playerPoint().x, this.playerPoint().y, color, 36, 0.3, 1.4);
+      } else if (effect.type === 'refund') {
+        const slot = this.activeWeaponSlot;
+        const state = this.weaponAmmo?.[slot];
+        if (state) state.reserve = Math.min(9999, (state.reserve || 0) + 3);
+        this.fx.ring(this.playerPoint().x, this.playerPoint().y, color, 26, 0.25, 1.2);
+      } else if (effect.type === 'super') {
+        this.player.superCharge = Math.min(100, this.player.superCharge + (effect.value || 8) * this.exoticSuperMultiplier());
+      } else if (effect.type === 'shield') {
+        this.player.shield = Math.min(this.player.maxShield, this.player.shield + (effect.value || 24));
+      } else if (effect.type === 'burn') {
+        this.fx.burst(x, y, color, 9, 110, 2);
+        this.fx.ring(x, y, color, 30, 0.3, 1.6);
+      } else if (effect.type === 'pierce') {
+        target.slowTimer = Math.max(target.slowTimer || 0, 1.2);
+        this.fx.ring(x, y, color, 32, 0.28, 1.5);
+      }
+    }
+
+    applyExoticKill(target, source) {
+      const effect = source?.exoticEffect;
+      if (!effect) return;
+      const refund = effect.refund || 0;
+      if (refund > 0) {
+        const state = this.weaponAmmo?.[this.activeWeaponSlot];
+        if (state) state.reserve = Math.min(9999, (state.reserve || 0) + Math.round(3 + refund * 10));
+      }
+      if (effect.type === 'heal') {
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + 15);
+      }
+    }
+
+    weaponArchetypeFor(slotId = this.activeWeaponSlot) {
+      const item = this.equipment?.[slotId];
+      const list = DESTINY_WEAPON_ARCHETYPES[slotId] || DESTINY_WEAPON_ARCHETYPES.primary;
+      return list.find((type) => type.id === item?.weaponType) || list[0];
+    }
+
+    weaponSpecFor(slotId = this.activeWeaponSlot) {
+      const base = DESTINY_WEAPON_SPECS[slotId] || DESTINY_WEAPON_SPECS.primary;
+      const item = this.equipment?.[slotId];
+      const archetype = this.weaponArchetypeFor(slotId);
+      const elementId = item?.element || (slotId === 'primary' ? 'kinetic' : 'solar');
+      const element = DESTINY_ELEMENTS[elementId] || DESTINY_ELEMENTS.kinetic;
+      const spec = {
+        ...base,
+        ...archetype,
+        slot: slotId,
+        number: base.number,
+        typeCn: base.typeCn,
+        typeShort: base.typeShort,
+        typeEn: base.typeEn,
+        typeLabel: archetype.label,
+        element: elementId,
+        elementLabel: element.name,
+        elementColor: element.color,
+        color: element.color,
+        bulletColor: element.color,
+        bulletWidth: archetype.bulletWidth || base.bulletWidth,
+        mag: archetype.mag,
+        reserve: archetype.reserve,
+        rate: archetype.rate,
+        damage: archetype.damage
+      };
+      const exotic = item?.exoticId ? this.exoticWeaponDef(item.exoticId) : null;
+      if (exotic) {
+        Object.assign(spec, exotic.overrides || {});
+        const exoticElement = DESTINY_ELEMENTS[exotic.element] || element;
+        spec.exoticId = exotic.id;
+        spec.exoticName = exotic.name;
+        spec.exoticAbility = exotic.ability;
+        spec.exoticAbilityName = exotic.abilityName;
+        spec.exoticEffect = exotic.effect;
+        spec.element = exotic.element;
+        spec.elementLabel = exoticElement.name;
+        spec.elementColor = exoticElement.color;
+        spec.color = exoticElement.color;
+        spec.bulletColor = exoticElement.color;
+        spec.typeLabel = exotic.weaponType ? (DESTINY_WEAPON_ARCHETYPES[slotId] || []).find((entry) => entry.id === exotic.weaponType)?.label || spec.typeLabel : spec.typeLabel;
+      }
+      return spec;
+    }
+
+    activeWeaponSpec() {
+      return this.weaponSpecFor(this.activeWeaponSlot);
+    }
+
+    weaponState(id) {
+      const spec = this.weaponSpecFor(id);
+      if (id === this.activeWeaponSlot && this.player) {
+        return { ammo: this.player.ammo, reserve: this.player.reserve ?? 0, mag: this.player.mag };
+      }
+      const state = this.weaponAmmo?.[id];
+      return {
+        ammo: state?.ammo ?? spec.mag,
+        reserve: state?.reserve ?? spec.reserve,
+        mag: state?.mag ?? spec.mag
+      };
+    }
+
+    resetWeaponAmmo(slot = 'primary') {
+      this.activeWeaponSlot = DESTINY_WEAPON_SPECS[slot] ? slot : 'primary';
+      this.weaponAmmo = {};
+      ['primary', 'energy', 'power'].forEach((id) => {
+        const spec = this.weaponSpecFor(id);
+        this.weaponAmmo[id] = { ammo: spec.mag, reserve: spec.reserve, mag: spec.mag };
+      });
+      this.applyActiveWeaponAmmo();
+    }
+
+    applyActiveWeaponAmmo() {
+      if (!this.player) return;
+      const spec = this.activeWeaponSpec();
+      const state = this.weaponAmmo?.[spec.slot] || { ammo: spec.mag, reserve: spec.reserve, mag: spec.mag };
+      this.player.ammo = state.ammo;
+      this.player.reserve = state.reserve;
+      this.player.mag = state.mag;
+      this.player.reserveMax = spec.reserve;
+      this.player.reload = 0;
+    }
+
+    syncActiveWeaponAmmo() {
+      if (!this.player) return;
+      const spec = this.activeWeaponSpec();
+      this.weaponAmmo[spec.slot] = {
+        ammo: this.player.ammo,
+        reserve: this.player.reserve ?? 0,
+        mag: this.player.mag
+      };
+    }
+
+    switchWeapon(id) {
+      if (!this.player || !DESTINY_WEAPON_SPECS[id] || id === this.activeWeaponSlot) return;
+      this.syncActiveWeaponAmmo();
+      this.player.reload = 0;
+      this.activeWeaponSlot = id;
+      this.applyActiveWeaponAmmo();
+      const spec = this.weaponSpecFor(id);
+      const item = this.equipment?.[id];
+      this.toast(`武器 ${spec.number} · ${item?.name || spec.typeLabel} · ${spec.elementLabel}`);
+    }
+
+    makeGear(slot, light, overrides = {}) {
+      const rarity = overrides.rarity || (light >= 40 ? 'legendary' : light >= 20 ? 'rare' : 'common');
+      const rarityInfo = DESTINY_RARITY[rarity] || DESTINY_RARITY.common;
+      const names = DESTINY_GEAR_NAMES[slot.id] || [slot.label];
+      let weaponType = null;
+      let element = null;
+      let elementInfo = null;
+      if (slot.kind === 'weapon') {
+        const list = DESTINY_WEAPON_ARCHETYPES[slot.id] || DESTINY_WEAPON_ARCHETYPES.primary;
+        weaponType = list.find((type) => type.id === overrides.weaponType) || pick(list);
+        element = slot.id === 'primary' ? 'kinetic' : (overrides.element || pick(['solar', 'arc', 'void', 'stasis', 'strand']));
+        elementInfo = DESTINY_ELEMENTS[element] || DESTINY_ELEMENTS.kinetic;
+      }
+      const name = overrides.name || (weaponType
+        ? `${pick(DESTINY_WEAPON_PREFIXES)}${weaponType.label}`
+        : pick(names));
+      const statNames = slot.kind === 'weapon'
+        ? ['伤害', '射程', '稳定', '操控']
+        : ['机动', '韧性', '恢复', '纪律'];
+      const stats = statNames.map((label) => ({ label, value: Math.round(28 + Math.random() * 68) }));
+      const perks = slot.kind === 'weapon'
+        ? [...DESTINY_GEAR_PERKS].sort(() => Math.random() - 0.5).slice(0, 3)
+        : [];
+      return {
+        id: `gear-${++this.lootSeq}`,
+        slot: slot.id,
+        slotLabel: slot.label,
+        kind: slot.kind,
+        name,
+        rarity,
+        rarityLabel: rarityInfo.label,
+        color: rarityInfo.color,
+        light,
+        stats,
+        perks,
+        weaponType: weaponType?.id || null,
+        typeLabel: weaponType?.label || null,
+        element,
+        elementLabel: elementInfo?.name || null,
+        elementColor: elementInfo?.color || null
+      };
+    }
+
+    currentLight() {
+      if (!this.gearInitialized) return 0;
+      return this.gearSlots.reduce((highest, slot) => Math.max(highest, this.equipment[slot.id]?.light || 0), 0);
+    }
+
+    aimAssistValue(spec = this.activeWeaponSpec()) {
+      const base = {
+        auto: 62, scout: 78, pulse: 71, handcannon: 88, sidearm: 84, smg: 56, bow: 80,
+        gl: 60, fusion: 74, microgl: 63, wavegl: 66, rocket: 58, heavygl: 55,
+        linear: 79, machinegun: 61, heavybow: 82
+      }[spec?.id] || 64;
+      const classBonus = (this.classId || 'hunter') === 'hunter' ? 8 : (this.classId || 'hunter') === 'warlock' ? 3 : 5;
+      return clamp(Math.round(base + classBonus), 35, 100);
+    }
+
+    aimAssistTarget(origin, direction, maxRange = 420, cone = 0.72) {
+      const targets = [];
+      const push = (enemy) => {
+        if (!enemy || enemy.alive === false || targets.includes(enemy)) return;
+        targets.push(enemy);
+      };
+      if (this.boss && !this.boss.dead) push(this.boss);
+      push(this.raidBoss);
+      push(this.dlcBoss);
+      this.enemies.forEach(push);
+      let best = null;
+      let bestScore = Infinity;
+      targets.forEach((enemy) => {
+        const x = enemy.x * this.w;
+        const y = enemy.y * this.h;
+        const distance = dist(origin.x, origin.y, x, y);
+        if (distance > maxRange || distance < 2) return;
+        const angle = Math.atan2(y - origin.y, x - origin.x);
+        const diff = Math.abs(Math.atan2(Math.sin(angle - direction), Math.cos(angle - direction)));
+        if (diff > cone) return;
+        const score = distance + diff * 190;
+        if (score < bestScore) {
+          bestScore = score;
+          best = { enemy, x, y, distance, diff };
+        }
+      });
+      return best;
+    }
+
+    raidFocusPoint() {
+      const player = this.player || { x: 0.5, y: 0.7 };
+      const points = [{ x: player.x, y: player.y }];
+      if (this.raidBoss) points.push({ x: this.raidBoss.x, y: this.raidBoss.y });
+      const objects = this.raidState?.objects?.filter((object) => object) || [];
+      if (objects.length) {
+        points.push({
+          x: objects.reduce((sum, object) => sum + object.x, 0) / objects.length,
+          y: objects.reduce((sum, object) => sum + object.y, 0) / objects.length
+        });
+      }
+      return {
+        x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+        y: points.reduce((sum, point) => sum + point.y, 0) / points.length
+      };
+    }
+
+    raidCameraFor(viewW = this.viewW, viewH = this.viewH) {
+      const worldW = this.w || viewW;
+      const worldH = this.h || viewH;
+      const focus = this.raidFocusPoint();
+      let camX = focus.x * worldW - viewW / 2;
+      let camY = focus.y * worldH - viewH / 2;
+      if (this.player) {
+        const playerScreenX = this.player.x * worldW - camX;
+        const playerScreenY = this.player.y * worldH - camY;
+        if (playerScreenX < 100) camX = this.player.x * worldW - 100;
+        if (playerScreenX > viewW - 100) camX = this.player.x * worldW - (viewW - 100);
+        if (playerScreenY < 120) camY = this.player.y * worldH - 120;
+        if (playerScreenY > viewH - 130) camY = this.player.y * worldH - (viewH - 130);
+      }
+      return {
+        x: clamp(camX, 0, Math.max(0, worldW - viewW)),
+        y: clamp(camY, 0, Math.max(0, worldH - viewH))
+      };
+    }
+
+    worldMouse() {
+      if (this.currentMode !== 'raid' || this.screen !== 'play') {
+        return { x: this.manager.mouse.x, y: this.manager.mouse.y };
+      }
+      const camera = this.raidCameraFor(this.viewW || this.manager.width, this.viewH || this.manager.height);
+      return { x: this.manager.mouse.x + camera.x, y: this.manager.mouse.y + camera.y };
+    }
+
+    cursorAimTarget(mouse = this.manager.mouse, maxRange = 620) {
+      if (!this.player) return null;
+      const camera = this.currentMode === 'raid'
+        ? this.raidCameraFor(this.viewW || this.manager.width, this.viewH || this.manager.height)
+        : { x: 0, y: 0 };
+      const point = this.playerPoint();
+      const targets = [];
+      const push = (enemy) => {
+        if (!enemy || enemy.alive === false || enemy.dead || targets.includes(enemy)) return;
+        targets.push(enemy);
+      };
+      if (this.boss && !this.boss.dead) push(this.boss);
+      push(this.raidBoss);
+      push(this.dlcBoss);
+      this.enemies.forEach(push);
+      const assistRadius = 10 + this.aimAssistValue() * 0.36;
+      let best = null;
+      targets.forEach((enemy) => {
+        const sx = enemy.x * this.w - camera.x;
+        const sy = enemy.y * this.h - camera.y;
+        if (sx < -30 || sx > (this.viewW || this.w) + 30 || sy < -30 || sy > (this.viewH || this.h) + 30) return;
+        const screenDistance = dist(mouse.x, mouse.y, sx, sy);
+        if (screenDistance > assistRadius) return;
+        const worldDistance = dist(point.x, point.y, enemy.x * this.w, enemy.y * this.h);
+        if (worldDistance > maxRange) return;
+        if (!best || screenDistance < best.screenDistance) {
+          best = { enemy, x: enemy.x * this.w, y: enemy.y * this.h, screenX: sx, screenY: sy, screenDistance, distance: worldDistance };
+        }
+      });
+      return best;
+    }
+
+    assistAim(origin, point, maxRange = 360) {
+      const target = this.cursorAimTarget(this.manager.mouse, maxRange);
+      if (!target) return { x: point.x, y: point.y, target: null, locked: false };
+      return { x: target.x, y: target.y, target: target.enemy, locked: true };
+    }
+
+    gearById(id) {
+      if (!id) return null;
+      for (const slot of this.gearSlots) {
+        const item = this.equipment[slot.id];
+        if (item?.id === id) return item;
+      }
+      return this.inventory.find((item) => item.id === id) || null;
+    }
+
+    classProfile() {
+      return DESTINY_CLASSES.find((entry) => entry.id === this.classId) || DESTINY_CLASSES[0];
+    }
+
+    classAbilityBlock(subclassId = this.subclassId) {
+      const classId = this.classId || 'hunter';
+      return DESTINY_CLASS_ABILITIES[classId]?.[subclassId] || DESTINY_CLASS_ABILITIES.hunter[subclassId] || {};
+    }
+
+    refreshPrismaticChoices() {
+      const classId = this.classId || 'hunter';
+      const defaults = {
+        hunter: { super: 'solar', grenade: 'void', melee: 'solar', classAbility: 'solar' },
+        warlock: { super: 'void', grenade: 'solar', melee: 'void', classAbility: 'solar' },
+        titan: { super: 'solar', grenade: 'solar', melee: 'solar', classAbility: 'solar' }
+      }[classId] || { super: 'solar', grenade: 'solar', melee: 'solar', classAbility: 'solar' };
+      this.prismaticChoices = {};
+      Object.entries(defaults).forEach(([slot, subclassId]) => {
+        this.prismaticChoices[slot] = { subclassId };
+      });
+    }
+
+    setClass(id) {
+      const profile = DESTINY_CLASSES.find((entry) => entry.id === id);
+      if (!profile) return;
+      this.classId = profile.id;
+      this.lastClassId = profile.id;
+      this.subclassId = 'solar';
+      this.refreshPrismaticChoices();
+      this.unequipInvalidExoticArmor();
+      this.saveProgress();
+      this.toast(`已选择守护者职业：${profile.name} · ${profile.en} · 进度已保存`);
+    }
+
+    activeSubclass() {
+      const base = DESTINY_SUBCLASSES.find((entry) => entry.id === this.subclassId) || DESTINY_SUBCLASSES[0];
+      const profile = {
+        ...base,
+        ...(this.classAbilityBlock(base.id) || {})
+      };
+      if (base.id === 'prismatic') {
+        if (!Object.keys(this.prismaticChoices || {}).length) this.refreshPrismaticChoices();
+        DESTINY_PRISMATIC_SLOTS.forEach(([slot]) => {
+          const choice = this.prismaticChoices?.[slot];
+          if (!choice?.subclassId) return;
+          const block = this.classAbilityBlock(choice.subclassId);
+          if (block?.[slot]) {
+            profile[slot] = block[slot];
+            profile[`${slot}Origin`] = choice.subclassId;
+          }
+        });
+      }
+      if (base.id === 'prismatic' && this.transcendenceTime > 0) {
+        profile.grenade = '超凡手雷';
+        profile.melee = '超凡近战';
+      }
+      return profile;
+    }
+
+    activeAbilityElement(slot) {
+      if (this.subclassId !== 'prismatic') return this.subclassId;
+      return this.prismaticChoices?.[slot]?.subclassId || 'prismatic';
+    }
+
+    addTranscendence(element, amount = 16) {
+      if (this.subclassId !== 'prismatic' || this.transcendenceTime > 0) return;
+      const wasReady = this.transcendenceLight >= 50 && this.transcendenceDark >= 50;
+      const light = !['stasis', 'strand'].includes(element);
+      if (light) this.transcendenceLight = clamp(this.transcendenceLight + amount, 0, 50);
+      else this.transcendenceDark = clamp(this.transcendenceDark + amount, 0, 50);
+      if (!wasReady && this.transcendenceLight >= 50 && this.transcendenceDark >= 50) {
+        this.audio?.play('transcendenceReady');
+        this.toast('超凡能量已充满 · 长按 V 进入超凡', 'success');
+      }
+    }
+
+    transcendenceReady() {
+      return this.subclassId === 'prismatic'
+        && this.transcendenceTime <= 0
+        && this.transcendenceLight >= 50
+        && this.transcendenceDark >= 50;
+    }
+
+    activateTranscendence() {
+      if (this.subclassId !== 'prismatic' || this.transcendenceTime > 0) return;
+      this.transcendenceTime = 14;
+      this.transcendenceLight = 50;
+      this.transcendenceDark = 50;
+      if (this.player) {
+        this.player.grenadeCd = 0;
+        this.player.meleeCd = 0;
+        this.player.classCd = 0;
+        this.player.dashCd = 0;
+      }
+      this.audio?.play('transcendence');
+      this.toast('超凡已激活 · 光暗融合 · 技能恢复极快', 'success');
+      const point = this.playerPoint();
+      this.fx.ring(point.x, point.y, '#ffe7aa', 95, 0.7, 3);
+      this.fx.ring(point.x, point.y, '#b78aff', 70, 0.55, 2);
+    }
+
+    updateTranscendence(dt) {
+      if (this.transcendenceTime <= 0) return;
+      this.transcendenceTime = Math.max(0, this.transcendenceTime - dt);
+      if (this.transcendenceTime <= 0) {
+        this.transcendenceLight = 0;
+        this.transcendenceDark = 0;
+        this.audio?.play('transcendenceEnd');
+        this.toast('超凡状态结束 · 光暗回响消退');
+      }
+    }
+
+    setPrismaticOrigin(slot, subclassId) {
+      if (!DESTINY_PRISMATIC_SLOTS.some(([key]) => key === slot)) return;
+      if (!this.subclassInfo(subclassId) || subclassId === 'prismatic') return;
+      const prev = this.prismaticChoices?.[slot]?.subclassId;
+      this.prismaticChoices[slot] = { subclassId };
+      this.prismaticSlot = slot;
+      const label = DESTINY_PRISMATIC_SLOTS.find(([key]) => key === slot)?.[1] || slot;
+      const origin = this.subclassInfo(subclassId);
+      this.saveProgress();
+      this.toast(`棱镜${label} → ${this.activeSubclass()[slot]} · ${origin.name}`);
+      return prev;
+    }
+
+    meleeProfile() {
+      if (this.subclassId === 'prismatic' && this.transcendenceTime > 0) {
+        return { name: '超凡近战', type: 'transcendent', damage: 118, color: '#e7c4ff', speed: 1120, life: 0.95, radius: 92 };
+      }
+      const classId = this.classId || 'hunter';
+      const element = this.activeAbilityElement('melee');
+      const profiles = {
+        'hunter:solar': { name: '投掷飞刀', type: 'knife', damage: 66, color: '#f2a35c', speed: 1250, life: 0.9 },
+        'hunter:arc': { name: '组合打击', type: 'punch', damage: 82, color: '#79c9ff' },
+        'hunter:void': { name: '烟雾弹', type: 'smoke', damage: 46, color: '#b28ae8', speed: 560, life: 0.8, radius: 72 },
+        'hunter:stasis': { name: '枯萎之刃', type: 'ice', damage: 60, color: '#79bde8', speed: 1100, life: 0.9 },
+        'hunter:strand': { name: '穿线飞刃', type: 'needle', damage: 64, color: '#8ddb8a', speed: 1200, life: 0.9 },
+        'warlock:solar': { name: '天火掌', type: 'palm', damage: 70, color: '#f2a35c', speed: 900, life: 0.62 },
+        'warlock:arc': { name: '连锁闪电', type: 'arc', damage: 66, color: '#79c9ff', speed: 950, life: 0.8 },
+        'warlock:void': { name: '虚空投射', type: 'void', damage: 72, color: '#b28ae8', speed: 850, life: 0.9, radius: 64 },
+        'warlock:stasis': { name: '冰法杖', type: 'freeze', damage: 54, color: '#79bde8', speed: 900, life: 0.9, radius: 70 },
+        'warlock:strand': { name: '魔法飞针', type: 'needle', damage: 60, color: '#8ddb8a', speed: 1150, life: 0.9 },
+        'titan:solar': { name: '投掷战锤', type: 'hammer', damage: 88, color: '#f2a35c', speed: 650, life: 1.0, radius: 58 },
+        'titan:arc': { name: '地震打击', type: 'punch', damage: 94, color: '#79c9ff' },
+        'titan:void': { name: '盾牌猛击', type: 'punch', damage: 90, color: '#b28ae8' },
+        'titan:stasis': { name: '冰矛', type: 'ice', damage: 86, color: '#79bde8', speed: 1050, life: 1.0, radius: 64 },
+        'titan:strand': { name: '狂怒之爪', type: 'punch', damage: 92, color: '#8ddb8a' }
+      };
+      return profiles[`${classId}:${element}`] || {
+        name: this.activeSubclass().melee, type: 'punch', damage: 72, color: this.activeSubclass().color
+      };
+    }
+
+    superProfile() {
+      const classId = this.classId || 'hunter';
+      const element = this.activeAbilityElement('super');
+      return DESTINY_SUPERS[classId]?.[element] || {
+        name: this.activeSubclass().super,
+        kind: 'projectile',
+        color: this.activeSubclass().color,
+        damage: 260,
+        radius: 130
+      };
+    }
+
+    cyclePrismaticAbility(slot) {
+      if (this.subclassId !== 'prismatic') return;
+      const entry = DESTINY_PRISMATIC_SLOTS.find(([key]) => key === slot);
+      if (!entry) return;
+      const order = ['solar', 'arc', 'void', 'stasis', 'strand'];
+      const current = this.prismaticChoices?.[slot]?.subclassId || 'solar';
+      const next = order[(order.indexOf(current) + 1) % order.length];
+      this.prismaticChoices[slot] = { subclassId: next };
+      this.saveProgress();
+      const profile = this.classProfile();
+      const origin = this.subclassInfo(next);
+      this.toast(`棱镜${entry[1]}：${this.activeSubclass()[slot]} · ${origin.name} · ${profile.name}`);
+    }
+
+    setSubclass(id) {
+      const subclass = DESTINY_SUBCLASSES.find((entry) => entry.id === id);
+      if (!subclass || subclass.id === this.subclassId) return;
+      this.subclassId = subclass.id;
+      if (subclass.id !== 'prismatic') {
+        this.transcendenceTime = 0;
+        this.transcendenceLight = 0;
+        this.transcendenceDark = 0;
+      }
+      this.saveProgress();
+      const active = this.activeSubclass();
+      this.toast(`已切换副职业：${subclass.name} · ${active.super}`);
+    }
+
+    selectedGear() {
+      return this.gearById(this.selectedGearId) || this.equipment.primary || null;
+    }
+
+    rollLoot(source, guaranteed = false) {
+      if (!source || !this.gearInitialized) return;
+      const chance = guaranteed ? 1 : source.elite ? 0.3 : 0.08;
+      if (!guaranteed && Math.random() > chance) return;
+      const count = 1;
+      const dropped = [];
+      for (let i = 0; i < count; i += 1) {
+        const slot = pick(this.gearSlots);
+        const item = this.makeGear(slot, this.currentLight() + 10);
+        this.lootDrops.push({
+          id: `loot-${++this.lootSeq}`,
+          x: clamp((source.x ?? 0.5) + rand(-0.035, 0.035), 0.06, 0.94),
+          y: clamp((source.y ?? 0.5) + rand(-0.035, 0.035), 0.1, 0.9),
+          item,
+          phase: rand(0, Math.PI * 2)
+        });
+        if (this.lootDrops.length > 9) this.lootDrops.shift();
+        dropped.push(item);
+      }
+      return dropped;
+    }
+
+    awardLootItems(items) {
+      if (!items?.length) return;
+      const ids = new Set(items.map((item) => item.id));
+      this.lootDrops = this.lootDrops.filter((drop) => !ids.has(drop.item.id));
+      items.forEach((item) => {
+        this.inventory.push(item);
+        if (item.exoticId) this.exoticCollection[item.exoticId] = true;
+      });
+      this.trimInventory();
+      this.selectedGearId = items[0].id;
+      this.audio?.play('loot');
+      this.saveProgress();
+      this.toast(`首领掉落已收入背包 · ${items.map((item) => `${item.rarityLabel} ${item.name}（${item.light}）`).join(' / ')}`);
+    }
+
+    nearestLoot(range = 92) {
+      if (!this.player) return null;
+      const point = this.playerPoint();
+      let best = null;
+      let bestDistance = range;
+      this.lootDrops.forEach((drop) => {
+        const distance = dist(point.x, point.y, drop.x * this.w, drop.y * this.h);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = drop;
+        }
+      });
+      return best ? { drop: best, distance: bestDistance } : null;
+    }
+
+    ammoKindLabel(kind) {
+      return { primary: '动能', energy: '能量', power: '威能', all: '全弹药' }[kind] || '弹药';
+    }
+
+    ammoKindColor(kind) {
+      return { primary: '#e6e9e3', energy: '#7fd8b0', power: '#b98aef', all: '#e9c477' }[kind] || '#e9c477';
+    }
+
+    spawnAmmoBox(x = null, y = null, kind = null) {
+      const roll = Math.random();
+      const chosen = kind || (roll < 0.48 ? 'primary' : roll < 0.78 ? 'energy' : roll < 0.94 ? 'power' : 'all');
+      this.ammoDrops.push({
+        id: `ammo-${++this.ammoSeq}`,
+        x: x === null ? rand(0.12, 0.88) : clamp(x, 0.06, 0.94),
+        y: y === null ? rand(0.33, 0.72) : clamp(y, 0.18, 0.84),
+        kind: chosen,
+        phase: rand(0, Math.PI * 2)
+      });
+      if (this.ammoDrops.length > 6) this.ammoDrops.shift();
+    }
+
+    dropAmmoAt(x, y, elite = false) {
+      if (this.currentMode === 'range' || this.currentMode === 'crucible' || this.currentMode === 'gambit') return;
+      const chance = elite ? 0.88 : 0.46;
+      if (Math.random() > chance) return;
+      const roll = Math.random();
+      const kind = elite && roll < 0.26 ? 'all' : roll < 0.5 ? 'primary' : roll < 0.78 ? 'energy' : 'power';
+      this.spawnAmmoBox(x + rand(-0.025, 0.025), y + rand(-0.025, 0.025), kind);
+    }
+
+    grantAmmo(kind, amount = null) {
+      if (!this.player) return;
+      this.audio?.play('ammo');
+      this.weaponAmmo = this.weaponAmmo || {};
+      const slots = kind === 'all' ? ['primary', 'energy', 'power'] : [kind];
+      const gains = { primary: 54, energy: 30, power: 8 };
+      slots.forEach((slot) => {
+        const spec = this.weaponSpecFor(slot);
+        const state = this.weaponAmmo[slot] || { ammo: spec.mag, reserve: spec.reserve, mag: spec.mag };
+        const gain = amount === null ? gains[slot] || 18 : Math.max(1, Math.round(amount));
+        state.reserve = Math.min(9999, (state.reserve || 0) + gain);
+        state.mag = state.mag || spec.mag;
+        state.ammo = state.ammo ?? spec.mag;
+        this.weaponAmmo[slot] = state;
+        if (slot === this.activeWeaponSlot) {
+          this.player.reserve = state.reserve;
+          this.player.reserveMax = Math.max(this.player.reserveMax || 0, state.reserve);
+        }
+      });
+    }
+
+    updateAmmoDrops(dt, w, h) {
+      if (!this.player || this.currentMode === 'range' || this.currentMode === 'crucible' || this.currentMode === 'gambit') return;
+      this.ammoDropTimer -= dt;
+      if (this.ammoDropTimer <= 0) {
+        if (this.ammoDrops.length < 4) this.spawnAmmoBox();
+        this.ammoDropTimer = rand(11, 17);
+      }
+      const point = this.playerPoint();
+      this.ammoDrops.forEach((drop) => {
+        if (drop.collected) return;
+        if (dist(point.x, point.y, drop.x * w, drop.y * h) > 46) return;
+        drop.collected = true;
+        this.grantAmmo(drop.kind);
+        this.fx.ring(drop.x * w, drop.y * h, this.ammoKindColor(drop.kind), 34, 0.4, 2);
+        this.fx.float(drop.x * w, drop.y * h - 12, `+${this.ammoKindLabel(drop.kind)}弹药`, this.ammoKindColor(drop.kind), 10);
+        this.toast(`${this.ammoKindLabel(drop.kind)}弹药箱已拾取`);
+      });
+      this.ammoDrops = this.ammoDrops.filter((drop) => !drop.collected);
+    }
+
+    drawAmmoDrops(ctx, w, h) {
+      this.ammoDrops.forEach((drop) => {
+        const x = drop.x * w;
+        const y = drop.y * h;
+        const color = this.ammoKindColor(drop.kind);
+        const pulse = 1 + Math.sin(this.time * 3.2 + drop.phase) * 0.08;
+        ctx.save();
+        ctx.translate(x, y);
+        glowCircle(ctx, 0, 0, 22 * pulse, `${color}33`, 0.75);
+        ctx.fillStyle = 'rgba(4, 8, 10, .9)';
+        fillRoundRect(ctx, -12, -9, 24, 18, 3, 'rgba(4, 8, 10, .9)');
+        ctx.strokeStyle = `${color}cc`;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-12, -9, 24, 18);
+        ctx.fillStyle = color;
+        ctx.fillRect(-9, -5, 18, 2);
+        ctx.fillRect(-9, 2, 18, 2);
+        ctx.fillStyle = `${color}bb`;
+        ctx.font = '600 5px "SFMono-Regular", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('AMMO', 0, 7.5);
+        ctx.restore();
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = color;
+        ctx.font = '500 5.2px "PingFang SC", sans-serif';
+        ctx.fillText(this.ammoKindLabel(drop.kind), x, y + 25);
+        ctx.restore();
+      });
+    }
+
+    trimInventory() {
+      while (this.inventory.length > 24) {
+        const candidates = this.inventory
+          .map((item, index) => ({ item, index }))
+          .filter((entry) => !entry.item.exoticId);
+        if (!candidates.length) break;
+        let lowest = candidates[0];
+        candidates.forEach((entry) => {
+          if (entry.item.light < lowest.item.light) lowest = entry;
+        });
+        this.inventory.splice(lowest.index, 1);
+      }
+    }
+
+    pickupLoot() {
+      const near = this.nearestLoot();
+      if (!near) return false;
+      this.lootDrops = this.lootDrops.filter((drop) => drop.id !== near.drop.id);
+      this.inventory.push(near.drop.item);
+      if (near.drop.item.exoticId) this.exoticCollection[near.drop.item.exoticId] = true;
+      this.trimInventory();
+      this.selectedGearId = near.drop.item.id;
+      this.audio?.play('loot');
+      this.saveProgress();
+      this.toast(`拾取 ${near.drop.item.rarityLabel} · ${near.drop.item.name} · 光等 ${near.drop.item.light} · 已保存`);
+      this.fx.ring(near.drop.x * this.w, near.drop.y * this.h, near.drop.item.color, 42, 0.45, 2);
+      return true;
+    }
+
+    equipGear(itemId) {
+      const item = this.inventory.find((entry) => entry.id === itemId);
+      if (!item) return false;
+      if (item.exoticId && item.kind === 'armor' && item.classId && item.classId !== 'any' && item.classId !== (this.classId || 'hunter')) {
+        this.toast(`职业不符 · ${item.name} 只能由${item.classLabel || '对应职业'}装备`, 'danger');
+        return false;
+      }
+      if (item.exoticId) {
+        const equippedExotic = this.exoticEquipConflict(item);
+        if (equippedExotic) {
+          this.toast(`只能装备一件异域${item.kind === 'weapon' ? '武器' : '装备'} · 请先卸下 ${equippedExotic.name}`, 'danger');
+          return false;
+        }
+      }
+      const previous = this.equipment[item.slot];
+      this.equipment[item.slot] = item;
+      this.inventory = this.inventory.filter((entry) => entry.id !== itemId);
+      if (previous) this.inventory.push(previous);
+      this.trimInventory();
+      this.selectedGearId = item.id;
+      this.playerLight = this.currentLight();
+      if (item.kind === 'weapon' && this.weaponAmmo) {
+        const spec = this.weaponSpecFor(item.slot);
+        this.weaponAmmo[item.slot] = { ammo: spec.mag, reserve: spec.reserve, mag: spec.mag };
+        if (item.slot === this.activeWeaponSlot) this.applyActiveWeaponAmmo();
+      }
+      this.rebuildExoticCollection();
+      this.saveProgress();
+      this.toast(`已装备 ${item.name} · 光等 ${item.light} · 角色光等 ${this.playerLight} · 已保存`);
+      return true;
+    }
+
+    melee() {
+      const player = this.player;
+      if (!player || player.meleeCd > 0 || this.transition) return;
+      const profile = this.meleeProfile();
+      this.audio?.play('melee');
+      this.addTranscendence(this.activeAbilityElement('melee'), 15);
+      const point = this.playerPoint();
+      const damage = (profile.damage + this.currentLight() * 0.7) * this.exoticArmorMultiplier('meleeDamage');
+      if (profile.type === 'punch' || profile.type === 'palm') {
+        player.meleeCdMax = 2.8;
+        player.meleeCd = 2.8;
+        const radius = profile.type === 'palm' ? 132 : 98;
+        let hits = 0;
+        this.enemies.forEach((enemy) => {
+          if (!enemy.alive) return;
+          if (dist(point.x, point.y, enemy.x * this.w, enemy.y * this.h) < radius + enemy.radius) {
+            hits += 1;
+            this.damageEnemy(enemy, damage);
+          }
+        });
+        if (this.boss && !this.boss.dead && dist(point.x, point.y, this.boss.x * this.w, this.boss.y * this.h) < radius + this.boss.radius) {
+          hits += 1;
+          this.damageBoss(damage);
+        }
+        this.fx.ring(point.x, point.y, profile.color, radius, 0.32, profile.type === 'palm' ? 3.5 : 2.6);
+        this.fx.burst(point.x, point.y, profile.color, 12, 165, 2);
+        this.shake = Math.max(this.shake, 5);
+        if (!hits) this.toast(`${profile.name} 挥空`);
+        return;
+      }
+      player.meleeCdMax = 3.2;
+      player.meleeCd = 3.2;
+      const mouse = this.worldMouse();
+      const assisted = this.assistAim(point, mouse, 340, 0.55, 0.75);
+      const facing = Math.atan2(assisted.y - point.y, assisted.x - point.x);
+      const muzzle = this.playerMuzzlePoint(facing);
+      const angle = Math.atan2(assisted.y - muzzle.y, assisted.x - muzzle.x);
+      const speed = profile.speed || 900;
+      this.bullets.push({
+        x: muzzle.x + Math.cos(angle) * 3,
+        y: muzzle.y + Math.sin(angle) * 3,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: profile.life || 0.9,
+        damage,
+        color: profile.color,
+        width: profile.type === 'hammer' || profile.type === 'ice' ? 2.6 : 1.8,
+        melee: true,
+        meleeType: profile.type,
+        meleeName: profile.name,
+        meleeRadius: profile.radius || 0,
+        spin: 0,
+        transcendent: this.transcendenceTime > 0
+      });
+      this.fx.burst(muzzle.x, muzzle.y, profile.color, 7, 95, 1.6);
+      this.shake = Math.max(this.shake, 2);
+    }
+
+
+    get metric() {
+      return Math.min(this.w, this.h);
+    }
+
+    playerPoint() {
+      return { x: this.player.x * this.w, y: this.player.y * this.h };
+    }
+
+    playerMuzzlePoint(angle = null) {
+      const point = this.playerPoint();
+      const aim = angle === null
+        ? Math.atan2(this.worldMouse().y - point.y, this.worldMouse().x - point.x)
+        : angle;
+      const rotation = aim + Math.PI / 2;
+      const localX = 11.5;
+      const localY = -36.7;
+      return {
+        x: point.x + localX * Math.cos(rotation) - localY * Math.sin(rotation),
+        y: point.y + localX * Math.sin(rotation) + localY * Math.cos(rotation)
+      };
+    }
+
+    aliveEnemies() {
+      return this.enemies.filter((enemy) => enemy.alive);
+    }
+
+    enemyStats(type) {
+      const scale = this.missionIndex;
+      const stats = {
+        legionary: { hp: 52 + scale * 12, speed: 72 + scale * 5, radius: 13, damage: 8, fireDelay: 1.55, range: 370, color: '#d05c43', barColor: '#de7251' },
+        phalanx: { hp: 100 + scale * 20, speed: 48 + scale * 3, radius: 17, damage: 11, fireDelay: 2.35, range: 300, color: '#b84636', barColor: '#de7251' },
+        incendior: { hp: 88 + scale * 16, speed: 52 + scale * 3, radius: 16, damage: 13, fireDelay: 2.15, range: 330, color: '#d97b45', barColor: '#e78d54' },
+        gladiator: { hp: 135 + scale * 24, speed: 108 + scale * 5, radius: 19, damage: 16, fireDelay: 1.1, range: 64, color: '#8e3b30', barColor: '#e07053' },
+        centurion: { hp: 340, speed: 66, radius: 26, damage: 18, fireDelay: 1.05, range: 440, color: '#e0a558', barColor: '#f1c26f' },
+        goblin: { hp: 54 + scale * 10, speed: 76 + scale * 4, radius: 13, damage: 8, fireDelay: 1.7, range: 360, color: '#69c6b3', barColor: '#71d9c1' },
+        hobgoblin: { hp: 96 + scale * 17, speed: 56 + scale * 3, radius: 16, damage: 12, fireDelay: 2.0, range: 420, color: '#5aa9a0', barColor: '#83e6d2' },
+        minotaur: { hp: 190 + scale * 28, speed: 61 + scale * 3, radius: 22, damage: 16, fireDelay: 1.35, range: 310, color: '#4d8e87', barColor: '#8ce8d1' },
+        thrall: { hp: 38 + scale * 8, speed: 112 + scale * 4, radius: 11, damage: 10, fireDelay: 1.1, range: 48, color: '#759b61', barColor: '#9ccc78' },
+        acolyte: { hp: 72 + scale * 14, speed: 72 + scale * 4, radius: 13, damage: 9, fireDelay: 1.9, range: 350, color: '#82a367', barColor: '#a9d184' },
+        knight: { hp: 165 + scale * 25, speed: 58 + scale * 3, radius: 19, damage: 16, fireDelay: 1.6, range: 90, color: '#577747', barColor: '#94bf72' },
+        raider: { hp: 60 + scale * 12, speed: 78 + scale * 4, radius: 13, damage: 9, fireDelay: 1.7, range: 330, color: '#a77b96', barColor: '#d09ab7' },
+        stalker: { hp: 58 + scale * 11, speed: 118 + scale * 4, radius: 12, damage: 10, fireDelay: 1.2, range: 52, color: '#86658f', barColor: '#bd8fc7' },
+        chieftain: { hp: 175 + scale * 25, speed: 56 + scale * 3, radius: 20, damage: 15, fireDelay: 1.8, range: 300, color: '#8e5c82', barColor: '#cf8fb3' },
+        dreg: { hp: 48 + scale * 10, speed: 94 + scale * 4, radius: 12, damage: 8, fireDelay: 1.6, range: 320, color: '#739cc4', barColor: '#8fc3e7' },
+        vandal: { hp: 88 + scale * 15, speed: 64 + scale * 3, radius: 15, damage: 12, fireDelay: 1.9, range: 390, color: '#6486bc', barColor: '#91b6ef' },
+        captain: { hp: 175 + scale * 25, speed: 58 + scale * 3, radius: 20, damage: 16, fireDelay: 1.5, range: 340, color: '#506fa9', barColor: '#81a8e2' },
+        grim: { hp: 44 + scale * 9, speed: 108 + scale * 4, radius: 12, damage: 9, fireDelay: 1.4, range: 300, color: '#b9b6c9', barColor: '#d8d4e4' },
+        weaver: { hp: 92 + scale * 15, speed: 67 + scale * 3, radius: 15, damage: 12, fireDelay: 1.8, range: 380, color: '#a79bbf', barColor: '#cbc0e2' },
+        subjugator: { hp: 195 + scale * 28, speed: 54 + scale * 3, radius: 21, damage: 18, fireDelay: 1.45, range: 360, color: '#7e7594', barColor: '#b7aecb' },
+        'taken-thrall': { hp: 46 + scale * 9, speed: 104 + scale * 4, radius: 11, damage: 10, fireDelay: 1.2, range: 50, color: '#6c6b77', barColor: '#d8e6e2' },
+        'taken-acolyte': { hp: 84 + scale * 14, speed: 70 + scale * 3, radius: 14, damage: 12, fireDelay: 1.8, range: 360, color: '#777584', barColor: '#d9e8e4' },
+        'taken-knight': { hp: 185 + scale * 26, speed: 56 + scale * 3, radius: 20, damage: 17, fireDelay: 1.5, range: 120, color: '#55545f', barColor: '#c9e5de' }
+      };
+      const base = stats[type] || stats.legionary;
+      const hpScale = 1.9 + this.missionIndex * 0.035;
+      const damageScale = 1.45 + this.missionIndex * 0.025;
+      return {
+        ...base,
+        hp: Math.round(base.hp * hpScale),
+        damage: Math.round(base.damage * damageScale),
+        speed: base.speed * 1.04
+      };
+    }
+
+    spawnEnemy(type = 'legionary', position = null) {
+      const stats = this.enemyStats(type);
+      let x = position?.x ?? 0.5;
+      let y = position?.y ?? 0.5;
+      if (!position) {
+        for (let tries = 0; tries < 16; tries += 1) {
+          const edge = Math.floor(Math.random() * 4);
+          if (edge === 0) { x = rand(0.08, 0.92); y = rand(0.07, 0.12); }
+          else if (edge === 1) { x = rand(0.9, 0.96); y = rand(0.12, 0.8); }
+          else if (edge === 2) { x = rand(0.08, 0.92); y = rand(0.86, 0.94); }
+          else { x = rand(0.04, 0.1); y = rand(0.12, 0.8); }
+          if (dist(x * this.w, y * this.h, this.player.x * this.w, this.player.y * this.h) > 210) break;
+        }
+      }
+      const enemy = {
+        type, x, y, hp: stats.hp, maxHp: stats.hp, speed: stats.speed, radius: stats.radius,
+        damage: stats.damage, fireDelay: stats.fireDelay, range: stats.range, color: stats.color,
+        barColor: stats.barColor || stats.color, faction: this.mission.faction || 'cabal',
+        attackCd: rand(0.55, 1.8), meleeCd: rand(0.4, 1.1), flash: 0, alive: true,
+        phase: rand(0, Math.PI * 2),
+        elite: ['centurion', 'minotaur', 'knight', 'chieftain', 'captain', 'subjugator'].includes(type)
+      };
+      this.enemies.push(enemy);
+      return enemy;
+    }
+
+    randomEnemyType() {
+      const faction = this.mission.faction || 'cabal';
+      const pools = {
+        cabal: ['legionary', 'phalanx', 'incendior', 'gladiator'],
+        shadow: ['legionary', 'phalanx', 'incendior', 'gladiator'],
+        barant: ['legionary', 'phalanx', 'incendior', 'gladiator'],
+        vex: ['goblin', 'goblin', 'hobgoblin', 'minotaur'],
+        hive: ['thrall', 'thrall', 'acolyte', 'knight'],
+        scorn: ['raider', 'raider', 'stalker', 'chieftain'],
+        fallen: ['dreg', 'dreg', 'vandal', 'captain'],
+        dread: ['grim', 'grim', 'weaver', 'subjugator'],
+        taken: ['taken-thrall', 'taken-thrall', 'taken-acolyte', 'taken-knight']
+      };
+      if (faction === 'cabal' && this.currentMode === 'campaign' && this.missionIndex === 0) {
+        const roll = Math.random();
+        if (roll < 0.68) return 'legionary';
+        if (roll < 0.86) return 'phalanx';
+        return 'incendior';
+      }
+      return pick(pools[faction] || pools.cabal);
+    }
+
+    spawnWave() {
+      this.wave += 1;
+      const count = 3 + this.wave * 2;
+      for (let i = 0; i < count; i += 1) {
+        let type = this.randomEnemyType();
+        if (this.wave === 3 && i === 0) type = 'gladiator';
+        this.spawnEnemy(type);
+      }
+      this.toast(`第 ${this.wave} 波红色军团进入了广场`);
+    }
+
+    startReload() {
+      if (!this.player || this.player.reload > 0 || this.player.ammo === this.player.mag) return;
+      if ((this.player.reserve ?? 0) <= 0) return;
+      this.audio?.play('reload');
+      this.player.reload = 1.45 / this.exoticReloadMultiplier();
+    }
+
+    fireWeapon() {
+      const player = this.player;
+      if (!player || player.reload > 0 || player.fireCd > 0) return;
+      if (player.ammo <= 0) { this.startReload(); return; }
+      const spec = this.activeWeaponSpec();
+      this.audio?.weapon(spec);
+      player.ammo -= 1;
+      player.fireCd = spec.rate;
+      player.muzzle = 0.07;
+      const point = this.playerPoint();
+      const mouse = this.worldMouse();
+      const assisted = spec.explosive
+        ? { x: mouse.x, y: mouse.y, target: null, locked: false }
+        : this.assistAim(point, mouse, 420, 0.34, 0.55);
+      const baseAngle = Math.atan2(assisted.y - point.y, assisted.x - point.x) + rand(-0.018, 0.018);
+      const count = spec.pellets || spec.burst || 1;
+      const spread = spec.spread || (count > 1 ? 0.13 : 0);
+      const speed = spec.speed || 1080;
+      const burnBoost = spec.exoticEffect?.type === 'burn' ? 1 + (spec.exoticEffect.ratio || 0) : 1;
+      const damage = (spec.damage + this.currentLight() * (spec.slot === 'power' ? 0.65 : 0.22))
+        * this.exoticWeaponMultiplier(spec) * burnBoost;
+      const muzzle = this.playerMuzzlePoint(baseAngle);
+      const trajectoryAngle = Math.atan2(assisted.y - muzzle.y, assisted.x - muzzle.x);
+      for (let i = 0; i < count; i += 1) {
+        const offset = count > 1 ? (i - (count - 1) / 2) * spread : 0;
+        const angle = trajectoryAngle + offset;
+        this.bullets.push({
+          x: muzzle.x + Math.cos(angle) * 4,
+          y: muzzle.y + Math.sin(angle) * 4,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: spec.life || 1.15,
+          damage,
+          color: spec.bulletColor,
+          width: spec.bulletWidth,
+          explosive: Boolean(spec.explosive),
+          explosionRadius: spec.explosionRadius || 0,
+          explosionDamage: spec.explosive ? damage * 1.15 : 0,
+          projectileType: spec.projectileType || 'bullet',
+          weaponLabel: spec.typeLabel,
+          exoticId: spec.exoticId || null,
+          exoticEffect: spec.exoticEffect || null
+        });
+      }
+      this.fx.burst(muzzle.x, muzzle.y, spec.bulletColor, spec.explosive ? 7 : 2, spec.explosive ? 120 : 70, spec.explosive ? 2 : 1.1);
+      if (player.ammo <= 0) this.startReload();
+    }
+
+    dash() {
+      const player = this.player;
+      if (!player || player.dashCd > 0 || player.dashTime > 0) {
+        if (player) this.toast(`闪身冷却中 · ${player.dashCd.toFixed(1)} 秒`);
+        return;
+      }
+      let x = (this.manager.keys.has('KeyD') ? 1 : 0) - (this.manager.keys.has('KeyA') ? 1 : 0);
+      let y = (this.manager.keys.has('KeyS') ? 1 : 0) - (this.manager.keys.has('KeyW') ? 1 : 0);
+      if (!x && !y) {
+        const point = this.playerPoint();
+        const mouse = this.worldMouse();
+        const angle = Math.atan2(point.y - mouse.y, point.x - mouse.x);
+        x = Math.cos(angle);
+        y = Math.sin(angle);
+      }
+      const length = Math.hypot(x, y) || 1;
+      player.dashX = x / length;
+      player.dashY = y / length;
+      player.dashTime = 0.17;
+      player.dashCd = 2.5;
+      player.invuln = Math.max(player.invuln, 0.34);
+      const point = this.playerPoint();
+      this.fx.ring(point.x, point.y, '#ffd88b', 42, 0.3, 1.5);
+    }
+
+    useClassAbility() {
+      const player = this.player;
+      if (!player || this.transition || this.deathState) return;
+      if ((player.classCd || 0) > 0) {
+        this.toast(`${this.activeSubclass().classAbility}冷却中 · ${player.classCd.toFixed(1)} 秒`);
+        return;
+      }
+      const classHeal = this.exoticClassHeal();
+      if (classHeal) {
+        player.hp = Math.min(player.maxHp, player.hp + classHeal);
+        player.shield = Math.min(player.maxShield, player.shield + classHeal * 0.5);
+        this.fx.ring(player.x * this.w, player.y * this.h, '#8ff0c1', 46, 0.4, 2);
+      }
+      const classId = this.classId || 'hunter';
+      this.audio?.play('class');
+      this.addTranscendence(this.activeAbilityElement('classAbility'), 10);
+      if (classId === 'hunter') {
+        if (player.dashCd > 0 || player.dashTime > 0) {
+          this.toast(`闪身冷却中 · ${player.dashCd.toFixed(1)} 秒`);
+          return;
+        }
+        this.dash();
+        player.classCdMax = 4.2;
+        player.classCd = 4.2;
+        this.toast(`职业技能 · ${this.activeSubclass().classAbility}`);
+        return;
+      }
+      const point = this.playerPoint();
+      if (classId === 'warlock') {
+        player.classCdMax = 7;
+        player.classCd = 7;
+        this.rifts.push({
+          x: point.x, y: point.y, time: 8, max: 8, radius: this.metric * 0.13,
+          color: this.activeSubclass().color
+        });
+        this.fx.ring(point.x, point.y, this.activeSubclass().color, this.metric * 0.16, 0.55, 2.4);
+        this.toast(`职业技能 · ${this.activeSubclass().classAbility}`);
+        return;
+      }
+      if (classId === 'titan') {
+        const mouse = this.worldMouse();
+        const angle = Math.atan2(mouse.y - point.y, mouse.x - point.x);
+        const bx = point.x + Math.cos(angle) * 42;
+        const by = point.y + Math.sin(angle) * 42;
+        player.classCdMax = 9;
+        player.classCd = 9;
+        player.shield = Math.min(player.maxShield, player.shield + 65);
+        player.shieldTimer = 6;
+        this.barricades.push({
+          x: bx, y: by, angle: angle + Math.PI / 2, time: 10, max: 10,
+          radius: this.metric * 0.085, color: this.activeSubclass().color
+        });
+        this.fx.ring(bx, by, '#f0c47a', 56, 0.45, 2);
+        this.toast(`职业技能 · ${this.activeSubclass().classAbility}`);
+      }
+    }
+
+    throwGrenade() {
+      const player = this.player;
+      if (!player || player.grenadeCd > 0) {
+        if (player) this.toast(`${this.activeSubclass().grenade}冷却中 · ${player.grenadeCd.toFixed(1)} 秒`);
+        return;
+      }
+      const point = this.playerPoint();
+      const mouse = this.worldMouse();
+      const angle = Math.atan2(mouse.y - point.y, mouse.x - point.x);
+      const range = Math.min(340, Math.max(60, dist(point.x, point.y, mouse.x, mouse.y)));
+      const tx = point.x + Math.cos(angle) * range;
+      const ty = point.y + Math.sin(angle) * range;
+      this.addTranscendence(this.activeAbilityElement('grenade'), 18);
+      this.audio?.play('grenade');
+      player.grenadeCd = 7;
+      this.grenadeUses += 1;
+      this.grenades.push({
+        x: point.x, y: point.y, tx, ty, time: 0.72, max: 0.72,
+        subclass: this.subclassId, element: this.activeAbilityElement('grenade'),
+        transcendent: this.transcendenceTime > 0, phase: rand(0, Math.PI * 2)
+      });
+    }
+
+    throwSuper() {
+      const player = this.player;
+      if (!player) return;
+      if (player.superCharge < 100) {
+        this.toast(`光能不足 · ${Math.floor(player.superCharge)}%`);
+        return;
+      }
+      player.superCharge = 0;
+      this.superUses += 1;
+      this.addTranscendence(this.activeAbilityElement('super'), 28);
+      const profile = this.superProfile();
+      this.audio?.play(profile.name === '黄金枪' ? 'golden' : 'super');
+      const point = this.playerPoint();
+      const mouse = this.worldMouse();
+      const assisted = profile.kind === 'golden-gun' || profile.kind === 'beam'
+        ? this.assistAim(point, mouse, Math.min(profile.range || 700, 620), 0.42, 0.82)
+        : { x: mouse.x, y: mouse.y, target: null, locked: false };
+      const angle = Math.atan2(assisted.y - point.y, assisted.x - point.x);
+      const range = Math.min(profile.range || 700, Math.max(120, dist(point.x, point.y, assisted.x, assisted.y)));
+      const tx = point.x + Math.cos(angle) * range;
+      const ty = point.y + Math.sin(angle) * range;
+      this.toast(`${profile.name}已释放${assisted.locked ? ' · AA 锁定' : ''}`);
+      if (profile.kind === 'golden-gun') {
+        this.castGoldenGun(profile, point, angle, range);
+        return;
+      }
+      if (profile.kind === 'beam') {
+        this.castSuperBeam(profile, point, angle, range);
+        return;
+      }
+      if (profile.kind === 'meteor') {
+        this.superBeams.push({ x1: tx, y1: -40, x2: tx, y2: ty, color: profile.color, width: 22, life: 0.55, max: 0.55, kind: 'meteor' });
+        this.explodeAt(tx, ty, profile.radius, profile.damage, profile.color);
+        this.fx.ring(tx, ty, '#e9fbff', profile.radius * 1.15, 0.7, 3);
+        this.shake = 16;
+        return;
+      }
+      if (profile.kind === 'aura') {
+        this.superEffects.push({
+          kind: 'aura', aura: profile.aura, x: point.x, y: point.y, time: profile.duration, max: profile.duration,
+          radius: profile.radius, damage: profile.damage, color: profile.color, tick: 0, follow: true
+        });
+        this.fx.ring(point.x, point.y, profile.color, profile.radius, 0.6, 3);
+        return;
+      }
+      if (profile.kind === 'chainbeam') {
+        this.superEffects.push({
+          kind: 'chainbeam', x: point.x, y: point.y, time: profile.duration, max: profile.duration,
+          radius: profile.radius, damage: profile.damage, color: profile.color, tick: 0, follow: true
+        });
+        return;
+      }
+      if (profile.kind === 'freeze') {
+        this.superEffects.push({
+          kind: 'freeze', x: tx, y: ty, time: profile.duration, max: profile.duration,
+          radius: profile.radius, damage: profile.damage, color: profile.color, tick: 0,
+          roam: true, speed: 92, roamAngle: rand(0, Math.PI * 2), phase: rand(0, Math.PI * 2)
+        });
+        this.fx.ring(tx, ty, profile.color, profile.radius, 0.6, 3);
+        return;
+      }
+      if (profile.kind === 'tornado' || profile.kind === 'icequake' || profile.kind === 'wave') {
+        this.superEffects.push({
+          kind: profile.kind, x: tx, y: ty, time: profile.duration || 1.2, max: profile.duration || 1.2,
+          radius: profile.radius, damage: profile.damage, color: profile.color, tick: 0,
+          roam: profile.kind === 'icequake', speed: 78, roamAngle: rand(0, Math.PI * 2), phase: rand(0, Math.PI * 2)
+        });
+        return;
+      }
+      if (profile.kind === 'storm') {
+        this.hammers.push({
+          x: point.x, y: point.y, tx, ty, time: 0.64, max: 0.64, spin: 0,
+          subclass: this.subclassId, element: this.activeAbilityElement('super'), profile
+        });
+        return;
+      }
+      if (profile.kind === 'volley') {
+        const count = profile.count || 3;
+        for (let i = 0; i < count; i += 1) {
+          const offset = (i - (count - 1) / 2) * 0.075;
+          const spread = angle + offset;
+          this.hammers.push({
+            x: point.x, y: point.y,
+            tx: point.x + Math.cos(spread) * range,
+            ty: point.y + Math.sin(spread) * range,
+            time: 0.52 + i * 0.045, max: 0.52 + i * 0.045, spin: i * 0.8,
+            subclass: this.subclassId, element: this.activeAbilityElement('super'), profile
+          });
+        }
+        return;
+      }
+      this.hammers.push({
+        x: point.x, y: point.y, tx, ty, time: 0.58, max: 0.58, spin: 0,
+        subclass: this.subclassId, element: this.activeAbilityElement('super'), profile
+      });
+    }
+
+    castGoldenGun(profile, point, angle, range) {
+      const aimX = point.x + Math.cos(angle) * range;
+      const aimY = point.y + Math.sin(angle) * range;
+      const muzzle = this.playerMuzzlePoint(angle);
+      const beamAngle = Math.atan2(aimY - muzzle.y, aimX - muzzle.x);
+      const x2 = muzzle.x + Math.cos(beamAngle) * range;
+      const y2 = muzzle.y + Math.sin(beamAngle) * range;
+      const color = profile.color || '#ffb35c';
+      this.superBeams.push({
+        x1: muzzle.x, y1: muzzle.y, x2, y2, color,
+        width: 24, life: 0.72, max: 0.72, kind: 'golden-gun'
+      });
+      const lineDistance = (px, py) => {
+        const vx = x2 - muzzle.x;
+        const vy = y2 - muzzle.y;
+        const wx = px - muzzle.x;
+        const wy = py - muzzle.y;
+        const lengthSq = vx * vx + vy * vy || 1;
+        const t = clamp((wx * vx + wy * vy) / lengthSq, 0, 1);
+        return Math.hypot(px - (muzzle.x + vx * t), py - (muzzle.y + vy * t));
+      };
+      let hits = 0;
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive) return;
+        if (lineDistance(enemy.x * this.w, enemy.y * this.h) < 34 + enemy.radius) {
+          this.damageEnemy(enemy, profile.damage);
+          hits += 1;
+          this.fx.burst(enemy.x * this.w, enemy.y * this.h, '#ffd38a', 10, 180, 2.2);
+        }
+      });
+      if (this.boss && !this.boss.dead) {
+        if (lineDistance(this.boss.x * this.w, this.boss.y * this.h) < 50 + this.boss.radius) {
+          this.damageBoss(profile.damage * 0.8, x2, y2);
+        }
+      }
+      this.explodeAt(x2, y2, profile.radius || 96, 120, color);
+      this.fx.ring(muzzle.x, muzzle.y, '#fff0c2', 48, 0.4, 2.2);
+      this.fx.burst(muzzle.x, muzzle.y, color, 30, 260, 3.2);
+      this.fx.burst(x2, y2, '#fff1c8', 34, 300, 3.5);
+      this.shake = Math.max(this.shake, 15);
+      this.toast(`黄金枪 · 烈日光束命中 ${hits} 个目标`);
+    }
+
+    castSuperBeam(profile, point, angle, range) {
+      const aimX = point.x + Math.cos(angle) * range;
+      const aimY = point.y + Math.sin(angle) * range;
+      const muzzle = this.playerMuzzlePoint(angle);
+      const beamAngle = Math.atan2(aimY - muzzle.y, aimX - muzzle.x);
+      const x2 = muzzle.x + Math.cos(beamAngle) * range;
+      const y2 = muzzle.y + Math.sin(beamAngle) * range;
+      this.superBeams.push({ x1: muzzle.x, y1: muzzle.y, x2, y2, color: profile.color, width: 11, life: 0.34, max: 0.34, kind: 'beam' });
+      const lineDistance = (px, py) => {
+        const vx = x2 - muzzle.x;
+        const vy = y2 - muzzle.y;
+        const wx = px - muzzle.x;
+        const wy = py - muzzle.y;
+        const lengthSq = vx * vx + vy * vy || 1;
+        const t = clamp((wx * vx + wy * vy) / lengthSq, 0, 1);
+        return Math.hypot(px - (muzzle.x + vx * t), py - (muzzle.y + vy * t));
+      };
+      this.enemies.forEach((enemy) => {
+        if (enemy.alive && lineDistance(enemy.x * this.w, enemy.y * this.h) < 25 + enemy.radius) {
+          this.damageEnemy(enemy, profile.damage);
+        }
+      });
+      if (this.boss && !this.boss.dead && lineDistance(this.boss.x * this.w, this.boss.y * this.h) < 44) {
+        this.damageBoss(profile.damage);
+      }
+      this.fx.ring(x2, y2, profile.color, 38, 0.45, 3);
+      this.fx.burst(x2, y2, profile.color, 24, 210, 3);
+      this.shake = Math.max(this.shake, 9);
+    }
+
+    applyMeleeImpact(enemy, bullet) {
+      const x = enemy.x * this.w;
+      const y = enemy.y * this.h;
+      const type = bullet.meleeType;
+      if (type === 'transcendent') {
+        const radius = bullet.meleeRadius || 92;
+        this.explodeAt(x, y, radius, bullet.damage * 0.72, '#ffe5a7');
+        this.explodeAt(x, y, radius * 0.86, bullet.damage * 0.55, '#b58cff');
+        this.fx.ring(x, y, '#ffe9b6', radius * 1.3, 0.55, 3);
+        this.enemies.forEach((entry) => {
+          if (entry.alive && dist(x, y, entry.x * this.w, entry.y * this.h) < radius * 1.35) {
+            entry.slowTimer = Math.max(entry.slowTimer || 0, 2.4);
+          }
+        });
+        this.toast('超凡近战 · 光暗冲击');
+        return;
+      }
+      if (type === 'smoke') {
+        const radius = bullet.meleeRadius || 72;
+        this.fx.ring(x, y, bullet.color, radius, 0.55, 2.4);
+        this.fx.burst(x, y, bullet.color, 24, 160, 2.4);
+        this.enemies.forEach((entry) => {
+          if (!entry.alive) return;
+          if (dist(x, y, entry.x * this.w, entry.y * this.h) <= radius + entry.radius) {
+            this.damageEnemy(entry, bullet.damage * 0.9);
+            if (entry.alive) entry.slowTimer = Math.max(entry.slowTimer || 0, 2.4);
+          }
+        });
+        return;
+      }
+      this.damageEnemy(enemy, bullet.damage);
+      if (type === 'ice' || type === 'freeze') {
+        enemy.slowTimer = Math.max(enemy.slowTimer || 0, 4.2);
+        this.fx.ring(x, y, bullet.color, 34, 0.45, 2);
+      } else if (type === 'void') {
+        this.vortexes.push({
+          x, y, time: 1.7, max: 1.7, tick: 0, radius: bullet.meleeRadius || 64, color: bullet.color
+        });
+      } else if (type === 'arc') {
+        const targets = this.enemies
+          .filter((entry) => entry.alive && entry !== enemy && dist(x, y, entry.x * this.w, entry.y * this.h) < 220)
+          .slice(0, 2);
+        targets.forEach((entry) => {
+          this.chainBolts.push({ x1: x, y1: y, x2: entry.x * this.w, y2: entry.y * this.h, time: 0.35, max: 0.35, color: bullet.color });
+          this.damageEnemy(entry, bullet.damage * 0.55);
+        });
+      } else if (type === 'hammer') {
+        const radius = bullet.meleeRadius || 58;
+        this.fx.ring(x, y, bullet.color, radius, 0.4, 2);
+        this.enemies.forEach((entry) => {
+          if (entry.alive && entry !== enemy && dist(x, y, entry.x * this.w, entry.y * this.h) <= radius) {
+            this.damageEnemy(entry, bullet.damage * 0.4);
+          }
+        });
+      }
+    }
+
+    explodeAt(x, y, radius, damage, color = null) {
+      const accent = color || this.activeSubclass().color;
+      this.fx.ring(x, y, accent, radius, 0.6, 3);
+      this.fx.ring(x, y, accent, radius * 0.64, 0.45, 2);
+      this.fx.burst(x, y, accent, 34, 250, 3.4);
+      this.shake = 11;
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive) return;
+        if (dist(x, y, enemy.x * this.w, enemy.y * this.h) < radius + enemy.radius) this.damageEnemy(enemy, damage);
+      });
+      if (this.boss && !this.boss.dead && dist(x, y, this.boss.x * this.w, this.boss.y * this.h) < radius + this.boss.radius) this.damageBoss(damage * 0.65, x, y);
+      if (this.raidState?.phase === 'mechanic' && DESTINY_MECHANIC_INFO[this.raidState.mechanicType]?.kind === 'shoot') {
+        this.raidState.objects.forEach((target) => {
+          if (target.alive && dist(x, y, target.x * this.w, target.y * this.h) < radius + 18) {
+            this.damageRaidMechanicObject(target, damage * 0.8);
+          }
+        });
+      }
+      this.encounter?.objects.forEach((crystal) => {
+        if (crystal.alive && dist(x, y, crystal.x * this.w, crystal.y * this.h) < radius + 16) {
+          this.damageCrystal(crystal, damage * 0.75);
+        }
+      });
+      this.conduits.forEach((conduit) => {
+        if (conduit.alive && dist(x, y, conduit.x * this.w, conduit.y * this.h) < radius + 18) this.damageConduit(conduit, damage);
+      });
+      this.generators.forEach((generator) => {
+        if (generator.alive && dist(x, y, generator.x * this.w, generator.y * this.h) < radius + 20) this.damageGenerator(generator, damage);
+      });
+    }
+
+    damageEnemy(enemy, amount, source = null) {
+      if (!enemy || !enemy.alive) return;
+      if (enemy === this.raidBoss && this.raidState && this.raidState.phase !== 'damage') {
+        if (!this.encounterWarned) {
+          this.encounterWarned = true;
+          this.toast(`${this.raidState.mechanicLabel || '机制'}尚未完成 · 首领护盾开启`);
+        }
+        if (this.time - (enemy.lastShieldFx || 0) > 0.22) {
+          enemy.lastShieldFx = this.time;
+          this.fx.ring(enemy.x * this.w, enemy.y * this.h, '#a9e7ff', enemy.radius + 18, 0.26, 1.4);
+          this.fx.float(enemy.x * this.w, enemy.y * this.h - enemy.radius - 10, '护盾', '#bcefff', 9);
+        }
+        return;
+      }
+      if (enemy === this.dlcBoss && this.fieldObjective && !this.fieldObjective.done) {
+        if (!this.encounterWarned) {
+          this.encounterWarned = true;
+          this.toast(`${this.fieldObjective.label}尚未完成 · 首领护盾开启`);
+        }
+        if (this.time - (enemy.lastShieldFx || 0) > 0.22) {
+          enemy.lastShieldFx = this.time;
+          this.fx.ring(enemy.x * this.w, enemy.y * this.h, this.fieldObjective.accent, enemy.radius + 18, 0.26, 1.4);
+          this.fx.float(enemy.x * this.w, enemy.y * this.h - enemy.radius - 10, '护盾', this.fieldObjective.accent, 9);
+        }
+        return;
+      }
+      const markMultiplier = enemy.exoticMarkUntil > this.time ? enemy.exoticMarkMult || 1 : 1;
+      const dealt = amount * markMultiplier;
+      enemy.hp -= dealt;
+      enemy.flash = 0.12;
+      const hitPan = this.player ? clamp((enemy.x - this.player.x) * 1.2, -0.7, 0.7) : 0;
+      this.audio?.hit(Boolean(enemy.elite), hitPan);
+      const x = enemy.x * this.w;
+      const y = enemy.y * this.h;
+      if (this.currentMode === 'range') {
+        this.rangeDamage = (this.rangeDamage || 0) + dealt;
+        this.rangeHits = (this.rangeHits || 0) + 1;
+      }
+      const showDamageNumber = this.currentMode === 'range' || dealt >= 80;
+      const damageInterval = this.currentMode === 'range' ? 0.035 : 0.11;
+      if (showDamageNumber && this.time - (enemy.lastDamageNumber || 0) > damageInterval) {
+        enemy.lastDamageNumber = this.time;
+        const hitColor = dealt >= 150 ? '#fff0b8' : dealt >= 70 ? '#ffd08a' : '#f4eee0';
+        this.fx.float(x + rand(-5, 5), y - 13, String(Math.round(dealt)), hitColor, dealt >= 150 ? 15 : dealt >= 70 ? 13 : 11);
+      }
+      this.fx.burst(x, y, '#ffb077', 4, 70, 1.6);
+      this.applyExoticHit(enemy, dealt, source);
+      if (enemy.hp > 0) return;
+      enemy.alive = false;
+      this.applyExoticKill(enemy, source);
+      const armorHeal = this.exoticHealOnKill();
+      if (armorHeal) this.player.hp = Math.min(this.player.maxHp, this.player.hp + armorHeal);
+      const bossKill = enemy === this.raidBoss || enemy === this.dlcBoss;
+      this.rollWorldExotic({ x: enemy.x, y: enemy.y }, Boolean(enemy.elite && !enemy.training), bossKill);
+      this.kills += 1;
+      this.score += enemy.elite ? 500 : 100;
+      if (enemy !== this.raidBoss && enemy !== this.dlcBoss) this.audio?.play(enemy.elite ? 'eliteKill' : 'kill');
+      if (this.currentMode !== 'range' && this.currentMode !== 'crucible' && this.currentMode !== 'gambit') {
+        this.dropAmmoAt(enemy.x, enemy.y, enemy.elite);
+      }
+      if (this.player) this.player.superCharge = Math.min(100, this.player.superCharge + (enemy.elite ? 28 : 9) * this.exoticSuperMultiplier());
+      this.fx.ring(x, y, '#ffcf80', enemy.elite ? 55 : 25, 0.35, 1.4);
+      this.fx.float(x, y - 10, enemy.elite ? '+500' : '+100', '#ffd794', 11);
+      if (this.currentMode === 'range' && enemy.training) {
+        this.rangeKills = (this.rangeKills || 0) + 1;
+        enemy.respawn = 2.2;
+        this.fx.float(x, y - 10, '目标击破', '#a8f0d0', 10);
+        return;
+      }
+      const finalBoss = enemy === this.dlcBoss;
+      const enemyLoot = this.currentMode !== 'crucible' && this.currentMode !== 'range' ? this.rollLoot(enemy, finalBoss) : [];
+      if (this.currentMode === 'raid' && enemy === this.raidBoss) {
+        this.audio?.play('bossDown');
+        this.awardLootItems(enemyLoot);
+        this.raidBoss = null;
+        this.dlcBoss = null;
+        this.completeRaidEncounter();
+        return;
+      }
+      if (this.currentMode === 'crucible' && this.crucible) {
+        this.crucible.playerScore += 1;
+      }
+      if (this.currentMode === 'gambit' && this.gambit && enemy !== this.gambit.primeval) {
+        this.gambit.motes = Math.min(this.gambit.target, this.gambit.motes + 1);
+      }
+      if (this.gambit?.primeval === enemy) {
+        this.gambit.primeval = null;
+        this.finishActivity(true, 'Primeval 已被击败', '荧光在银行上空熄灭，智谋胜利。');
+        return;
+      }
+      if (this.dlcBoss === enemy) {
+        this.audio?.play('bossDown');
+        this.dlcBoss = null;
+        this.awardLootItems(enemyLoot);
+        this.completeMission();
+        return;
+      }
+      if (enemy.elite) {
+        this.toast(`${enemy.name || (enemy.faction === 'cabal' ? '帝国百夫长' : '精英敌人')} 被击败`);
+      }
+    }
+
+    damageBoss(amount, x = null, y = null, source = null) {
+      const boss = this.boss;
+      if (!boss || boss.dead) return;
+      const bossPan = this.player ? clamp((boss.x - this.player.x) * 1.2, -0.7, 0.7) : 0;
+      this.audio?.hit(true, bossPan);
+      if (this.encounter && !this.encounter.done) {
+        if (!this.encounterWarned) {
+          this.encounterWarned = true;
+          this.toast('压制水晶仍在保护首领 · 先摧毁 3 枚水晶');
+        }
+        return;
+      }
+      const markMultiplier = boss.exoticMarkUntil > this.time ? boss.exoticMarkMult || 1 : 1;
+      const dealt = amount * markMultiplier;
+      boss.hp -= dealt;
+      boss.flash = 0.13;
+      const bx = x || boss.x * this.w;
+      const by = y || boss.y * this.h;
+      this.fx.burst(bx, by, '#ffd186', 5, 90, 1.8);
+      this.applyExoticHit(boss, dealt, source);
+      if (boss.hp <= 0) {
+        boss.hp = 0;
+        boss.dead = true;
+        this.audio?.play('bossDown');
+        this.fx.burst(bx, by, '#ffe0a0', 65, 340, 4.5);
+        this.fx.ring(bx, by, '#ffe8ad', 155, 0.9, 3);
+        this.shake = 14;
+        this.rollWorldExotic({ x: boss.x, y: boss.y }, true, true);
+        this.awardLootItems(this.rollLoot({ x: boss.x, y: boss.y, elite: true }, true));
+        this.completeMission();
+        return;
+      }
+      if (boss.phase === 1 && boss.hp <= boss.maxHp * 0.66) {
+        boss.phase = 2;
+        boss.attackTimer = 1.2;
+        this.toast('Ghaul 进入了第二阶段 · 红色军团增援');
+        this.spawnEnemy('gladiator');
+        this.spawnEnemy('incendior');
+      } else if (boss.phase === 2 && boss.hp <= boss.maxHp * 0.33) {
+        boss.phase = 3;
+        boss.attackTimer = 0.8;
+        this.toast('Ghaul 燃烧了光能 · 最终阶段');
+        this.spawnEnemy('phalanx');
+      }
+    }
+
+    damageConduit(conduit, amount) {
+      if (!conduit || !conduit.alive) return;
+      conduit.hp -= amount;
+      const x = conduit.x * this.w;
+      const y = conduit.y * this.h;
+      this.fx.burst(x, y, '#ffc674', 4, 75, 1.5);
+      if (conduit.hp <= 0) {
+        conduit.alive = false;
+        conduit.hp = 0;
+        this.fx.ring(x, y, '#ffda9b', 85, 0.6, 2.5);
+        this.fx.burst(x, y, '#ffb65a', 30, 220, 3);
+        this.toast('太阳导流器已摧毁');
+      }
+    }
+
+    damageGenerator(generator, amount) {
+      if (!generator || !generator.alive) return;
+      generator.hp -= amount;
+      const x = generator.x * this.w;
+      const y = generator.y * this.h;
+      this.fx.burst(x, y, '#ffb174', 4, 70, 1.4);
+      if (generator.hp <= 0) {
+        generator.alive = false;
+        generator.hp = 0;
+        this.fx.ring(x, y, '#ffcc86', 75, 0.55, 2.4);
+        this.toast('护盾发生器已关闭');
+      }
+    }
+
+    damagePlayer(amount) {
+      const player = this.player;
+      if (!player || player.invuln > 0 || player.hp <= 0 || this.transition || this.deathState) return;
+      amount *= 1 - this.exoticDamageResist();
+      this.audio?.play(player.shield > 0 ? 'shield' : 'damage');
+      let remaining = amount;
+      if (player.shield > 0) {
+        const absorbed = Math.min(player.shield, remaining);
+        player.shield -= absorbed;
+        remaining -= absorbed;
+      }
+      player.hp -= remaining;
+      player.shieldTimer = 3.3;
+      player.flash = 1;
+      this.shake = 7;
+      const point = this.playerPoint();
+      this.fx.burst(point.x, point.y, player.shield > 0 ? '#8bdcff' : '#ff7460', 9, 110, 2);
+      if (player.hp > 0) return;
+      player.hp = 0;
+      if (this.currentMode === 'crucible' && this.crucible) {
+        this.crucible.enemyScore += 1;
+        if (this.crucible.enemyScore >= 20) {
+          this.finishActivity(false, '熔炉比赛结束', '对手先达到了 20 次击破。下一次你会更快。');
+          return;
+        }
+        this.toast(`你被击破 · ${this.crucible.enemyScore} / 20`);
+      } else if (this.currentMode === 'gambit' && this.gambit) {
+        this.gambit.motes = 0;
+      }
+      if (!this.deathState) {
+        this.deathState = {
+          time: 7, max: 7, readyAt: 2.2,
+          mode: this.currentMode,
+          x: player.x, y: player.y
+        };
+        this.enemyBullets = [];
+        this.telegraphs = [];
+        this.bullets = [];
+        this.hammers = [];
+        this.grenades = [];
+        this.audio?.play('death');
+        if (this.manager.hud) this.manager.hud.hidden = true;
+      }
+    }
+
+    reviveFromDeath() {
+      if (!this.deathState) return;
+      this.deathState = null;
+      this.respawnPlayer();
+      this.player.invuln = Math.max(this.player.invuln, 2.4);
+      this.audio?.play('revive');
+      this.toast('光能重新凝聚 · 返回战场');
+    }
+
+    respawnPlayer() {
+      if (!this.player) return;
+      this.player.x = 0.5;
+      this.player.y = this.currentMode === 'raid' ? 0.72 : 0.79;
+      this.player.hp = this.player.maxHp;
+      this.player.shield = this.player.maxShield;
+      this.player.shieldTimer = 0;
+      this.player.invuln = 2.2;
+      this.player.flash = 0;
+      this.player.fireCd = 0;
+      this.player.reload = 0;
+      this.player.classCd = 0;
+      this.resetWeaponAmmo(this.activeWeaponSlot);
+      this.enemyBullets = [];
+      const point = this.playerPoint();
+      this.fx.ring(point.x, point.y, '#ffe0a2', 75, 0.6, 2);
+    }
+
+    finishActivity(win, title, desc) {
+      if (this.transition) return;
+      this.audio?.play(win ? 'victory' : 'defeat');
+      this.transition = {
+        activity: true,
+        time: 4.4,
+        max: 4.4,
+        win,
+        title,
+        desc
+      };
+      this.enemies = [];
+      this.enemyBullets = [];
+      this.bullets = [];
+      this.telegraphs = [];
+      if (this.manager.hud) this.manager.hud.hidden = true;
+    }
+
+    updatePlayer(dt, w, h) {
+      const player = this.player;
+      this.updateTranscendence(dt);
+      if (this.transcendenceHold >= 0) {
+        this.transcendenceHold += dt;
+        if (this.transcendenceHold >= 0.55) {
+          if (this.transcendenceReady()) this.activateTranscendence();
+          this.transcendenceHold = -1;
+        }
+      }
+      const abilityRate = (this.transcendenceTime > 0 ? 6 : 1) * this.exoticAbilityMultiplier();
+      player.fireCd = Math.max(0, player.fireCd - dt);
+      player.grenadeCd = Math.max(0, player.grenadeCd - dt * abilityRate);
+      player.meleeCd = Math.max(0, (player.meleeCd || 0) - dt * abilityRate);
+      player.dashCd = Math.max(0, player.dashCd - dt * (this.transcendenceTime > 0 ? 3 : 1));
+      player.classCd = Math.max(0, (player.classCd || 0) - dt * abilityRate);
+      player.invuln = Math.max(0, player.invuln - dt);
+      const classPoint = this.playerPoint();
+      this.rifts.forEach((rift) => {
+        rift.time -= dt;
+        if (dist(classPoint.x, classPoint.y, rift.x, rift.y) <= rift.radius) {
+          player.hp = Math.min(player.maxHp, player.hp + 22 * dt);
+          player.shield = Math.min(player.maxShield, player.shield + 16 * dt);
+        }
+      });
+      this.rifts = this.rifts.filter((rift) => rift.time > 0);
+      this.barricades.forEach((barricade) => { barricade.time -= dt; });
+      this.barricades = this.barricades.filter((barricade) => barricade.time > 0);
+      player.flash = Math.max(0, player.flash - dt * 3.4);
+      player.muzzle = Math.max(0, player.muzzle - dt);
+      player.shieldTimer = Math.max(0, player.shieldTimer - dt);
+      if (player.reload > 0) {
+        player.reload -= dt * this.exoticReloadMultiplier();
+        if (player.reload <= 0) {
+          player.reload = 0;
+          const needed = player.mag - player.ammo;
+          const loaded = Math.min(needed, player.reserve ?? 0);
+          player.ammo += loaded;
+          player.reserve = Math.max(0, (player.reserve ?? 0) - loaded);
+        }
+      }
+      if (player.shieldTimer <= 0) {
+        player.shield = Math.min(player.maxShield, player.shield + 27 * dt);
+      }
+
+      let dx = 0;
+      let dy = 0;
+      if (this.manager.keys.has('KeyW')) dy -= 1;
+      if (this.manager.keys.has('KeyS')) dy += 1;
+      if (this.manager.keys.has('KeyA')) dx -= 1;
+      if (this.manager.keys.has('KeyD')) dx += 1;
+      if (player.dashTime > 0) {
+        player.dashTime -= dt;
+        player.x = clamp(player.x + player.dashX * 620 * dt / w, 0.05, 0.95);
+        player.y = clamp(player.y + player.dashY * 620 * dt / h, 0.26, 0.94);
+      } else if (dx || dy) {
+        const length = Math.hypot(dx, dy) || 1;
+        player.x = clamp(player.x + (dx / length) * 235 * dt / w, 0.05, 0.95);
+        player.y = clamp(player.y + (dy / length) * 235 * dt / h, 0.26, 0.94);
+      }
+      if (this.manager.mouse.down) this.fireWeapon();
+    }
+
+    updateBullets(dt, w, h) {
+      this.bullets.forEach((bullet) => {
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
+        bullet.life -= dt;
+        const raidTarget = this.raidState?.phase === 'mechanic'
+          && DESTINY_MECHANIC_INFO[this.raidState.mechanicType]?.kind === 'shoot'
+          ? this.raidState.objects.find((entry) => entry.alive && dist(bullet.x, bullet.y, entry.x * w, entry.y * h) < 24)
+          : null;
+        if (raidTarget) {
+          bullet.life = 0;
+          this.damageRaidMechanicObject(raidTarget, bullet.damage);
+          return;
+        }
+        const crystal = this.encounter?.objects.find((entry) => entry.alive && dist(bullet.x, bullet.y, entry.x * w, entry.y * h) < 22);
+        if (crystal) {
+          bullet.life = 0;
+          this.damageCrystal(crystal, bullet.damage);
+          return;
+        }
+        if (this.boss && !this.boss.dead && dist(bullet.x, bullet.y, this.boss.x * w, this.boss.y * h) < this.boss.radius) {
+          bullet.life = 0;
+          if (bullet.explosive) {
+            if (bullet.exoticEffect) this.applyExoticHit(this.boss, bullet.damage, bullet);
+            bullet.exploded = true;
+            this.explodeAt(bullet.x, bullet.y, bullet.explosionRadius, bullet.explosionDamage, bullet.color);
+          } else {
+            this.damageBoss(bullet.damage, bullet.x, bullet.y, bullet);
+          }
+          return;
+        }
+        const enemy = this.enemies.find((entry) => entry.alive && dist(bullet.x, bullet.y, entry.x * w, entry.y * h) < entry.radius + 2);
+        if (enemy) {
+          bullet.life = 0;
+          if (bullet.melee) this.applyMeleeImpact(enemy, bullet);
+          else if (bullet.explosive) {
+            if (bullet.exoticEffect) this.applyExoticHit(enemy, bullet.damage, bullet);
+            bullet.exploded = true;
+            this.explodeAt(bullet.x, bullet.y, bullet.explosionRadius, bullet.explosionDamage, bullet.color);
+          } else this.damageEnemy(enemy, bullet.damage, bullet);
+          return;
+        }
+        const conduit = this.conduits.find((entry) => entry.alive && dist(bullet.x, bullet.y, entry.x * w, entry.y * h) < 22);
+        if (conduit) {
+          bullet.life = 0;
+          if (bullet.explosive) {
+            bullet.exploded = true;
+            this.explodeAt(bullet.x, bullet.y, bullet.explosionRadius, bullet.explosionDamage, bullet.color);
+          } else this.damageConduit(conduit, bullet.damage);
+          return;
+        }
+        const generator = this.generators.find((entry) => entry.alive && dist(bullet.x, bullet.y, entry.x * w, entry.y * h) < 24);
+        if (generator) {
+          bullet.life = 0;
+          if (bullet.explosive) {
+            bullet.exploded = true;
+            this.explodeAt(bullet.x, bullet.y, bullet.explosionRadius, bullet.explosionDamage, bullet.color);
+          } else {
+            this.damageGenerator(generator, bullet.damage);
+          }
+          return;
+        }
+        if (bullet.life <= 0 && bullet.explosive && !bullet.exploded) {
+          bullet.exploded = true;
+          this.explodeAt(bullet.x, bullet.y, bullet.explosionRadius, bullet.explosionDamage, bullet.color);
+        }
+      });
+      this.bullets = this.bullets.filter((bullet) => bullet.life > 0 && bullet.x > -30 && bullet.x < w + 30 && bullet.y > -30 && bullet.y < h + 30);
+
+      const point = this.playerPoint();
+      this.enemyBullets.forEach((bullet) => {
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
+        bullet.life -= dt;
+        const barrier = this.barricades.find((entry) => dist(bullet.x, bullet.y, entry.x, entry.y) < entry.radius);
+        if (barrier) {
+          bullet.life = 0;
+          this.fx.ring(bullet.x, bullet.y, '#f0c47a', 16, 0.25, 1.4);
+          return;
+        }
+        if (dist(bullet.x, bullet.y, point.x, point.y) < 18) {
+          bullet.life = 0;
+          this.damagePlayer(bullet.damage);
+        }
+      });
+      this.enemyBullets = this.enemyBullets.filter((bullet) => bullet.life > 0 && bullet.x > -30 && bullet.x < w + 30 && bullet.y > -30 && bullet.y < h + 30);
+    }
+
+    updateEnemies(dt, w, h) {
+      const point = this.playerPoint();
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive) return;
+        if (enemy === this.raidBoss) return;
+        if (enemy.training) {
+          enemy.flash = Math.max(0, enemy.flash - dt);
+          return;
+        }
+        enemy.flash = Math.max(0, enemy.flash - dt);
+        enemy.attackCd -= dt;
+        enemy.meleeCd -= dt;
+        const ex = enemy.x * w;
+        const ey = enemy.y * h;
+        const distance = dist(ex, ey, point.x, point.y);
+        const angle = Math.atan2(point.y - ey, point.x - ex);
+        const melee = enemy.range <= 120;
+        let preferred = melee ? 34 : Math.min(190, enemy.range * 0.55);
+        if (enemy.type === 'gladiator') preferred = 30;
+        if (enemy.slowTimer > 0) enemy.slowTimer = Math.max(0, enemy.slowTimer - dt);
+        if (distance > preferred) {
+          const slowScale = enemy.slowTimer > 0 ? 0.42 : 1;
+          const speed = ((melee || enemy.type === 'gladiator') && distance < 260 ? enemy.speed * 1.35 : enemy.speed) * slowScale;
+          enemy.x = clamp(enemy.x + Math.cos(angle) * speed * dt / w, 0.035, 0.965);
+          enemy.y = clamp(enemy.y + Math.sin(angle) * speed * dt / h, 0.08, 0.94);
+        }
+        if (enemy.type === 'gladiator' || melee) {
+          if (distance < enemy.radius + 38 && enemy.meleeCd <= 0) {
+            enemy.meleeCd = enemy.type === 'thrall' ? 0.72 : 1.05;
+            this.damagePlayer(enemy.damage);
+            this.fx.ring(ex, ey, '#ff9c7a', enemy.radius + 9, 0.3, 1.4);
+          }
+        } else if (distance < enemy.range && enemy.attackCd <= 0) {
+          enemy.attackCd = enemy.fireDelay * rand(0.85, 1.2);
+          const shots = enemy.type === 'centurion' || enemy.type === 'subjugator' ? 3 : 1;
+          for (let i = 0; i < shots; i += 1) {
+            const spread = (i - (shots - 1) / 2) * 0.1;
+            const bulletAngle = angle + spread;
+            const speed = enemy.type === 'incendior' ? 170 : enemy.type === 'centurion' ? 285 : 235;
+            this.enemyBullets.push({
+              x: ex + Math.cos(bulletAngle) * (enemy.radius + 5),
+              y: ey + Math.sin(bulletAngle) * (enemy.radius + 5),
+              vx: Math.cos(bulletAngle) * speed,
+              vy: Math.sin(bulletAngle) * speed,
+              life: 4,
+              damage: enemy.damage
+            });
+          }
+          this.fx.burst(ex, ey, '#ff9c64', 3, 50, 1.1);
+        }
+      });
+      this.enemies = this.enemies.filter((enemy) => enemy.alive || (enemy.training && this.currentMode === 'range'));
+    }
+
+    updateBoss(dt, w, h) {
+      const boss = this.boss;
+      if (!boss || boss.dead) return;
+      boss.flash = Math.max(0, boss.flash - dt);
+      boss.step += dt;
+      const point = this.playerPoint();
+      const bx = boss.x * w;
+      const by = boss.y * h;
+      const distance = dist(bx, by, point.x, point.y);
+      const angle = Math.atan2(point.y - by, point.x - bx);
+      if (distance > 190) {
+        const speed = 48 + boss.phase * 12;
+        boss.x = clamp(boss.x + Math.cos(angle) * speed * dt / w, 0.16, 0.84);
+        boss.y = clamp(boss.y + Math.sin(angle) * speed * dt / h, 0.17, 0.58);
+      }
+      boss.attackTimer -= dt;
+      if (boss.attackTimer > 0) return;
+      const attack = Math.floor(Math.random() * (boss.phase >= 2 ? 4 : 3));
+      if (attack === 0) {
+        const count = boss.phase >= 3 ? 13 : 9;
+        for (let i = 0; i < count; i += 1) {
+          const bulletAngle = (Math.PI * 2 * i) / count + boss.step * 0.3;
+          this.enemyBullets.push({
+            x: bx + Math.cos(bulletAngle) * 45,
+            y: by + Math.sin(bulletAngle) * 45,
+            vx: Math.cos(bulletAngle) * 185,
+            vy: Math.sin(bulletAngle) * 185,
+            life: 4.6,
+            damage: 11 + boss.phase * 2
+          });
+        }
+        this.fx.ring(bx, by, '#ff925e', 80, 0.5, 2);
+      } else if (attack === 1) {
+        const shots = boss.phase >= 3 ? 7 : 5;
+        for (let i = 0; i < shots; i += 1) {
+          const spread = (i - (shots - 1) / 2) * 0.1;
+          const bulletAngle = angle + spread;
+          this.enemyBullets.push({
+            x: bx + Math.cos(bulletAngle) * 42,
+            y: by + Math.sin(bulletAngle) * 42,
+            vx: Math.cos(bulletAngle) * 300,
+            vy: Math.sin(bulletAngle) * 300,
+            life: 4,
+            damage: 13 + boss.phase * 2
+          });
+        }
+      } else if (attack === 2) {
+        this.telegraphs.push({ x: point.x / w, y: point.y / h, radius: this.metric * 0.095, time: 0.95, max: 0.95, damage: 23 + boss.phase * 4 });
+      } else {
+        for (let i = 0; i < 2; i += 1) this.spawnEnemy(i ? 'gladiator' : 'legionary');
+        this.toast('Ghaul 召来红色军团增援');
+      }
+      boss.attackTimer = boss.phase >= 3 ? rand(1.1, 1.5) : boss.phase === 2 ? rand(1.5, 2.0) : rand(2.1, 2.7);
+    }
+
+    updateGrenades(dt, w, h) {
+      this.grenades.forEach((grenade) => {
+        grenade.time -= dt;
+        grenade.x = lerp(grenade.x, grenade.tx, 0.2);
+        grenade.y = lerp(grenade.y, grenade.ty, 0.2);
+        if (grenade.time <= 0) {
+          this.detonateGrenade(grenade);
+        }
+      });
+      this.grenades = this.grenades.filter((grenade) => grenade.time > 0);
+      this.hammers.forEach((hammer) => {
+        hammer.time -= dt;
+        hammer.spin += dt * 18;
+        hammer.trail = hammer.trail || [];
+        hammer.trail.push({ x: hammer.x, y: hammer.y });
+        if (hammer.trail.length > 9) hammer.trail.shift();
+        hammer.x = lerp(hammer.x, hammer.tx, 0.22);
+        hammer.y = lerp(hammer.y, hammer.ty, 0.22);
+        if (hammer.time <= 0) this.detonateSuper(hammer);
+      });
+      this.hammers = this.hammers.filter((hammer) => hammer.time > 0);
+      this.telegraphs.forEach((telegraph) => {
+        telegraph.time -= dt;
+        if (telegraph.time <= 0 && !telegraph.done) {
+          telegraph.done = true;
+          const px = this.playerPoint();
+          if (dist(px.x, px.y, telegraph.x * w, telegraph.y * h) < telegraph.radius) this.damagePlayer(telegraph.damage);
+          this.fx.ring(telegraph.x * w, telegraph.y * h, '#ff8f5c', telegraph.radius * 1.3, 0.6, 3);
+          this.shake = 10;
+        }
+      });
+      this.telegraphs = this.telegraphs.filter((telegraph) => telegraph.time > -0.7);
+      this.updateSubclassEffects(dt);
+    }
+
+    subclassInfo(id = this.subclassId) {
+      return DESTINY_SUBCLASSES.find((entry) => entry.id === id) || DESTINY_SUBCLASSES[0];
+    }
+
+    detonateGrenade(grenade) {
+      this.audio?.play('explosion');
+      if (grenade.transcendent) {
+        this.detonateTranscendentGrenade(grenade);
+        return;
+      }
+      const subclass = this.subclassInfo(grenade.element || grenade.subclass);
+      const grenadeScale = this.exoticArmorMultiplier('grenadeDamage');
+      const x = grenade.tx;
+      const y = grenade.ty;
+      if (subclass.id === 'arc') {
+        this.explodeAt(x, y, 82, 42 * grenadeScale, subclass.color);
+        const targets = this.enemies
+          .filter((enemy) => enemy.alive && dist(x, y, enemy.x * this.w, enemy.y * this.h) < 225)
+          .slice(0, 5);
+        targets.forEach((enemy) => {
+          this.chainBolts.push({ x1: x, y1: y, x2: enemy.x * this.w, y2: enemy.y * this.h, time: 0.38, max: 0.38, color: subclass.color });
+          this.damageEnemy(enemy, 58 * grenadeScale);
+          this.fx.ring(enemy.x * this.w, enemy.y * this.h, subclass.color, 24, 0.25, 1.2);
+        });
+        if (targets.length) this.toast(`电弧连锁 · ${targets.length + 1} 个目标`);
+      } else if (subclass.id === 'void') {
+        this.vortexes.push({ x, y, time: 3.2, max: 3.2, tick: 0, radius: 92, color: subclass.color });
+        this.fx.ring(x, y, subclass.color, 92, 0.6, 3);
+        this.toast('虚空涡流已展开');
+      } else if (subclass.id === 'stasis') {
+        this.explodeAt(x, y, 100, 48 * grenadeScale, subclass.color);
+        this.enemies.forEach((enemy) => {
+          if (!enemy.alive) return;
+          if (dist(x, y, enemy.x * this.w, enemy.y * this.h) < 165) enemy.slowTimer = 3.2;
+        });
+        this.toast('冰影冻结了周围敌人');
+      } else if (subclass.id === 'strand') {
+        this.explodeAt(x, y, 110, 58 * grenadeScale, subclass.color);
+        this.enemies.forEach((enemy) => {
+          if (!enemy.alive) return;
+          if (dist(x, y, enemy.x * this.w, enemy.y * this.h) < 190) {
+            enemy.x = lerp(enemy.x, x / this.w, 0.18);
+            enemy.y = lerp(enemy.y, y / this.h, 0.18);
+          }
+        });
+        this.toast('缚丝把敌人拉向爆点');
+      } else if (subclass.id === 'prismatic') {
+        this.explodeAt(x, y, 122, 88 * grenadeScale, subclass.color);
+        this.fx.ring(x, y, '#fff1bd', 66, 0.45, 2);
+        this.toast('棱镜能量爆发');
+      } else {
+        this.explodeAt(x, y, 104, 82 * grenadeScale, subclass.color);
+      }
+    }
+
+    detonateTranscendentGrenade(grenade) {
+      this.audio?.play('explosion');
+      const x = grenade.tx;
+      const y = grenade.ty;
+      this.explodeAt(x, y, 118, 72, '#ffe5a3');
+      this.explodeAt(x, y, 118, 72, '#b58cff');
+      this.fx.ring(x - 20, y, '#ffe9b5', 86, 0.55, 2.8);
+      this.fx.ring(x + 20, y, '#b58cff', 92, 0.62, 3);
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive) return;
+        if (dist(x, y, enemy.x * this.w, enemy.y * this.h) < 150) {
+          enemy.slowTimer = Math.max(enemy.slowTimer || 0, 2.8);
+        }
+      });
+      this.toast('超凡手雷 · 光暗融合爆炸');
+      this.shake = Math.max(this.shake, 12);
+    }
+
+    detonateSuper(hammer) {
+      const profile = hammer.profile || this.superProfile();
+      const x = hammer.tx;
+      const y = hammer.ty;
+      if (profile.kind === 'storm') {
+        this.superEffects.push({
+          kind: 'silence-squall', x, y, time: 30, max: 30,
+          radius: profile.radius || 142, damage: profile.damage || 26,
+          color: profile.color || '#79bde8', tick: 0,
+          roam: true, speed: 178, roamAngle: rand(0, Math.PI * 2),
+          phase: rand(0, Math.PI * 2), trailTimer: 0
+        });
+        this.explodeAt(x, y, (profile.radius || 142) * 0.75, (profile.damage || 26) * 2.4, profile.color);
+        this.enemies.forEach((enemy) => {
+          if (enemy.alive && dist(x, y, enemy.x * this.w, enemy.y * this.h) < (profile.radius || 142)) {
+            enemy.slowTimer = Math.max(enemy.slowTimer || 0, 5);
+          }
+        });
+        this.fx.ring(x, y, '#c9f4ff', 180, 0.8, 4);
+        return;
+      }
+      this.explodeAt(x, y, profile.radius || 100, profile.damage || 220, profile.color);
+      if (profile.kind === 'projectile' && hammer.element === 'void') {
+        this.vortexes.push({ x, y, time: 3.2, max: 3.2, tick: 0, radius: (profile.radius || 130) * 0.8, color: profile.color });
+      }
+      if (profile.kind === 'volley' && hammer.element === 'solar') {
+        this.fx.ring(x, y, '#ffd58a', (profile.radius || 82) * 1.2, 0.45, 2);
+      }
+    }
+
+    updateRoamingSuper(effect, dt, w, h) {
+      const targets = [];
+      const push = (enemy) => {
+        if (!enemy || enemy.alive === false || enemy.dead || targets.includes(enemy)) return;
+        targets.push(enemy);
+      };
+      if (this.boss && !this.boss.dead) push(this.boss);
+      this.enemies.forEach(push);
+      let target = null;
+      let best = Infinity;
+      targets.forEach((enemy) => {
+        const distance = dist(effect.x, effect.y, enemy.x * w, enemy.y * h);
+        if (distance < best) {
+          best = distance;
+          target = enemy;
+        }
+      });
+      const radius = effect.radius || 140;
+      if (target) {
+        const tx = target.x * w;
+        const ty = target.y * h;
+        const angle = Math.atan2(ty - effect.y, tx - effect.x);
+        const orbit = best < radius * 0.62 ? Math.PI * 0.52 : 0;
+        const wobble = Math.sin((effect.max - effect.time) * 2.7 + (effect.phase || 0)) * 0.34;
+        effect.roamAngle = angle + orbit + wobble;
+      } else {
+        effect.roamAngle += dt * 0.72;
+      }
+      effect.x += Math.cos(effect.roamAngle) * (effect.speed || 160) * dt;
+      effect.y += Math.sin(effect.roamAngle) * (effect.speed || 160) * dt;
+      const marginX = Math.min(radius * 0.8, w * 0.2);
+      const marginY = Math.min(radius * 0.8, h * 0.2);
+      if (effect.x < marginX || effect.x > w - marginX) {
+        effect.roamAngle = Math.PI - effect.roamAngle;
+      }
+      if (effect.y < marginY || effect.y > h - marginY) {
+        effect.roamAngle = -effect.roamAngle;
+      }
+      effect.x = clamp(effect.x, marginX, w - marginX);
+      effect.y = clamp(effect.y, marginY, h - marginY);
+      effect.trailTimer = (effect.trailTimer || 0) - dt;
+      if (effect.trailTimer <= 0) {
+        effect.trailTimer = 0.18;
+        this.fx.ring(effect.x, effect.y, effect.color, radius * 0.72, 0.35, 1.4);
+        this.fx.burst(effect.x, effect.y, effect.color, 3, 55, 1.4);
+      }
+    }
+
+    updateSuperEffects(dt, w, h) {
+      this.superBeams.forEach((beam) => { beam.time -= dt; });
+      this.superBeams = this.superBeams.filter((beam) => beam.time > 0);
+      const point = this.playerPoint();
+      this.superEffects.forEach((effect) => {
+        effect.time -= dt;
+        effect.tick -= dt;
+        if (effect.follow) {
+          effect.x = point.x;
+          effect.y = point.y;
+        }
+        if (effect.roam) this.updateRoamingSuper(effect, dt, w, h);
+        if (effect.tick > 0) return;
+        const tick = effect.kind === 'silence-squall' ? 0.62
+          : effect.kind === 'aura' ? 0.38
+            : effect.kind === 'chainbeam' ? 0.48
+              : effect.kind === 'tornado' ? 0.4
+                : effect.kind === 'freeze' ? 0.52 : 0.46;
+        effect.tick = tick;
+        const radius = effect.radius || 100;
+        const damage = effect.damage || 40;
+        if (effect.kind === 'silence-squall') {
+          this.enemies.forEach((enemy) => {
+            if (enemy.alive && dist(effect.x, effect.y, enemy.x * w, enemy.y * h) <= radius + enemy.radius) {
+              this.damageEnemy(enemy, damage);
+              if (enemy.alive) enemy.slowTimer = Math.max(enemy.slowTimer || 0, 2.2);
+            }
+          });
+          this.fx.ring(effect.x, effect.y, effect.color, radius * (0.75 + Math.sin(this.time * 3) * 0.08), 0.3, 1.5);
+        } else if (effect.kind === 'aura') {
+          this.enemies.forEach((enemy) => {
+            if (enemy.alive && dist(effect.x, effect.y, enemy.x * w, enemy.y * h) <= radius + enemy.radius) {
+              this.damageEnemy(enemy, damage);
+            }
+          });
+          this.fx.ring(effect.x, effect.y, effect.color, radius, 0.3, 1.6);
+        } else if (effect.kind === 'chainbeam') {
+          const targets = this.enemies
+            .filter((enemy) => enemy.alive && dist(effect.x, effect.y, enemy.x * w, enemy.y * h) < radius)
+            .sort((a, b) => dist(effect.x, effect.y, a.x * w, a.y * h) - dist(effect.x, effect.y, b.x * w, b.y * h))
+            .slice(0, 4);
+          targets.forEach((enemy) => {
+            this.chainBolts.push({
+              x1: effect.x, y1: effect.y, x2: enemy.x * w, y2: enemy.y * h,
+              time: 0.34, max: 0.34, color: effect.color
+            });
+            this.damageEnemy(enemy, damage);
+          });
+        } else if (effect.kind === 'freeze') {
+          this.enemies.forEach((enemy) => {
+            if (enemy.alive && dist(effect.x, effect.y, enemy.x * w, enemy.y * h) <= radius + enemy.radius) {
+              this.damageEnemy(enemy, damage);
+              if (enemy.alive) enemy.slowTimer = Math.max(enemy.slowTimer || 0, 3.2);
+            }
+          });
+          this.fx.ring(effect.x, effect.y, effect.color, radius, 0.35, 1.8);
+        } else if (effect.kind === 'tornado') {
+          this.enemies.forEach((enemy) => {
+            if (!enemy.alive) return;
+            const distance = dist(effect.x, effect.y, enemy.x * w, enemy.y * h);
+            if (distance < radius * 1.35) {
+              this.damageEnemy(enemy, damage);
+              if (enemy.alive && distance > 8) {
+                enemy.x = lerp(enemy.x, effect.x / w, 0.08);
+                enemy.y = lerp(enemy.y, effect.y / h, 0.08);
+              }
+            }
+          });
+          this.fx.ring(effect.x, effect.y, effect.color, radius, 0.35, 1.6);
+        } else if (effect.kind === 'icequake' || effect.kind === 'wave') {
+          this.enemies.forEach((enemy) => {
+            if (enemy.alive && dist(effect.x, effect.y, enemy.x * w, enemy.y * h) <= radius + enemy.radius) {
+              this.damageEnemy(enemy, damage);
+              if (enemy.alive && effect.kind === 'icequake') enemy.slowTimer = Math.max(enemy.slowTimer || 0, 2.6);
+            }
+          });
+          this.fx.ring(effect.x, effect.y, effect.color, radius, 0.35, 2);
+        }
+        if (this.boss && !this.boss.dead) {
+          const distance = dist(effect.x, effect.y, this.boss.x * w, this.boss.y * h);
+          if (distance < radius + this.boss.radius) this.damageBoss(damage * 0.55);
+        }
+      });
+      this.superEffects = this.superEffects.filter((effect) => effect.time > 0);
+    }
+
+    updateSubclassEffects(dt) {
+      this.chainBolts.forEach((bolt) => { bolt.time -= dt; });
+      this.chainBolts = this.chainBolts.filter((bolt) => bolt.time > 0);
+      this.vortexes.forEach((vortex) => {
+        vortex.time -= dt;
+        vortex.tick -= dt;
+        if (vortex.tick <= 0) {
+          vortex.tick = 0.55;
+          this.enemies.forEach((enemy) => {
+            if (enemy.alive && dist(vortex.x, vortex.y, enemy.x * this.w, enemy.y * this.h) < vortex.radius) {
+              this.damageEnemy(enemy, 26);
+            }
+          });
+          this.fx.ring(vortex.x, vortex.y, vortex.color, vortex.radius * 0.65, 0.28, 1.2);
+        }
+      });
+      this.vortexes = this.vortexes.filter((vortex) => vortex.time > 0);
+    }
+
+
+    updateMission(dt, w, h) {
+      const point = this.playerPoint();
+      if (this.mission.type === 'waves') {
+        if (this.phase === 'waves' && !this.aliveEnemies().length) {
+          if (this.wave < 3) {
+            this.spawnTimer -= dt;
+            if (this.spawnTimer <= 0) {
+              this.spawnWave();
+              this.spawnTimer = 1.8;
+            }
+          } else {
+            this.phase = 'extract';
+            this.extraction = { x: 0.84, y: 0.35 };
+            this.toast('撤离点已开启 · 前往塔城广场北侧');
+          }
+        }
+        if (this.phase === 'extract' && this.extraction) {
+          const target = { x: this.extraction.x * w, y: this.extraction.y * h };
+          if (dist(point.x, point.y, target.x, target.y) < 72) this.completeMission();
+        }
+      } else if (this.mission.type === 'shard') {
+        this.spawnTimer -= dt;
+        if (this.spawnTimer <= 0 && this.aliveEnemies().length < 8 && this.shard.charge < 100) {
+          this.spawnEnemy(this.randomEnemyType());
+          this.spawnTimer = rand(1.9, 3.1);
+        }
+        if (this.shard) {
+          const shardPoint = { x: this.shard.x * w, y: this.shard.y * h };
+          const near = dist(point.x, point.y, shardPoint.x, shardPoint.y) < 165;
+          this.shard.charge = clamp(this.shard.charge + dt * (near ? 11 : 2.2), 0, 100);
+          if (this.shard.charge >= 100) this.completeMission();
+        }
+      } else if (this.mission.type === 'conduits') {
+        this.spawnTimer -= dt;
+        if (this.spawnTimer <= 0 && this.aliveEnemies().length < 7) {
+          this.spawnEnemy(this.randomEnemyType());
+          this.spawnTimer = rand(2.6, 3.8);
+        }
+        if (this.conduits.every((conduit) => !conduit.alive)) this.completeMission();
+      } else if (this.mission.type === 'generators') {
+        this.spawnTimer -= dt;
+        if (this.spawnTimer <= 0 && this.aliveEnemies().length < 8 && !this.eliteSpawned) {
+          this.spawnEnemy(this.randomEnemyType());
+          this.spawnTimer = rand(2.4, 3.5);
+        }
+        const destroyed = this.generators.every((generator) => !generator.alive);
+        if (destroyed && !this.eliteSpawned) {
+          this.eliteSpawned = true;
+          this.elite = this.spawnEnemy('centurion', { x: 0.5, y: 0.17 });
+          this.spawnTimer = 4;
+          this.toast('护盾发生器的爆炸引来了帝国百夫长');
+        }
+        if (this.elite && !this.elite.alive) this.completeMission();
+      } else if (this.mission.type === 'boss') {
+        this.updateBoss(dt, w, h);
+      } else if (this.mission.type === 'crucible') {
+        this.updateCrucible(dt, w, h);
+      } else if (this.mission.type === 'gambit') {
+        this.updateGambit(dt, w, h);
+      } else if (this.mission.type === 'reckoning') {
+        this.updateWaveActivity(dt, w, h, 'reckoning');
+      } else if (this.mission.type === 'dlc') {
+        this.updateWaveActivity(dt, w, h, 'dlc');
+      } else if (this.mission.type === 'raid') {
+        this.updateRaid(dt, w, h);
+      } else if (this.mission.type === 'exoticQuest') {
+        this.updateWaveActivity(dt, w, h, 'exoticQuest');
+      } else if (this.mission.type === 'strike') {
+        this.updateWaveActivity(dt, w, h, 'strike');
+      } else if (this.mission.type === 'range') {
+        this.updateRange(dt, w, h);
+      }
+    }
+
+    spawnGuardian(type = 'legionary') {
+      const enemy = this.spawnEnemy(type);
+      enemy.skin = 'guardian';
+      enemy.color = '#76b9ff';
+      return enemy;
+    }
+
+    updateCrucible(dt, w, h) {
+      if (!this.crucible || this.transition) return;
+      this.crucible.timeLeft = Math.max(0, this.crucible.timeLeft - dt);
+      this.crucible.spawnTimer -= dt;
+      if (this.crucible.spawnTimer <= 0 && this.aliveEnemies().length < 6) {
+        this.spawnGuardian(pick(['legionary', 'phalanx', 'incendior']));
+        this.crucible.spawnTimer = rand(0.8, 1.6);
+      }
+      if (this.crucible.playerScore >= 20) {
+        this.finishActivity(true, '熔炉胜利', '你率先取得了 20 次击破。熔炉记分板为你亮起。');
+        return;
+      }
+      if (this.crucible.enemyScore >= 20) {
+        this.finishActivity(false, '熔炉比赛结束', '对手率先取得了 20 次击破。');
+        return;
+      }
+      if (this.crucible.timeLeft <= 0) {
+        const win = this.crucible.playerScore >= this.crucible.enemyScore;
+        this.finishActivity(win, win ? '熔炉胜利' : '熔炉比赛结束', `时间到 · ${this.crucible.playerScore} : ${this.crucible.enemyScore}`);
+      }
+    }
+
+    spawnGambitEnemy() {
+      const enemy = this.spawnEnemy(pick(['legionary', 'phalanx', 'incendior', 'gladiator']));
+      enemy.skin = 'gambit';
+      enemy.color = '#79d9a3';
+      return enemy;
+    }
+
+    spawnPrimeval() {
+      if (!this.gambit || this.gambit.primeval) return;
+      const primeval = this.spawnEnemy('centurion', { x: 0.5, y: 0.19 });
+      primeval.skin = 'primeval';
+      primeval.hp = 720;
+      primeval.maxHp = 720;
+      primeval.radius = 31;
+      primeval.speed = 52;
+      primeval.damage = 20;
+      primeval.name = 'Primeval';
+      this.gambit.primeval = primeval;
+      this.toast('Primeval 已被召唤 · 击败它');
+      this.fx.ring(primeval.x * this.w, primeval.y * this.h, '#e8cb76', 110, 0.8, 3);
+    }
+
+    bankGambitMotes() {
+      if (!this.gambit || this.transition) return;
+      const point = this.playerPoint();
+      const bankPoint = { x: this.gambit.bank.x * this.w, y: this.gambit.bank.y * this.h };
+      if (dist(point.x, point.y, bankPoint.x, bankPoint.y) > 92) {
+        this.toast('靠近中央银行才能存入荧光');
+        return;
+      }
+      if (this.gambit.motes <= 0) {
+        this.toast('你还没有携带荧光');
+        return;
+      }
+      const amount = this.gambit.motes;
+      this.gambit.motes = 0;
+      this.gambit.banked = Math.min(this.gambit.target, this.gambit.banked + amount);
+      this.fx.ring(bankPoint.x, bankPoint.y, '#7ce9ac', 58, 0.5, 2);
+      this.toast(`存入 ${amount} 个荧光 · ${this.gambit.banked} / ${this.gambit.target}`);
+      if (this.gambit.banked >= this.gambit.target && !this.gambit.primeval) this.spawnPrimeval();
+    }
+
+    updateGambit(dt, w, h) {
+      if (!this.gambit || this.transition) return;
+      this.spawnTimer -= dt;
+      if (this.spawnTimer <= 0 && this.aliveEnemies().length < (this.gambit.primeval ? 4 : 6)) {
+        this.spawnGambitEnemy();
+        this.spawnTimer = rand(1.8, 3.2);
+      }
+      if (this.gambit.primeval && !this.gambit.primeval.alive) {
+        this.gambit.primeval = null;
+        this.finishActivity(true, '智谋胜利', 'Primeval 被击败，银行里的荧光终于安静了。');
+      }
+    }
+
+    setupRange() {
+      this.rangeKills = 0;
+      this.rangeDamage = 0;
+      this.rangeHits = 0;
+      this.rangeTimer = 0;
+      this.enemies = [];
+      const types = Object.keys(DESTINY_ENEMY_LABELS);
+      types.forEach((type, index) => {
+        const col = index % 6;
+        const row = Math.floor(index / 6);
+        const enemy = this.spawnEnemy(type, {
+          x: 0.1 + col * 0.16,
+          y: 0.22 + row * 0.125
+        });
+        enemy.training = true;
+        enemy.name = DESTINY_ENEMY_LABELS[type];
+        enemy.faction = DESTINY_ENEMY_FACTION[type] || enemy.faction;
+        enemy.speed = 0;
+        enemy.damage = 0;
+        enemy.range = 0;
+        enemy.attackCd = Infinity;
+        enemy.meleeCd = Infinity;
+        enemy.hp = Math.max(enemy.hp, 260);
+        enemy.maxHp = enemy.hp;
+        enemy.respawn = 0;
+      });
+      this.toast('靶场已启动 · 所有敌人类型已生成 · 弹药与技能无限');
+    }
+
+    updateRange(dt, w, h) {
+      if (!this.player) return;
+      const player = this.player;
+      this.rangeTimer += dt;
+      player.superCharge = 100;
+      player.grenadeCd = 0;
+      player.meleeCd = 0;
+      player.classCd = 0;
+      player.dashCd = 0;
+      player.reload = 0;
+      player.ammo = player.mag;
+      player.reserve = player.reserveMax;
+      player.hp = player.maxHp;
+      player.shield = player.maxShield;
+      player.invuln = Math.max(player.invuln, 0.4);
+      this.enemies.forEach((enemy) => {
+        if (!enemy.training || enemy.alive) return;
+        enemy.respawn -= dt;
+        if (enemy.respawn <= 0) {
+          enemy.alive = true;
+          enemy.hp = enemy.maxHp;
+          enemy.flash = 0;
+          enemy.attackCd = Infinity;
+          enemy.meleeCd = Infinity;
+          this.fx.ring(enemy.x * w, enemy.y * h, enemy.color, 32, 0.4, 2);
+        }
+      });
+    }
+
+    setupFieldObjective() {
+      if (!this.mission) return;
+      let seed = 7;
+      const seedSource = this.dlcConfig?.id || this.strikeConfig?.id || this.activityId || this.mission.id || 'mission';
+      for (let i = 0; i < seedSource.length; i += 1) seed = (seed * 31 + seedSource.charCodeAt(i)) % 9973;
+      const types = ['capture', 'scan', 'sequence', 'relay', 'defend', 'hunt'];
+      for (let i = types.length - 1; i > 0; i -= 1) {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        const swap = seed % (i + 1);
+        [types[i], types[swap]] = [types[swap], types[i]];
+      }
+      const offset = seed % types.length;
+      const type = types[(offset + this.missionIndex) % types.length];
+      const accent = this.mission.accent || this.activeSubclass().color || '#e9bd72';
+      const info = {
+        capture: { label: '占领战场节点', hint: '站上所有节点，直到它们完全被光能控制' },
+        scan: { label: '扫描异常信标', hint: '靠近信标停留，完成数据扫描' },
+        defend: { label: '守住光能信标', hint: '待在信标范围内，稳定它的光能' },
+        sequence: { label: '按顺序校准信标', hint: '按照编号顺序依次站入，已激活的节点不会重置' },
+        relay: { label: '搬运光能核心', hint: '拾取核心并送回中央光能装置' },
+        hunt: { label: '猎杀敌方指挥官', hint: '找到并击败被标记的敌方指挥官' }
+      }[type];
+      const positions = type === 'defend'
+        ? [[0.5, 0.4]]
+        : type === 'hunt'
+          ? []
+          : type === 'relay'
+            ? [[0.2, 0.4], [0.8, 0.4], [0.5, 0.26]]
+            : type === 'sequence'
+              ? [[0.25, 0.34], [0.5, 0.27], [0.75, 0.34]]
+              : type === 'scan'
+                ? [[0.25, 0.31], [0.5, 0.24], [0.75, 0.31]]
+                : [[0.27, 0.36], [0.5, 0.27], [0.73, 0.36]];
+      this.fieldObjective = {
+        type,
+        label: info.label,
+        hint: info.hint,
+        accent,
+        done: false,
+        progress: 0,
+        target: type === 'defend' || type === 'hunt' ? 1 : positions.length,
+        carried: 0,
+        deposited: 0,
+        sequenceStep: 0,
+        sequenceOrder: positions.map((_, index) => index).sort((a, b) => ((seed >> (a * 3)) % 7) - ((seed >> (b * 3)) % 7)),
+        bank: { x: 0.5, y: 0.62 },
+        objects: positions.map(([x, y], index) => ({
+          x, y, radius: type === 'defend' ? 68 : 44,
+          progress: 0, active: false, collected: false, phase: index * 1.7
+        }))
+      };
+      if (type === 'hunt') {
+        const huntType = this.randomEnemyType();
+        const target = this.spawnEnemy(huntType, { x: 0.5, y: 0.4 });
+        target.name = '光能干扰指挥官';
+        target.hp = Math.round(target.hp * 2.4);
+        target.maxHp = target.hp;
+        target.elite = true;
+        target.speed *= 0.75;
+        target.fieldHunt = true;
+        this.fieldObjective.huntTarget = target;
+        this.toast(`猎杀目标已出现 · ${target.name}`);
+      }
+    }
+
+    fieldObjectiveProgress() {
+      const field = this.fieldObjective;
+      if (!field) return 0;
+      if (field.type === 'defend') return clamp(field.progress / 100, 0, 1);
+      if (field.type === 'sequence') return clamp((field.sequenceStep || 0) / Math.max(1, field.objects.length), 0, 1);
+      if (field.type === 'relay') return clamp((field.deposited || 0) / Math.max(1, field.target), 0, 1);
+      if (field.type === 'hunt') return field.huntTarget && !field.huntTarget.alive ? 1 : 0;
+      const active = field.objects.filter((object) => object.active).length;
+      return clamp(active / Math.max(1, field.objects.length), 0, 1);
+    }
+
+    fieldObjectiveText() {
+      const field = this.fieldObjective;
+      if (!field) return '';
+      if (field.type === 'defend') return `${Math.floor(field.progress)}%`;
+      if (field.type === 'sequence') return `${field.sequenceStep || 0} / ${field.objects.length}`;
+      if (field.type === 'relay') return `${field.deposited || 0} / ${field.target}`;
+      if (field.type === 'hunt') return field.huntTarget && !field.huntTarget.alive ? '目标已击败' : '猎杀中';
+      return `${field.objects.filter((object) => object.active).length} / ${field.objects.length}`;
+    }
+
+    finishFieldObjective() {
+      const field = this.fieldObjective;
+      if (!field || field.done) return;
+      field.done = true;
+      const point = this.playerPoint();
+      this.audio?.play('objective');
+      this.fx.ring(point.x, point.y, field.accent, 110, 0.8, 3);
+      this.fx.burst(point.x, point.y, field.accent, 26, 190, 2.6);
+      this.toast(`${field.label}完成 · 首领护盾解除`, 'success');
+    }
+
+    updateFieldObjective(dt, w, h) {
+      const field = this.fieldObjective;
+      if (!field || field.done || !this.player) return;
+      const point = this.playerPoint();
+      if (field.type === 'defend') {
+        const object = field.objects[0];
+        const inside = dist(point.x, point.y, object.x * w, object.y * h) < object.radius;
+        field.progress = clamp(field.progress + dt * (inside ? 7.2 : -2.4), 0, 100);
+        object.progress = field.progress / 100;
+        object.active = inside;
+        if (field.progress >= 100) this.finishFieldObjective();
+        return;
+      }
+      if (field.type === 'hunt') {
+        if (!field.huntTarget || !field.huntTarget.alive) {
+          field.progress = 1;
+          this.finishFieldObjective();
+        }
+        return;
+      }
+      if (field.type === 'relay') {
+        field.objects.forEach((object) => {
+          if (object.collected) return;
+          if (dist(point.x, point.y, object.x * w, object.y * h) < 30) {
+            object.collected = true;
+            field.carried += 1;
+            this.toast(`拾取光能核心 · 携带 ${field.carried}`);
+            this.fx.ring(object.x * w, object.y * h, field.accent, 28, 0.4, 2);
+          }
+        });
+        if (field.carried > 0 && dist(point.x, point.y, field.bank.x * w, field.bank.y * h) < 62) {
+          field.deposited += field.carried;
+          field.carried = 0;
+          this.toast(`存入光能核心 · ${field.deposited} / ${field.target}`);
+          this.fx.ring(field.bank.x * w, field.bank.y * h, field.accent, 50, 0.5, 2);
+          if (field.deposited >= field.target) this.finishFieldObjective();
+        }
+        return;
+      }
+      if (field.type === 'sequence') {
+        const order = field.sequenceOrder || field.objects.map((_, index) => index);
+        if (field.sequenceStep >= order.length) {
+          this.finishFieldObjective();
+          return;
+        }
+        const index = order[field.sequenceStep];
+        const object = field.objects[index];
+        if (!object) {
+          this.finishFieldObjective();
+          return;
+        }
+        const inside = dist(point.x, point.y, object.x * w, object.y * h) < object.radius;
+        if (inside) object.progress = clamp(object.progress + dt / 1.55, 0, 1);
+        else object.progress = Math.max(0, object.progress - dt * 0.22);
+        if (object.progress >= 1) {
+          object.active = true;
+          field.sequenceStep += 1;
+          this.fx.ring(object.x * w, object.y * h, field.accent, object.radius * 1.35, 0.5, 2.2);
+          this.toast(`信标校准 · ${field.sequenceStep} / ${order.length}`);
+          if (field.sequenceStep >= order.length) this.finishFieldObjective();
+        }
+        return;
+      }
+      field.objects.forEach((object) => {
+        if (object.active) {
+          object.progress = 1;
+          return;
+        }
+        const inside = dist(point.x, point.y, object.x * w, object.y * h) < object.radius;
+        if (inside) object.progress = clamp(object.progress + dt / (field.type === 'scan' ? 2.25 : 1.65), 0, 1);
+        else object.progress = Math.max(0, object.progress - dt * 0.12);
+        object.active = object.progress >= 1;
+      });
+      if (field.objects.every((object) => object.active)) this.finishFieldObjective();
+    }
+
+    drawFieldObjective(ctx, w, h) {
+      const field = this.fieldObjective;
+      if (!field || field.done) return;
+      const color = field.accent;
+      const point = this.playerPoint();
+      ctx.save();
+      if (field.type === 'defend') {
+        const object = field.objects[0];
+        const x = object.x * w;
+        const y = object.y * h;
+        const near = dist(point.x, point.y, x, y) < object.radius;
+        glowCircle(ctx, x, y, object.radius * 1.35, `${color}22`, 0.8);
+        ctx.strokeStyle = near ? `${color}dd` : `${color}88`;
+        ctx.lineWidth = near ? 2.2 : 1.3;
+        ctx.beginPath();
+        ctx.arc(x, y, object.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = `${color}cc`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, y, object.radius - 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (field.progress / 100));
+        ctx.stroke();
+        ctx.fillStyle = `${color}44`;
+        ctx.beginPath();
+        ctx.arc(x, y, 10 + Math.sin(this.time * 3) * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#eef7ef';
+        ctx.font = '600 8px "PingFang SC", sans-serif';
+        ctx.fillText(`${field.label} ${Math.floor(field.progress)}%`, x, y - object.radius - 12);
+        ctx.fillStyle = 'rgba(212, 229, 219, .62)';
+        ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('HOLD THE LIGHT', x, y + object.radius + 16);
+      } else if (field.type === 'hunt') {
+        const target = field.huntTarget;
+        if (target && target.alive) {
+          const x = target.x * w;
+          const y = target.y * h;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(this.time * 0.45);
+          ctx.strokeStyle = `${color}cc`;
+          ctx.lineWidth = 1.8;
+          ctx.setLineDash([7, 9]);
+          ctx.beginPath();
+          ctx.arc(0, 0, target.radius + 28, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+          ctx.textAlign = 'center';
+          ctx.fillStyle = color;
+          ctx.font = '600 7px "PingFang SC", sans-serif';
+          ctx.fillText(field.label, x, y - target.radius - 34);
+        }
+      } else if (field.type === 'relay') {
+        field.objects.forEach((object) => {
+          if (object.collected) return;
+          const x = object.x * w;
+          const y = object.y * h;
+          glowCircle(ctx, x, y, 30, `${color}44`, 0.8);
+          fillRoundRect(ctx, x - 5, y - 13, 10, 26, 4, color);
+          ctx.fillStyle = 'rgba(7, 16, 20, .88)';
+          ctx.fillRect(x - 2, y - 9, 4, 18);
+        });
+        const bx = field.bank.x * w;
+        const by = field.bank.y * h;
+        glowCircle(ctx, bx, by, 58, `${color}22`, 0.7);
+        ctx.strokeStyle = `${color}aa`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(bx, by, 46, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#eff7ed';
+        ctx.font = '600 6px "PingFang SC", sans-serif';
+        ctx.fillText(`${field.deposited} / ${field.target}`, bx, by + 3);
+        if (field.carried > 0) {
+          ctx.strokeStyle = `${color}77`;
+          ctx.beginPath();
+          ctx.moveTo(point.x, point.y);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
+        }
+      } else {
+        field.objects.forEach((object, index) => {
+          const x = object.x * w;
+          const y = object.y * h;
+          const active = object.active;
+          glowCircle(ctx, x, y, object.radius * 1.3, `${color}${active ? '33' : '14'}`, 0.7);
+          ctx.strokeStyle = active ? `${color}dd` : `${color}66`;
+          ctx.lineWidth = active ? 2 : 1.2;
+          ctx.beginPath();
+          ctx.arc(x, y, object.radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = `${color}bb`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(x, y, object.radius - 5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * object.progress);
+          ctx.stroke();
+          ctx.strokeStyle = `${color}66`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(x, y, object.radius * 0.58, this.time * 0.6 + index, this.time * 0.6 + index + Math.PI * 1.3);
+          ctx.stroke();
+          ctx.fillStyle = active ? color : `${color}55`;
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.textAlign = 'center';
+          ctx.fillStyle = active ? '#effff4' : 'rgba(221, 236, 225, .7)';
+          ctx.font = '600 6px "PingFang SC", sans-serif';
+          const orderIndex = field.sequenceOrder?.indexOf(index) ?? -1;
+          const nodeLabel = field.type === 'sequence' ? `顺序 ${orderIndex + 1}`
+            : field.type === 'scan' ? `信标 ${index + 1}` : `节点 ${index + 1}`;
+          ctx.fillText(active ? '✓' : nodeLabel, x, y + object.radius + 15);
+        });
+      }
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `${color}cc`;
+      ctx.font = '600 6.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(field.hint, w * 0.5, h * 0.18);
+      ctx.restore();
+    }
+
+    setupRaid() {
+      const raid = this.raidConfig || DESTINY_RAIDS[this.directorSelected] || DESTINY_RAIDS.redwar;
+      this.raidConfig = raid;
+      this.encounter = null;
+      const encounterList = (DESTINY_RAID_ENCOUNTERS[raid.id] || [
+        { name: '开门关', mechanic: 'plates', bossName: null, bossKind: raid.bossKind },
+        { name: '突袭核心', mechanic: 'orbs', bossName: raid.bossName, bossKind: raid.bossKind }
+      ]);
+      this.raidState = {
+        phase: 'mechanic', mechanicIndex: 0, encounterIndex: 0,
+        encounters: encounterList, totalEncounters: encounterList.length,
+        config: encounterList[0], activeMechanic: encounterList[0].mechanic,
+        damageTimer: 0, cycles: 0, mechanicType: '', mechanicLabel: '', mechanicHint: '',
+        objects: [], progress: 0, target: 3, carried: 0, deposited: 0,
+        bank: { x: 0.5, y: 0.6 }, bossName: encounterList[0].bossName || ''
+      };
+      this.raidBoss = null;
+      this.dlcBoss = null;
+      this.enemies = [];
+      this.enemyBullets = [];
+      this.bullets = [];
+      this.setupRaidEncounter();
+      this.toast(`${raid.name} · 突袭开始 · 共 ${encounterList.length} 个关卡`);
+    }
+
+    setupRaidEncounter() {
+      const state = this.raidState;
+      if (!state || !state.encounters) return;
+      const config = state.encounters[state.encounterIndex];
+      if (!config) return;
+      state.config = config;
+      state.activeMechanic = config.mechanic;
+      state.phase = 'mechanic';
+      state.damageTimer = 0;
+      state.cycles = 0;
+      state.progress = 0;
+      state.carried = 0;
+      state.deposited = 0;
+      state.bossName = config.bossName || '';
+      this.encounter = null;
+      this.raidBoss = null;
+      this.dlcBoss = null;
+      this.enemies = [];
+      this.enemyBullets = [];
+      this.bullets = [];
+      this.spawnTimer = rand(1.2, 2);
+      const kind = this.mission.bossKind || this.mission.faction || 'cabal';
+      if (config.bossName) {
+        const bossType = kind === 'hive' ? 'knight'
+          : kind === 'fallen' ? 'captain'
+            : kind === 'scorn' ? 'chieftain'
+              : kind === 'vex' ? 'minotaur'
+                : kind === 'dread' ? 'subjugator'
+                  : kind === 'taken' ? 'taken-knight' : 'centurion';
+        const boss = this.spawnEnemy(bossType, { x: 0.5, y: 0.30 });
+        const bossHp = 3000 + state.encounterIndex * 950 + (this.missionIndex || 0) * 180
+          + (state.encounterIndex === state.encounters.length - 1 ? 1400 : 0);
+        Object.assign(boss, {
+          skin: 'raid-boss', name: config.bossName, bossKind: config.bossKind || kind,
+          faction: this.mission.faction, hp: bossHp, maxHp: bossHp, radius: 48,
+          speed: this.raidBossMoveSpeed(kind), elite: false, raidBoss: true,
+          color: this.raidConfig.accent || this.mission.accent || '#d9b06c',
+          barColor: this.raidConfig.accent || '#f0d08a', attackTimer: 1.9, step: 0, flash: 0,
+          windup: 0, pendingAttack: null, wander: rand(0, Math.PI * 2)
+        });
+        this.raidBoss = boss;
+        this.dlcBoss = boss;
+        this.bossAssetFor(boss);
+      }
+      this.setupRaidMechanic();
+      const addCount = config.bossName ? 3 : 2;
+      for (let i = 0; i < addCount; i += 1) {
+        this.spawnEnemy(this.randomEnemyType(), {
+          x: i === 0 ? 0.18 : i === 1 ? 0.82 : 0.5,
+          y: 0.42 + i * 0.11
+        });
+      }
+      const stageLabel = config.bossName ? `首领 ${config.bossName}` : '开门关 · 无首领';
+      this.raidStageBanner = {
+        time: 4.2, max: 4.2, index: state.encounterIndex + 1,
+        total: state.encounters.length, name: config.name,
+        bossName: config.bossName || '', mechanic: state.mechanicLabel,
+        accent: this.raidConfig.accent || '#f0d08a'
+      };
+      this.toast(`${this.raidConfig.name} · 第 ${state.encounterIndex + 1} / ${state.encounters.length} 关 · ${config.name} · ${stageLabel}`);
+      this.audio?.play('raidStage');
+    }
+
+    raidScriptFor(raidId, index) {
+      return DESTINY_RAID_SCRIPTS[raidId]?.[index] || null;
+    }
+
+    raidBossMoveSpeed(kind) {
+      return {
+        fallen: 54, vex: 24, cabal: 38, hive: 34, taken: 48,
+        dread: 32, scorn: 50, barant: 40, shadow: 38
+      }[kind] || 34;
+    }
+
+    executeRaidBossAttack(boss, w, h, state) {
+      if (!boss || !boss.alive) return;
+      const bx = boss.x * w;
+      const by = boss.y * h;
+      const point = this.playerPoint();
+      const kind = boss.bossKind || 'cabal';
+      const pattern = boss.pendingAttack || (kind === 'vex' ? 'radial' : 'fan');
+      const damage = 12 + state.cycles * 2 + state.encounterIndex * 2;
+      boss.pendingAttack = null;
+      boss.windup = 0;
+      this.audio?.play('bossShot');
+      if (pattern === 'radial') {
+        const shots = kind === 'vex' ? 16 : 12;
+        for (let i = 0; i < shots; i += 1) {
+          const angle = (i / shots) * Math.PI * 2 + boss.step * 0.3;
+          this.enemyBullets.push({
+            x: bx + Math.cos(angle) * 28, y: by + Math.sin(angle) * 28,
+            vx: Math.cos(angle) * 230, vy: Math.sin(angle) * 230,
+            life: 4.6, damage
+          });
+        }
+        this.fx.ring(bx, by, boss.color, 92, 0.5, 2.4);
+      } else if (pattern === 'slam') {
+        this.telegraphs.push({
+          x: point.x / w, y: point.y / h, radius: this.metric * 0.15,
+          time: 0.9, max: 0.9, damage: damage + 14
+        });
+        this.fx.ring(bx, by, boss.color, 120, 0.65, 3);
+        this.shake = Math.max(this.shake, 5);
+      } else if (pattern === 'summon') {
+        for (let i = 0; i < 2; i += 1) {
+          this.spawnEnemy(this.randomEnemyType(), { x: pick([0.22, 0.78]), y: rand(0.38, 0.58) });
+        }
+        this.toast(`${boss.name || '首领'} 召来增援`);
+        this.fx.ring(bx, by, boss.color, 80, 0.5, 1.8);
+      } else if (pattern === 'charge') {
+        const angle = Math.atan2(point.y - by, point.x - bx);
+        const distance = Math.min(this.metric * 0.45, dist(bx, by, point.x, point.y));
+        boss.x = clamp(boss.x + Math.cos(angle) * distance / w, 0.2, 0.8);
+        boss.y = clamp(boss.y + Math.sin(angle) * distance / h, 0.24, 0.55);
+        this.fx.ring(boss.x * w, boss.y * h, boss.color, 88, 0.54, 3);
+        this.telegraphs.push({
+          x: boss.x, y: boss.y, radius: this.metric * 0.11,
+          time: 0.55, max: 0.55, damage: damage + 6
+        });
+        this.shake = Math.max(this.shake, 4);
+      } else {
+        const shots = kind === 'cabal' ? 7 : 5;
+        const baseAngle = Math.atan2(point.y - by, point.x - bx);
+        for (let i = 0; i < shots; i += 1) {
+          const spread = (i - (shots - 1) / 2) * 0.11;
+          this.enemyBullets.push({
+            x: bx + Math.cos(baseAngle + spread) * 34,
+            y: by + Math.sin(baseAngle + spread) * 34,
+            vx: Math.cos(baseAngle + spread) * 330,
+            vy: Math.sin(baseAngle + spread) * 330,
+            life: 4.2, damage
+          });
+        }
+        this.fx.ring(bx, by, boss.color, 46, 0.36, 2);
+      }
+      boss.attackTimer = rand(state.phase === 'damage' ? 1.15 : 1.65, state.phase === 'damage' ? 1.75 : 2.35);
+    }
+
+    raidBossPatterns(boss) {
+      const kind = boss.bossKind || 'cabal';
+      if (kind === 'fallen') return ['fan', 'charge', 'summon'];
+      if (kind === 'vex') return ['radial', 'slam', 'summon'];
+      if (kind === 'hive') return ['slam', 'fan', 'summon'];
+      if (kind === 'taken') return ['fan', 'slam', 'summon'];
+      if (kind === 'dread') return ['radial', 'slam', 'fan'];
+      if (kind === 'scorn') return ['fan', 'charge', 'summon'];
+      return ['fan', 'radial', 'slam', 'summon'];
+    }
+
+    setupRaidMechanic(forcedType = null) {
+      const state = this.raidState;
+      if (!state) return;
+      const raid = this.raidConfig || { id: this.directorSelected || 'scourge', accent: '#d9b06c' };
+      const script = this.raidScriptFor(raid.id, state.encounterIndex);
+      const fallback = DESTINY_RAID_MECHANICS[raid.id] || ['plates', 'orbs'];
+      const type = forcedType || script?.kind || state.activeMechanic || fallback[state.mechanicIndex % fallback.length];
+      const info = DESTINY_MECHANIC_INFO[type] || DESTINY_MECHANIC_INFO.plates;
+      const accent = script?.color || raid.accent || '#d9b06c';
+      state.script = script;
+      state.phase = 'mechanic';
+      state.damageTimer = 0;
+      state.mechanicType = type;
+      state.activeMechanic = type;
+      state.mechanicLabel = script?.label || info.label;
+      state.mechanicHint = script?.hint || info.hint;
+      state.progress = 0;
+      state.carried = 0;
+      state.deposited = 0;
+      state.objects = [];
+      state.target = 0;
+      state.sequenceStep = 0;
+      state.sequenceOrder = [];
+      state.huntTarget = null;
+      state.bank = script?.bank || { x: 0.5, y: 0.62 };
+      this.encounterWarned = false;
+      this.hazards = [];
+      const layout = Array.isArray(script?.layout) ? script.layout : null;
+      const standPositions = layout || [[0.22, 0.35], [0.5, 0.3], [0.78, 0.35]];
+      const shootPositions = layout || [[0.24, 0.32], [0.5, 0.2], [0.76, 0.32]];
+      if (type === 'weakpoints') {
+        const offsets = script?.offsets || [[-0.17, 0.03], [0.17, 0.03], [0, 0.17]];
+        const boss = this.raidBoss;
+        state.objects = offsets.map(([ox, oy], index) => ({
+          kind: 'shoot', bossOffset: { x: ox, y: oy },
+          x: (boss?.x ?? 0.5) + ox, y: (boss?.y ?? 0.3) + oy,
+          hp: 150, maxHp: 150, alive: true, flash: 0, radius: 20,
+          color: index === 2 ? '#f0d38a' : accent
+        }));
+        state.target = state.objects.length;
+      } else if (type === 'hunt') {
+        const huntType = script?.huntType || (raid.id === 'deep-stone' ? 'captain' : 'minotaur');
+        const hunt = this.spawnEnemy(huntType, { x: 0.5, y: 0.42 });
+        Object.assign(hunt, {
+          hp: 850 + state.encounterIndex * 260,
+          maxHp: 850 + state.encounterIndex * 260,
+          speed: 62, radius: 25, elite: true, skin: 'raid-hunt',
+          name: script?.huntName || '突袭守卫', color: accent, barColor: accent,
+          attackTimer: 1.4, step: 0, flash: 0
+        });
+        state.huntTarget = hunt;
+        state.target = 1;
+      } else if (['sequence', 'tether', 'lightdark'].includes(type)) {
+        const colors = type === 'lightdark' ? ['#ffcf82', '#b58ae0'] : [accent, accent, accent];
+        state.objects = standPositions.map(([x, y], index) => ({
+          kind: 'stand', x, y,
+          radius: type === 'lightdark' ? 58 : 42,
+          progress: 0, active: false,
+          color: colors[index] || accent
+        }));
+        state.target = state.objects.length;
+        state.sequenceOrder = script?.order || (type === 'lightdark' || type === 'tether'
+          ? state.objects.map((_, index) => index)
+          : state.objects.map((_, index) => index));
+      } else if (type === 'relay' || info.kind === 'orbs') {
+        state.objects = standPositions.map(([x, y], index) => ({
+          kind: 'orb', x, y, collected: false, color: index % 2 ? accent : '#9edfff'
+        }));
+        state.target = state.objects.length;
+      } else if (type === 'shoot' || type === 'sweep' || info.kind === 'shoot') {
+        state.objects = shootPositions.map(([x, y], index) => ({
+          kind: 'shoot', x, y,
+          hp: type === 'sweep' ? 190 : 170,
+          maxHp: type === 'sweep' ? 190 : 170,
+          alive: true, flash: 0, radius: type === 'sweep' ? 23 : 22,
+          color: index === 1 ? '#f0d38a' : accent
+        }));
+        state.target = state.objects.length;
+        if (type === 'sweep') {
+          this.hazards.push({
+            x: 0.5, y: 0.5, angle: rand(0, Math.PI * 2), speed: 0.62,
+            length: 2.1, width: 3
+          });
+        }
+      } else {
+        state.objects = standPositions.map(([x, y]) => ({
+          kind: 'stand', x, y, radius: 42, progress: 0, active: false, color: accent
+        }));
+        state.target = state.objects.length;
+      }
+      if (this.raidBoss) this.raidBoss.attackTimer = 1.9;
+      this.toast(`${raid.name} · ${state.mechanicLabel} · ${state.mechanicHint}`);
+    }
+
+    openRaidDamagePhase() {
+      const state = this.raidState;
+      if (!state || state.phase !== 'mechanic') return;
+      if (!this.raidBoss) {
+        this.completeRaidEncounter();
+        return;
+      }
+      state.phase = 'damage';
+      state.damageTimer = 12;
+      state.cycles += 1;
+      this.hazards = [];
+      this.fx.ring(this.raidBoss.x * this.w, this.raidBoss.y * this.h, this.raidConfig?.accent || '#f0d08a', 100, 0.7, 3);
+      this.toast(`${state.config?.name || '首领'} · 机制完成 · 护盾关闭 · 输出阶段 12 秒`);
+      this.shake = Math.max(this.shake, 7);
+    }
+
+    completeRaidEncounter() {
+      const state = this.raidState;
+      if (!state || !state.encounters) return;
+      const completed = state.config;
+      state.encounterIndex += 1;
+      this.raidBoss = null;
+      this.dlcBoss = null;
+      this.enemyBullets = [];
+      this.bullets = [];
+      this.enemies = [];
+      if (state.encounterIndex >= state.encounters.length) {
+        this.completeMission();
+        return;
+      }
+      this.toast(`${completed?.name || '关卡'} 完成 · 突袭推进至第 ${state.encounterIndex + 1} 关`);
+      this.fx.ring(this.w * 0.5, this.h * 0.35, this.raidConfig?.accent || '#f0d08a', 160, 0.9, 3);
+      this.shake = Math.max(this.shake, 5);
+      this.setupRaidEncounter();
+    }
+
+    updateRaidMechanic(dt, w, h) {
+      const state = this.raidState;
+      if (!state || state.phase !== 'mechanic') return;
+      const type = state.mechanicType;
+      const info = DESTINY_MECHANIC_INFO[type];
+      if (!info) return;
+      const point = this.playerPoint();
+      if (type === 'sequence' || type === 'tether' || type === 'lightdark') {
+        const order = state.sequenceOrder?.length ? state.sequenceOrder : state.objects.map((_, index) => index);
+        if (state.sequenceStep >= order.length) {
+          this.openRaidDamagePhase();
+          return;
+        }
+        const index = order[state.sequenceStep];
+        const object = state.objects[index];
+        if (!object) {
+          this.openRaidDamagePhase();
+          return;
+        }
+        const inside = dist(point.x, point.y, object.x * w, object.y * h) < object.radius;
+        if (inside) object.progress = clamp(object.progress + dt * 1.1, 0, 1);
+        else object.progress = Math.max(0, object.progress - dt * 0.65);
+        state.objects.forEach((entry, entryIndex) => {
+          if (entryIndex !== index && !entry.active) entry.progress = Math.max(0, entry.progress - dt * 0.35);
+          entry.active = entry.progress >= 1;
+        });
+        if (object.active) {
+          state.sequenceStep += 1;
+          state.progress = state.sequenceStep;
+          this.fx.ring(object.x * w, object.y * h, object.color, object.radius * 1.4, 0.55, 2.4);
+          this.toast(`${state.mechanicLabel} · 节点 ${state.sequenceStep} / ${order.length}`);
+          if (state.sequenceStep >= order.length) this.openRaidDamagePhase();
+        }
+        return;
+      }
+      if (type === 'weakpoints') {
+        const boss = this.raidBoss;
+        if (boss) {
+          state.objects.forEach((object) => {
+            if (!object.alive || !object.bossOffset) return;
+            object.x = boss.x + object.bossOffset.x;
+            object.y = boss.y + object.bossOffset.y;
+          });
+        }
+        return;
+      }
+      if (type === 'hunt') {
+        const target = state.huntTarget;
+        if (!target || !target.alive) {
+          state.progress = 1;
+          this.openRaidDamagePhase();
+        }
+        return;
+      }
+      if (type === 'relay' || type === 'orbs' || info.kind === 'orbs') {
+        state.objects.forEach((object) => {
+          if (object.collected) return;
+          if (dist(point.x, point.y, object.x * w, object.y * h) < 30) {
+            object.collected = true;
+            state.carried += 1;
+            this.toast(`拾取能量核心 · 携带 ${state.carried}`);
+            this.fx.ring(object.x * w, object.y * h, object.color, 28, 0.4, 2);
+          }
+        });
+        if (state.carried > 0 && dist(point.x, point.y, state.bank.x * w, state.bank.y * h) < 62) {
+          state.deposited += state.carried;
+          state.carried = 0;
+          state.progress = state.deposited;
+          this.toast(`存入能量核心 · ${state.deposited} / ${state.target}`);
+          this.fx.ring(state.bank.x * w, state.bank.y * h, '#9edfff', 50, 0.5, 2);
+          if (state.deposited >= state.target) this.openRaidDamagePhase();
+        }
+        return;
+      }
+      if (type === 'shoot' || type === 'sweep' || info.kind === 'shoot') return;
+      let activeCount = 0;
+      state.objects.forEach((object) => {
+        const inside = dist(point.x, point.y, object.x * w, object.y * h) < object.radius;
+        if (inside) object.progress = clamp(object.progress + dt * 0.9, 0, 1);
+        object.active = object.progress >= 1;
+        if (object.active) activeCount += 1;
+      });
+      state.progress = activeCount;
+      if (activeCount >= state.target) this.openRaidDamagePhase();
+    }
+
+    damageRaidMechanicObject(object, amount) {
+      if (!object || !object.alive || !this.raidState) return;
+      object.hp -= amount;
+      object.flash = 0.14;
+      this.fx.burst(object.x * this.w, object.y * this.h, object.color, 5, 80, 1.6);
+      if (object.hp > 0) return;
+      object.alive = false;
+      object.hp = 0;
+      this.raidState.progress += 1;
+      this.fx.ring(object.x * this.w, object.y * this.h, object.color, 38, 0.45, 2);
+      this.toast(`机制目标已摧毁 · ${this.raidState.progress} / ${this.raidState.target}`);
+      if (this.raidState.progress >= this.raidState.target) this.openRaidDamagePhase();
+    }
+
+    updateRaid(dt, w, h) {
+      const state = this.raidState;
+      if (!state || this.missionCleared) return;
+      if (this.raidStageBanner) this.raidStageBanner.time -= dt;
+      this.spawnTimer -= dt;
+      if (this.spawnTimer <= 0 && this.aliveEnemies().length < 7) {
+        this.spawnEnemy(this.randomEnemyType(), { x: pick([0.15, 0.85]), y: rand(0.38, 0.7) });
+        this.spawnTimer = rand(2.7, 4.2);
+      }
+      this.updateRaidMechanic(dt, w, h);
+      const boss = this.raidBoss;
+      if (!boss) return;
+      if (this.raidBoss !== boss) return;
+      if (!boss.alive || boss.hp <= 0) {
+        this.completeRaidEncounter();
+        return;
+      }
+      boss.flash = Math.max(0, boss.flash - dt);
+      boss.step += dt;
+      const damagePhase = state.phase === 'damage';
+      const speed = boss.speed || 34;
+      const orbit = boss.step * (damagePhase ? 0.62 : 0.36) + (boss.wander || 0);
+      const targetX = 0.5 + Math.sin(orbit) * (damagePhase ? 0.2 : 0.13);
+      const targetY = 0.31 + Math.cos(orbit * 1.3) * (damagePhase ? 0.075 : 0.045);
+      const dx = targetX - boss.x;
+      const dy = targetY - boss.y;
+      const travelLength = Math.hypot(dx * w, dy * h);
+      if (travelLength > 2) {
+        const travel = Math.min(travelLength, speed * dt);
+        boss.x = clamp(boss.x + dx * (travel / travelLength), 0.2, 0.8);
+        boss.y = clamp(boss.y + dy * (travel / travelLength), 0.24, 0.56);
+      }
+      if (damagePhase) {
+        state.damageTimer -= dt;
+        if (state.damageTimer <= 0) {
+          this.setupRaidMechanic();
+          this.toast('首领重新获得护盾 · 重新执行本关机制');
+        }
+      }
+      if (boss.windup > 0) {
+        boss.windup -= dt;
+        if (boss.windup <= 0) this.executeRaidBossAttack(boss, w, h, state);
+      } else {
+        boss.attackTimer -= dt;
+        if (boss.attackTimer <= 0) {
+          const patterns = this.raidBossPatterns(boss);
+          boss.pendingAttack = pick(patterns);
+          boss.windup = damagePhase ? 0.38 : 0.58;
+          this.fx.ring(boss.x * w, boss.y * h, boss.color, 30, 0.3, 1.6);
+          this.audio?.play('bossCharge');
+        }
+      }
+      const point = this.playerPoint();
+      if (dist(point.x, point.y, boss.x * w, boss.y * h) < boss.radius + 20 && (this.player.invuln || 0) <= 0) {
+        this.player.invuln = 0.7;
+        this.damagePlayer(10 + state.encounterIndex * 2);
+        this.fx.burst(boss.x * w, boss.y * h, boss.color, 10, 120, 2);
+      }
+    }
+
+    updateWaveActivity(dt, w, h, mode) {
+      if (this.transition) return;
+      if (!this.aliveEnemies().length) {
+        const waveTarget = this.waveTarget || 3;
+        if (this.wave < waveTarget) {
+          this.spawnTimer -= dt;
+          if (this.spawnTimer <= 0) {
+            this.wave += 1;
+            const count = 3 + this.wave * 2;
+            for (let i = 0; i < count; i += 1) {
+              const enemy = this.spawnEnemy(this.randomEnemyType());
+              if (mode === 'reckoning') {
+                enemy.skin = 'reckoner';
+                enemy.color = this.mission.accent;
+              }
+            }
+            this.spawnTimer = 2.2;
+            const waveLabel = mode === 'dlc' ? (this.dlcConfig?.cn || 'DLC')
+              : mode === 'raid' ? (this.raidConfig?.name || '突袭')
+                : mode === 'strike' ? `先锋打击 · ${this.strikeConfig?.title || '打击'}`
+                  : mode === 'exoticQuest' ? `异域追猎 · ${this.exoticQuestConfig?.name || '未知任务'}`
+                    : '大清算';
+            this.toast(`${waveLabel} · 第 ${this.wave} / ${waveTarget} 波`);
+          }
+        } else if (mode === 'dlc' || mode === 'raid' || mode === 'strike' || mode === 'exoticQuest') {
+          if (!this.mission.boss) {
+            this.completeMission();
+          } else if (!this.dlcBoss) {
+            if (this.fieldObjective && !this.fieldObjective.done) return;
+            const bossType = this.mission.faction === 'hive' ? 'knight'
+              : this.mission.faction === 'fallen' ? 'captain'
+                : this.mission.faction === 'scorn' ? 'chieftain'
+                  : this.mission.faction === 'vex' ? 'minotaur'
+                    : this.mission.faction === 'dread' ? 'subjugator' : 'centurion';
+            const boss = this.spawnEnemy(bossType, { x: 0.5, y: 0.19 });
+            boss.skin = 'dlc-boss';
+            boss.name = this.mission.bossName || `${this.dlcConfig?.cn || 'DLC'} 首领`;
+            boss.bossKind = this.mission.bossKind || this.mission.faction;
+            boss.faction = this.mission.faction;
+            boss.hp = mode === 'raid' ? 4200 + this.missionIndex * 220
+              : mode === 'strike' ? 2400 + this.missionIndex * 140
+                : mode === 'exoticQuest' ? 3200
+                  : 1700 + this.missionIndex * 160;
+            boss.maxHp = boss.hp;
+            boss.radius = 31;
+            boss.speed = 52;
+            boss.color = this.mission.accent;
+            boss.elite = false;
+            this.dlcBoss = boss;
+            this.toast(`${boss.name} 出现`);
+            this.fx.ring(boss.x * this.w, boss.y * this.h, this.mission.accent, 120, 0.8, 3);
+          }
+        } else {
+          this.finishActivity(true, '大清算完成', '九层深渊的敌潮退去，你从清算中走了出来。');
+        }
+      }
+    }
+
+    completeMission() {
+      if (this.missionCleared) return;
+      if (this.fieldObjective && !this.fieldObjective.done) {
+        this.toast(`先完成 ${this.fieldObjective.label}，才能结算这个关卡。`);
+        return;
+      }
+      if (this.encounter && !this.encounter.done) {
+        this.toast('先摧毁所有压制水晶，才能结束这个关卡。');
+        return;
+      }
+      this.missionCleared = true;
+      this.enemies = [];
+      this.enemyBullets = [];
+      this.bullets = [];
+      if (this.manager.hud) this.manager.hud.hidden = true;
+      if (this.currentMode === 'exoticQuest' && this.exoticQuestConfig) {
+        this.completeExoticQuest();
+        return;
+      }
+      if (this.currentMode === 'raid' && this.raidConfig) {
+        const key = this.directorSelected || this.raidConfig.id;
+        this.raidCleared[key] = true;
+        this.awardRaidExotic(this.raidConfig.id);
+        this.saveProgress();
+        this.finishActivity(true, `${this.raidConfig.name} 突袭完成`, `${this.raidConfig.en} 已经清除。${this.raidConfig.location} 的战线恢复安静。`);
+        return;
+      }
+      if (this.currentMode === 'strike' && this.strikeConfig) {
+        const strike = this.strikeConfig;
+        this.saveProgress();
+        this.finishActivity(true, `先锋打击完成 · ${strike.title}`, `${strike.en} 已清除。${strike.bossName} 被击败，先锋行动结束。`);
+        return;
+      }
+      if (this.currentMode === 'dlc' && this.dlcConfig) {
+        this.dlcProgress[this.dlcConfig.id] = Math.max(
+          this.dlcProgress[this.dlcConfig.id] || 0,
+          this.missionIndex + 1
+        );
+      } else if (this.currentMode === 'campaign') {
+        this.campaignProgress = Math.max(this.campaignProgress || 0, this.missionIndex + 1);
+      }
+      this.saveProgress();
+      const final = this.missionIndex >= this.missions.length - 1;
+      const isDlc = this.currentMode === 'dlc' && this.dlcConfig;
+      if (final) {
+        const storyKey = this.currentMode === 'campaign' ? 'redwar' : (isDlc ? this.dlcConfig.id : null);
+        if (storyKey) this.awardStoryExotic(storyKey);
+      }
+      this.transition = {
+        time: final ? 4.8 : 3.8,
+        max: final ? 4.8 : 3.8,
+        final,
+        title: final ? (isDlc ? `${this.dlcConfig.cn} 战役完成` : '猩红战争结束') : '任务完成',
+        chapter: this.mission.chapter,
+        mission: this.mission.title,
+        next: final ? null : this.missions[this.missionIndex + 1]
+      };
+      this.fx.ring(this.playerPoint().x, this.playerPoint().y, this.mission.accent || '#ffdb92', 140, 0.8, 3);
+    }
+
+    advanceCampaign() {
+      if (!this.transition) return;
+      const done = this.transition;
+      this.transition = null;
+      if (done.activity) {
+        this.showOrbit();
+        return;
+      }
+      if (done.final) {
+        if (this.currentMode === 'dlc' && this.dlcConfig) {
+          this.finishActivity(
+            true,
+            `${this.dlcConfig.cn} 战役完成`,
+            `${this.dlcConfig.planetCn || this.dlcConfig.cn} 的战线已经清理。${this.dlcConfig.title} 的故事线完成，目的地进度已保存。`
+          );
+          return;
+        }
+        this.finish({
+          win: true,
+          title: '猩红战争结束了。',
+          desc: 'Ghaul 倒在自己的王座前。最后的城市重新看见了光。',
+          stats: [
+            { label: '章节', value: '5 / 5' },
+            { label: '击杀', value: String(this.kills) },
+            { label: '战役用时', value: formatTime(this.time) },
+            { label: '超能释放', value: String(this.superUses) }
+          ]
+        });
+      } else {
+        const nextIndex = this.missionIndex + 1;
+        if (this.currentMode === 'dlc' && this.dlcConfig) {
+          this.startMission(nextIndex, {
+            mode: 'dlc',
+            mission: this.missions[nextIndex],
+            dlc: this.dlcConfig,
+            activityId: this.activityId
+          });
+        } else {
+          this.startMission(nextIndex, { mode: 'campaign', mission: this.missions[nextIndex] });
+        }
+      }
+    }
+
+    pointerDown(x = this.manager.mouse.x, y = this.manager.mouse.y) {
+      this.audio?.ensure();
+      if (this.screen === 'classSelect') {
+        this.handleClassSelectClick(x, y);
+        return;
+      }
+      if (this.inventoryOpen) {
+        this.handleInventoryClick(x, y);
+        return;
+      }
+      if (this.screen === 'orbit') {
+        this.handleOrbitClick(x, y);
+        return;
+      }
+      if (this.deathState) {
+        if (this.deathState.time <= this.deathState.max - this.deathState.readyAt) {
+          this.reviveFromDeath();
+        }
+        return;
+      }
+      if (this.intro && this.intro.time > 0) {
+        this.intro.time = 0;
+        return;
+      }
+      if (this.transition) {
+        this.advanceCampaign();
+      }
+    }
+
+    pointerMove(x, y) {
+      if (this.screen === 'classSelect') {
+        const layout = this.classSelectLayout(this.w, this.h);
+        const hit = layout.hits.find((entry) => x >= entry.x && x <= entry.x + entry.w && y >= entry.y && y <= entry.y + entry.h);
+        this.classHover = hit ? hit.key : null;
+        return;
+      }
+      if (this.inventoryOpen) {
+        const layout = this.inventoryLayout(this.w, this.h);
+        const hit = layout.hits.find((entry) => x >= entry.x && x <= entry.x + entry.w && y >= entry.y && y <= entry.y + entry.h);
+        this.inventoryHover = hit ? hit.key : null;
+        return;
+      }
+      if (this.screen !== 'orbit') return;
+      const hit = this.directorHitTest(x, y);
+      this.directorHover = hit ? hit.key : null;
+    }
+
+    keyDown(code) {
+      this.audio?.ensure();
+      if (code === 'KeyM') {
+        const enabled = this.audio?.toggle();
+        this.toast(`音效已${enabled ? '开启' : '关闭'}`);
+        if (enabled) this.audio?.play('ui');
+        return;
+      }
+      if (this.screen === 'classSelect') {
+        if (code === 'Digit1') this.setClass('hunter');
+        else if (code === 'Digit2') this.setClass('warlock');
+        else if (code === 'Digit3') this.setClass('titan');
+        else if (code === 'ArrowLeft' || code === 'ArrowRight') {
+          const order = ['hunter', 'warlock', 'titan'];
+          const current = Math.max(0, order.indexOf(this.classId || 'hunter'));
+          const next = (current + (code === 'ArrowRight' ? 1 : order.length - 1)) % order.length;
+          this.setClass(order[next]);
+        } else if (code === 'Enter' || code === 'Space') this.confirmClass();
+        return;
+      }
+      if (this.screen === 'orbit') {
+        if (code === 'Escape' && this.directorPanelOpen) {
+          this.directorPanelOpen = false;
+          return;
+        }
+        if (code === 'F1') {
+          this.inventoryOpen = !this.inventoryOpen;
+          this.inventoryTab = 'character';
+          this.manager.keys.clear();
+          this.detailPinned = false;
+          if (!this.inventoryOpen) this.manager.canvas?.classList.remove('is-inventory-open');
+          if (this.inventoryOpen && !this.selectedGearId) this.selectedGearId = this.equipment.primary?.id || null;
+          return;
+        }
+        if (this.inventoryOpen && code === 'Escape') {
+          this.inventoryOpen = false;
+          this.detailPinned = false;
+          this.manager.mouse.down = false;
+          this.manager.canvas?.classList.remove('is-inventory-open');
+          return;
+        }
+        if (this.inventoryOpen) return;
+        if (code === 'Digit1') this.startDestination(DESTINY_RED_WAR_DESTINATION);
+        else if (code === 'Digit2') this.startActivity('crucible');
+        else if (code === 'Digit3') this.startActivity('gambit');
+        else if (code === 'Digit4') this.startActivity('reckoning');
+        else if (code === 'KeyC') {
+          this.classId = null;
+          this.start();
+          this.toast('返回职业选择 · 现有战役、突袭与装备进度不会丢失');
+          return;
+        }
+        else if (code === 'Enter' || code === 'Space') {
+          if (!this.directorPanelOpen) {
+            this.directorPanelOpen = true;
+            return;
+          }
+          const destination = this.destinationById(this.directorSelected);
+          if (!destination) return;
+          const missions = this.destinationMissions(destination);
+          const progress = this.destinationProgress(destination);
+          this.startDestination(destination, progress >= missions.length ? 0 : progress);
+        }
+        return;
+      }
+      if (code === 'F1') {
+        if (this.intro || this.transition || this.deathState) return;
+        this.inventoryOpen = !this.inventoryOpen;
+        this.manager.keys.clear();
+        this.detailPinned = false;
+        if (this.inventoryOpen && !this.selectedGearId) this.selectedGearId = this.equipment.primary?.id || null;
+        return;
+      }
+      if (this.inventoryOpen) {
+        if (code === 'Escape') {
+          this.inventoryOpen = false;
+          this.detailPinned = false;
+          this.manager.mouse.down = false;
+        }
+        return;
+      }
+      if (this.deathState) {
+        if ((code === 'Space' || code === 'Enter') && this.deathState.time <= this.deathState.max - this.deathState.readyAt) {
+          this.reviveFromDeath();
+        }
+        return;
+      }
+      if (this.intro && this.intro.time > 0) {
+        if (code === 'Space' || code === 'Enter') this.intro.time = 0;
+        return;
+      }
+      if (this.transition) {
+        if (code === 'Space' || code === 'Enter') this.advanceCampaign();
+        return;
+      }
+      if (code === 'Digit1') this.switchWeapon('primary');
+      else if (code === 'Digit2') this.switchWeapon('energy');
+      else if (code === 'Digit3') this.switchWeapon('power');
+      else if (code === 'KeyE') {
+        if (this.pickupLoot()) return;
+        if (this.currentMode === 'gambit') this.bankGambitMotes();
+      } else if (code === 'KeyR') this.startReload();
+      else if (code === 'KeyQ') this.throwGrenade();
+      else if (code === 'KeyC') this.melee();
+      else if (code === 'KeyF') this.throwSuper();
+      else if (code === 'KeyV') {
+        if (this.transcendenceReady()) {
+          this.transcendenceHold = 0;
+          this.toast('长按 V 进入超凡');
+        } else this.useClassAbility();
+      }
+      else if (code === 'ShiftLeft' || code === 'ShiftRight') this.dash();
+    }
+
+    keyUp(code) {
+      if (code === 'KeyV' && this.transcendenceHold >= 0) {
+        const held = this.transcendenceHold;
+        this.transcendenceHold = -1;
+        if (held < 0.55) this.useClassAbility();
+      }
+    }
+
+    update(dt, w, h) {
+      super.update(dt, w, h);
+      if (this.ended) return;
+      if (this.screen === 'classSelect') {
+        this.classSelectTime += dt;
+        return;
+      }
+      if (this.screen === 'orbit') {
+        this.orbitTime += dt;
+        this.updateDirectorStars(dt);
+        this.dlcRefresh += dt;
+        if (this.dlcRefresh >= 2) {
+          this.dlcRefresh = 0;
+          this.refreshDlcState();
+        }
+        return;
+      }
+      this.viewW = w;
+      this.viewH = h;
+      if (this.currentMode === 'raid') {
+        this.w = w * this.raidWorldScale;
+        this.h = h * this.raidWorldScale;
+      } else {
+        this.w = w;
+        this.h = h;
+      }
+      if (!this.player || this.inventoryOpen) return;
+      if (this.deathState) {
+        this.deathState.time -= dt;
+        if (this.deathState.time <= 0) this.reviveFromDeath();
+        return;
+      }
+      if (this.intro) {
+        this.intro.time = Math.max(0, this.intro.time - dt);
+        if (this.intro.time <= 0) {
+          this.intro = null;
+          if (this.manager.hud) this.manager.hud.hidden = true;
+        }
+        this.updateHUD();
+        return;
+      }
+      if (this.transition) {
+        this.transition.time -= dt;
+        if (this.transition.time <= 0) this.advanceCampaign();
+        this.updateHUD();
+        return;
+      }
+      const worldW = this.w;
+      const worldH = this.h;
+      this.updatePlayer(dt, worldW, worldH);
+      this.updateHazards(dt, worldW, worldH);
+      this.updateEnemies(dt, worldW, worldH);
+      this.updateBoss(dt, worldW, worldH);
+      this.updateBullets(dt, worldW, worldH);
+      this.updateGrenades(dt, worldW, worldH);
+      this.updateSuperEffects(dt, worldW, worldH);
+      this.updateAmmoDrops(dt, worldW, worldH);
+      this.updateFieldObjective(dt, worldW, worldH);
+      this.updateMission(dt, worldW, worldH);
+      this.updateHUD();
+    }
+
+    destinations() {
+      return [DESTINY_RED_WAR_DESTINATION, ...this.dlcModes, this.destinationById('dreaming-city'), this.destinationById('nessus'), this.destinationById('venus'), this.destinationById('blackhole')];
+    }
+
+    classSelectLayout(w, h) {
+      const pad = Math.max(20, w * 0.04);
+      const gap = Math.max(14, w * 0.022);
+      const cardW = Math.min(280, (w - pad * 2 - gap * 2) / 3);
+      const top = Math.max(100, h * 0.17);
+      const cardH = clamp(h * 0.58, 280, 420);
+      const totalW = cardW * 3 + gap * 2;
+      const left = w * 0.5 - totalW / 2;
+      const cards = DESTINY_CLASSES.map((profile, index) => ({
+        key: `class:${profile.id}`,
+        classId: profile.id,
+        profile,
+        x: left + index * (cardW + gap),
+        y: top,
+        w: cardW,
+        h: cardH
+      }));
+      const confirm = {
+        key: 'class-confirm',
+        x: w * 0.5 - 150,
+        y: h - 58,
+        w: 300,
+        h: 38,
+        enabled: Boolean(this.classId)
+      };
+      return { cards, confirm, hits: [...cards, confirm] };
+    }
+
+    drawClassSelect(ctx, w, h) {
+      const layout = this.classSelectLayout(w, h);
+      this.classHits = layout.hits;
+      const time = this.classSelectTime || 0;
+      ctx.save();
+      const bg = ctx.createLinearGradient(0, 0, 0, h);
+      bg.addColorStop(0, '#0b1115');
+      bg.addColorStop(0.55, '#080d11');
+      bg.addColorStop(1, '#030608');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      const starSeed = (n) => {
+        const value = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+        return value - Math.floor(value);
+      };
+      for (let i = 0; i < 90; i += 1) {
+        const sx = starSeed(i) * w;
+        const sy = starSeed(i + 93) * h;
+        const alpha = 0.16 + (Math.sin(time * 1.6 + i * 2.3) + 1) * 0.13;
+        ctx.fillStyle = `rgba(221, 239, 233, ${alpha})`;
+        ctx.fillRect(sx, sy, i % 7 === 0 ? 2 : 1, i % 7 === 0 ? 2 : 1);
+      }
+      const halo = ctx.createRadialGradient(w * 0.5, h * 0.42, 20, w * 0.5, h * 0.42, w * 0.46);
+      halo.addColorStop(0, 'rgba(216, 194, 130, .11)');
+      halo.addColorStop(0.5, 'rgba(92, 135, 137, .045)');
+      halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = halo;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#f0eee2';
+      ctx.font = `600 ${Math.max(22, Math.min(38, w * 0.033))}px "Segoe UI", "PingFang SC", sans-serif`;
+      ctx.fillText('选择你的守护者', w * 0.5, 52);
+      ctx.fillStyle = 'rgba(201, 216, 207, .58)';
+      ctx.font = '500 6.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('CHOOSE YOUR GUARDIAN · 光能与黑暗之间', w * 0.5, 69);
+
+      layout.cards.forEach((card) => {
+        const profile = card.profile;
+        const selected = this.classId === profile.id;
+        const hovered = this.classHover === card.key;
+        fillRoundRect(ctx, card.x, card.y, card.w, card.h, 6, selected ? 'rgba(13, 22, 26, .95)' : hovered ? 'rgba(10, 18, 23, .9)' : 'rgba(7, 13, 17, .76)');
+        ctx.strokeStyle = selected ? `${profile.accent}dd` : hovered ? `${profile.color}88` : 'rgba(185, 208, 201, .16)';
+        ctx.lineWidth = selected ? 1.8 : hovered ? 1.2 : 0.8;
+        ctx.strokeRect(card.x, card.y, card.w, card.h);
+        if (selected) {
+          ctx.strokeStyle = `${profile.accent}55`;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(card.x + 5, card.y + 5, card.w - 10, card.h - 10);
+        }
+        ctx.textAlign = 'center';
+        ctx.fillStyle = `${profile.color}20`;
+        ctx.beginPath();
+        ctx.arc(card.x + card.w / 2, card.y + 50, 31, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `${profile.accent}cc`;
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.fillStyle = profile.color;
+        ctx.font = '600 24px "PingFang SC", "Segoe UI", sans-serif';
+        ctx.fillText(profile.glyph, card.x + card.w / 2, card.y + 59);
+        ctx.fillStyle = '#f0f2e8';
+        ctx.font = '600 23px "PingFang SC", "Segoe UI", sans-serif';
+        ctx.fillText(profile.name, card.x + card.w / 2, card.y + 105);
+        ctx.fillStyle = 'rgba(190, 211, 204, .55)';
+        ctx.font = '500 7px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(profile.en, card.x + card.w / 2, card.y + 119);
+        ctx.fillStyle = profile.accent;
+        ctx.font = '500 7px "PingFang SC", sans-serif';
+        ctx.fillText(profile.role, card.x + card.w / 2, card.y + 135);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = 'rgba(207, 220, 214, .7)';
+        ctx.font = '500 8px "PingFang SC", sans-serif';
+        this.drawWrappedText(ctx, profile.desc, card.x + 16, card.y + 157, card.w - 32, 13);
+        const statsY = card.y + card.h - 88;
+        Object.entries(profile.stats).forEach(([label, value], index) => {
+          const y = statsY + index * 18;
+          ctx.fillStyle = 'rgba(179, 201, 195, .55)';
+          ctx.font = '500 6.2px "PingFang SC", sans-serif';
+          ctx.fillText(label, card.x + 16, y + 3);
+          fillRoundRect(ctx, card.x + 54, y - 4, card.w - 74, 5, 2, 'rgba(255, 255, 255, .08)');
+          fillRoundRect(ctx, card.x + 54, y - 4, (card.w - 74) * clamp(value / 10, 0, 1), 5, 2, profile.accent);
+        });
+        const chipY = card.y + card.h - 25;
+        ctx.textAlign = 'center';
+        DESTINY_SUBCLASSES.forEach((subclass, index) => {
+          const chipX = card.x + card.w - 20 - (5 - index) * 17;
+          this.drawDiamond(ctx, chipX, chipY, 5, `${subclass.color}25`, `${subclass.color}88`, 0.8);
+          this.drawSubclassGlyph(ctx, subclass.id, chipX, chipY, 3.3, subclass.color, 0.8);
+        });
+      });
+
+      const confirm = layout.confirm;
+      const selectedClass = this.classProfile();
+      fillRoundRect(ctx, confirm.x, confirm.y, confirm.w, confirm.h, 4, confirm.enabled ? selectedClass.accent : 'rgba(255, 255, 255, .06)');
+      ctx.textAlign = 'center';
+      ctx.fillStyle = confirm.enabled ? '#07100d' : 'rgba(185, 199, 194, .45)';
+      ctx.font = '600 10px "PingFang SC", sans-serif';
+      ctx.fillText(confirm.enabled ? `以${selectedClass.name}身份进入最后的城市` : '选择你的守护者', confirm.x + confirm.w / 2, confirm.y + 24);
+      ctx.fillStyle = 'rgba(200, 216, 208, .42)';
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('点击卡片选择  ·  1 / 2 / 3 快速选择  ·  Enter 确认', w * 0.5, h - 9);
+      ctx.restore();
+    }
+
+    handleClassSelectClick(x, y) {
+      const layout = this.classSelectLayout(this.w, this.h);
+      const hit = layout.hits.find((entry) => x >= entry.x && x <= entry.x + entry.w && y >= entry.y && y <= entry.y + entry.h);
+      if (!hit) return;
+      if (hit.classId) {
+        this.setClass(hit.classId);
+        return;
+      }
+      if (hit.key === 'class-confirm') this.confirmClass();
+    }
+
+    confirmClass() {
+      if (!this.classId) {
+        this.toast('请先选择猎人、术士或泰坦');
+        return;
+      }
+      this.toast(`${this.classProfile().name}已就位 · ${this.activeSubclass().super}已解锁`);
+      this.showOrbit();
+    }
+
+    directorLayout(w, h) {
+      const mapW = w;
+      const mapH = h;
+      const panelW = Math.min(430, w * 0.34);
+      const panel = { x: w - panelW - 14, y: 14, w: panelW, h: h - 28 };
+      const panelOpen = Boolean(this.directorPanelOpen && this.directorSelected);
+      const nodes = this.destinations().map((destination) => {
+        const mapPoint = destination.map || { x: 0.5, y: 0.5 };
+        const baseRadius = clamp(Math.min(w, h) * 0.044, 24, 40);
+        const radiusScale = destination.id === 'blackhole' ? 2.15 : destination.id === 'final-shape' ? 1.85 : destination.id === 'redwar' ? 1.22 : 1;
+        return {
+          id: destination.id,
+          destination,
+          x: mapW * (0.06 + mapPoint.x * 0.88),
+          y: h * (0.08 + mapPoint.y * 0.80),
+          r: baseRadius * radiusScale
+        };
+      });
+      const raidMarkers = nodes.map((node) => {
+        const destination = node.destination;
+        const raid = this.destinationRaid(destination);
+        if (!raid || !this.raidUnlocked(destination)) return null;
+        return {
+          id: destination.id,
+          key: `raid:${destination.id}`,
+          destination,
+          raid,
+          x: node.x + node.r + 17,
+          y: node.y - node.r - 8,
+          r: 9,
+          cleared: Boolean(this.raidCleared?.[destination.id])
+        };
+      }).filter(Boolean);
+      const exoticMarkers = nodes.map((node) => {
+        const destination = node.destination;
+        if (!this.exoticQuestUnlocked(destination.id)) return null;
+        const quest = this.exoticQuestForDestination(destination.id);
+        if (!quest) return null;
+        return {
+          id: destination.id,
+          key: `exotic:${destination.id}`,
+          destination,
+          quest,
+          weapon: this.exoticWeaponDef(quest.weapon),
+          x: node.x - node.r - 19,
+          y: node.y + node.r + 9,
+          r: 9
+        };
+      }).filter(Boolean);
+      const selected = panelOpen ? this.destinationById(this.directorSelected) : null;
+      const missions = selected ? this.destinationMissions(selected) : [];
+      const progress = selected ? this.destinationProgress(selected) : 0;
+      const chipW = clamp(w * 0.085, 86, 116);
+      const chipGap = w * 0.012;
+      const chipTotal = chipW * 5 + chipGap * 4;
+      const activityList = ['crucible', 'vanguard', 'range', 'gambit', 'reckoning'].map((key, index) => ({
+        id: key,
+        activity: DESTINY_ACTIVITIES[key],
+        x: (w - chipTotal) / 2 + index * (chipW + chipGap),
+        y: h * 0.085,
+        w: chipW,
+        h: Math.max(24, Math.min(31, h * 0.043))
+      }));
+      const panelClose = { key: 'panel-close', x: panel.x + panel.w - 30, y: panel.y + 9, w: 18, h: 18 };
+      let missionRects = [];
+      let cta = { x: panel.x + 13, y: panel.y + panel.h - 45, w: panel.w - 26, h: 32, enabled: false, label: '' };
+      if (selected) {
+        const ctaH = 32;
+        const ctaY = panel.y + panel.h - ctaH - 13;
+        const listTop = panel.y + 195;
+        const gap = 4;
+        const rowH = Math.max(25, Math.min(84, (ctaY - 12 - listTop - gap * Math.max(0, missions.length - 1)) / Math.max(1, missions.length)));
+        missionRects = missions.map((mission, index) => ({
+          index,
+          mission,
+          x: panel.x + 13,
+          y: listTop + index * (rowH + gap),
+          w: panel.w - 26,
+          h: rowH
+        }));
+        cta = {
+          x: panel.x + 13,
+          y: ctaY,
+          w: panel.w - 26,
+          h: ctaH,
+          enabled: selected.id === 'redwar' || Boolean(selected.installed),
+          label: !(selected.id === 'redwar' || selected.installed)
+            ? '需要安装此 DLC'
+            : progress >= missions.length ? '重新开始战役'
+              : progress > 0 ? '继续剧情' : '进入剧情'
+        };
+      }
+      return { mapW, mapH, panel, panelOpen, panelClose, nodes, raidMarkers, exoticMarkers, selected, progress, missions, activityList, missionRects, cta };
+    }
+
+    directorHitTest(x, y) {
+      const layout = this.directorLayout(this.w, this.h);
+      const contains = (rect) => x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
+      const exotic = layout.exoticMarkers.find((entry) => dist(x, y, entry.x, entry.y) <= entry.r + 8);
+      if (exotic) return { kind: 'exotic-quest', key: exotic.key, destination: exotic.destination, quest: exotic.quest };
+      const raid = layout.raidMarkers.find((entry) => dist(x, y, entry.x, entry.y) <= entry.r + 5);
+      if (raid) return { kind: 'raid', key: raid.key, destination: raid.destination, raid: raid.raid };
+      const node = layout.nodes.find((entry) => dist(x, y, entry.x, entry.y) <= entry.r + 7);
+      if (node) return { kind: 'destination', key: node.id, destination: node.destination };
+      const activity = layout.activityList.find((entry) => contains(entry));
+      if (activity) return { kind: 'activity', key: `act:${activity.id}`, activityId: activity.id, activity: activity.activity };
+      if (layout.panelOpen) {
+        if (contains(layout.panelClose)) return { kind: 'panel-close', key: 'panel-close' };
+        if (contains(layout.panel)) {
+          const mission = layout.missionRects.find((entry) => contains(entry));
+          if (mission) return { kind: 'mission', key: `mission:${mission.index}`, index: mission.index, mission: mission.mission };
+          if (contains(layout.cta)) return { kind: 'cta', key: 'cta', enabled: layout.cta.enabled };
+          return { kind: 'panel-background', key: 'panel-background' };
+        }
+      }
+      return null;
+    }
+
+    handleOrbitClick(x, y) {
+      const hit = this.directorHitTest(x, y);
+      if (!hit) {
+        if (this.directorPanelOpen) this.directorPanelOpen = false;
+        return;
+      }
+      if (hit.kind === 'panel-close') {
+        this.directorPanelOpen = false;
+        return;
+      }
+      if (hit.kind === 'panel-background') return;
+      if (hit.kind === 'exotic-quest') {
+        this.directorPanelOpen = false;
+        this.startExoticQuest(hit.destination.id);
+        return;
+      }
+      if (hit.kind === 'raid') {
+        this.directorPanelOpen = false;
+        this.startRaid(hit.destination);
+        return;
+      }
+      if (hit.kind === 'destination') {
+        this.directorSelected = hit.destination.id;
+        this.directorPanelOpen = true;
+        const destination = this.destinationById(hit.destination.id);
+        if (!destination) return;
+        this.selectedDestinationPulse = 0.7;
+        return;
+      }
+      if (hit.kind === 'activity') {
+        this.directorPanelOpen = false;
+        this.startActivity(hit.activityId);
+        return;
+      }
+      const destination = this.destinationById(this.directorSelected);
+      if (!destination) return;
+      if (hit.kind === 'mission') {
+        const progress = this.destinationProgress(destination);
+        if (hit.index > progress) {
+          this.toast('先完成前一个剧情节点，才能继续推进这条战役线。', 'danger');
+          return;
+        }
+        this.startDestination(destination, hit.index);
+        return;
+      }
+      if (hit.kind === 'cta') {
+        if (!hit.enabled) {
+          this.toast(`《${destination.title}》尚未安装，请先在 Steam 的 DLC 页面安装。`, 'danger');
+          return;
+        }
+        const missions = this.destinationMissions(destination);
+        const progress = this.destinationProgress(destination);
+        const index = progress >= missions.length ? 0 : progress;
+        this.startDestination(destination, index);
+      }
+    }
+
+    drawDirector(ctx, w, h) {
+      const layout = this.directorLayout(w, h);
+      const selected = layout.selected;
+      const accent = selected?.accent || '#e9c078';
+      const background = ctx.createRadialGradient(w * 0.3, h * 0.42, 20, w * 0.3, h * 0.42, Math.max(w, h) * 0.82);
+      background.addColorStop(0, '#142334');
+      background.addColorStop(0.44, '#080e17');
+      background.addColorStop(1, '#030609');
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+
+      this.drawDirectorStarfield(ctx, w, h);
+
+      this.drawDirectorEarth(ctx, layout, w, h);
+
+      ctx.save();
+      const mapCenterX = layout.mapW * 0.5;
+      const mapCenterY = h * 0.40;
+      glowCircle(ctx, mapCenterX, mapCenterY, Math.min(layout.mapW, h) * 0.3, 'rgba(232, 226, 255, .14)', 0.85);
+      ctx.strokeStyle = 'rgba(174, 211, 222, .09)';
+      ctx.setLineDash([3, 9]);
+      [[0.23, 0.14], [0.36, 0.23], [0.48, 0.32]].forEach(([rx, ry], index) => {
+        ctx.beginPath();
+        ctx.ellipse(mapCenterX, mapCenterY, layout.mapW * rx, h * ry, -0.18 + index * 0.05, Math.PI * 1.08, Math.PI * 1.92);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(214, 232, 238, .055)';
+      ctx.lineWidth = 0.8;
+      layout.nodes.forEach((node) => {
+        if (node.id === 'final-shape') return;
+        ctx.beginPath();
+        ctx.moveTo(mapCenterX, mapCenterY);
+        ctx.lineTo(node.x, node.y);
+        ctx.stroke();
+      });
+      ctx.restore();
+
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(237, 220, 177, .55)';
+      ctx.font = '600 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('AISNIPER DIRECTOR // DESTINY 2', w * 0.038, h * 0.075);
+      ctx.fillStyle = 'rgba(243, 247, 244, .95)';
+      ctx.font = `600 ${Math.max(25, Math.min(38, w * 0.034))}px "Segoe UI", "PingFang SC", sans-serif`;
+      ctx.fillText('目的地', w * 0.038, h * 0.127);
+      ctx.fillStyle = 'rgba(144, 169, 174, .68)';
+      ctx.font = '500 7px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText('点击星球查看剧情线。完成主线后，星球旁会出现异域任务标记。', w * 0.038, h * 0.15);
+      ctx.fillStyle = 'rgba(114, 196, 164, .58)';
+      ctx.font = '500 5.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('AUTO-SAVE ON  ·  C 更换职业  ·  F1 查看装备', w * 0.038, h * 0.173);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(128, 211, 183, .6)';
+      ctx.font = '500 5.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('● 以太网 // 8ms', w * 0.63, h * 0.078);
+      ctx.fillStyle = 'rgba(142, 166, 172, .45)';
+      ctx.fillText('THE LAST CITY // ORBIT', w * 0.63, h * 0.097);
+      ctx.restore();
+
+      layout.nodes.forEach((node) => this.drawDirectorPlanet(ctx, node, node.id === selected?.id));
+      layout.raidMarkers.forEach((marker) => this.drawDirectorRaidMarker(ctx, marker));
+      layout.exoticMarkers.forEach((marker) => this.drawDirectorExoticMarker(ctx, marker));
+      layout.activityList.forEach((chip) => this.drawDirectorActivity(ctx, chip));
+      if (layout.panelOpen) this.drawDirectorPanel(ctx, layout);
+    }
+
+    drawBlackHoleEffects(ctx, x, y, radius, options = {}) {
+      if (!radius || radius < 1) return;
+      const t = this.orbitTime || this.time || 0;
+      const alpha = clamp(options.alpha ?? 1, 0, 1);
+      const accent = options.accent || '#f1d08d';
+      const accent2 = options.accent2 || '#a98bff';
+      const withCore = options.core === true;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.globalCompositeOperation = 'lighter';
+
+      const aura = ctx.createRadialGradient(0, 0, radius * 0.2, 0, 0, radius * 2.4);
+      aura.addColorStop(0, `rgba(255, 229, 176, ${0.18 * alpha})`);
+      aura.addColorStop(0.34, `rgba(164, 124, 255, ${0.14 * alpha})`);
+      aura.addColorStop(0.66, `rgba(101, 73, 174, ${0.06 * alpha})`);
+      aura.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 2.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let i = 0; i < 7; i += 1) {
+        const rr = radius * (1.25 + i * 0.17);
+        ctx.globalAlpha = alpha * (0.18 - i * 0.018);
+        ctx.strokeStyle = i % 2 ? accent2 : accent;
+        ctx.lineWidth = Math.max(0.7, radius * (0.018 - i * 0.0014));
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rr, rr * (0.25 + (i % 3) * 0.04), -0.23 + Math.sin(t * 0.14 + i) * 0.04, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.globalAlpha = alpha * 0.09;
+      ctx.strokeStyle = 'rgba(191, 209, 255, .9)';
+      ctx.lineWidth = 0.7;
+      for (let i = 0; i < 6; i += 1) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radius * (1.72 + i * 0.3), radius * (0.52 + i * 0.08), -0.22, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 10; i += 1) {
+        const angle = (i / 10) * Math.PI * 2 + t * 0.018;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * radius * 1.12, Math.sin(angle) * radius * 0.36);
+        ctx.quadraticCurveTo(
+          Math.cos(angle + 0.18) * radius * 2.1,
+          Math.sin(angle + 0.18) * radius * 0.72,
+          Math.cos(angle) * radius * 2.85,
+          Math.sin(angle) * radius * 1.45
+        );
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < 5; i += 1) {
+        const rr = radius * (1.22 + i * 0.1);
+        const spin = t * (0.24 + i * 0.04) + i * 1.5;
+        ctx.globalAlpha = alpha * (0.34 - i * 0.045);
+        ctx.strokeStyle = i % 2 ? accent2 : accent;
+        ctx.lineWidth = Math.max(1, radius * (0.055 - i * 0.006));
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rr, rr * (0.31 + i * 0.02), -0.23, spin, spin + 1.7);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < 26; i += 1) {
+        const angle = t * (0.28 + (i % 5) * 0.05) + i * 1.618;
+        const rr = radius * (1.12 + (i % 6) * 0.13);
+        ctx.globalAlpha = alpha * (0.2 + (i % 4) * 0.075);
+        ctx.fillStyle = i % 3 ? accent : accent2;
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * rr, Math.sin(angle) * rr * 0.32, Math.max(0.7, radius * 0.026 * (1 - (i % 4) * 0.15)), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let i = 0; i < 16; i += 1) {
+        const angle = (i / 16) * Math.PI * 2 + t * 0.04;
+        const rr = radius * (1.7 + (i % 4) * 0.22);
+        ctx.globalAlpha = alpha * (0.11 + (i % 3) * 0.035);
+        ctx.strokeStyle = 'rgba(210, 230, 255, .9)';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rr, rr * 0.55, 0, angle, angle + 0.14);
+        ctx.stroke();
+      }
+
+      if (withCore) {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.66, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalCompositeOperation = 'lighter';
+        const rim = ctx.createRadialGradient(0, 0, radius * 0.58, 0, 0, radius * 0.98);
+        rim.addColorStop(0, 'rgba(0,0,0,0)');
+        rim.addColorStop(0.56, `rgba(255, 228, 158, ${0.58 * alpha})`);
+        rim.addColorStop(0.78, `rgba(178, 139, 255, ${0.25 * alpha})`);
+        rim.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = rim;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.02, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = Math.max(1.4, radius * 0.045);
+        ctx.shadowColor = accent;
+        ctx.shadowBlur = radius * 0.7;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.strokeStyle = `rgba(255, 238, 190, ${0.8 * alpha})`;
+        ctx.lineWidth = Math.max(1, radius * 0.08);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radius * 1.2, radius * 0.33, -0.22, 0.05, Math.PI - 0.05);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    drawBlackHoleFront(ctx, x, y, radius, active) {
+      if (!radius || radius < 1) return;
+      const t = this.orbitTime || this.time || 0;
+      const alpha = active ? 1 : 0.48;
+      const pulse = 0.5 + Math.sin(t * 2.2) * 0.18;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = `rgba(255, 235, 183, ${pulse * alpha})`;
+      ctx.lineWidth = Math.max(0.8, radius * 0.028);
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 0.94, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(178, 144, 255, ${0.28 * alpha})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius * 1.32, radius * 0.32, -0.23, t * 0.18, t * 0.18 + Math.PI * 1.6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius * 1.58, radius * 0.38, -0.23, t * -0.11 + 0.4, t * -0.11 + Math.PI * 1.2);
+      ctx.stroke();
+      for (let i = 0; i < 8; i += 1) {
+        const angle = t * 0.5 + i * 0.785;
+        const rr = radius * (1.32 + (i % 2) * 0.24);
+        ctx.globalAlpha = alpha * (0.16 + (i % 3) * 0.08);
+        ctx.fillStyle = i % 2 ? '#f0d39a' : '#baa2ff';
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * rr, Math.sin(angle) * rr * 0.34, Math.max(0.6, radius * 0.022), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    drawDirectorPlanet(ctx, node, selected) {
+      const { x, y, r, destination } = node;
+      const hovered = this.directorHover === destination.id;
+      const accent = destination.accent || '#e9c078';
+      const scale = hovered ? 1.07 : 1;
+      const radius = r * scale;
+      const active = selected || hovered;
+      const artKey = this.planetArtKey(destination);
+      const image = this.planetAssets?.[artKey];
+      const hasImage = Boolean(image && image.complete && image.naturalWidth);
+      const isBlackHole = destination.id === 'blackhole';
+      this.drawDestinationFrame(ctx, x, y, radius, accent, active);
+      ctx.save();
+      if (active) glowCircle(ctx, x, y, radius * 2.4, `${accent}33`, hovered ? 0.95 : 0.68);
+      if (isBlackHole) this.drawBlackHoleEffects(ctx, x, y, radius * (active ? 1.28 : 1.05), { alpha: active ? 1 : 0.58 });
+      if (destination.id === 'redwar') {
+        this.drawTowerIcon(ctx, x, y, radius, accent, active);
+      } else {
+        const span = radius * 2.12;
+        if (hasImage) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(this.orbitTime * (0.055 + (destination.id.length % 4) * 0.014));
+          ctx.drawImage(image, -span / 2, -span / 2, span, span);
+          ctx.restore();
+        } else {
+          this.drawDirectorPlanetFallback(ctx, x, y, radius * 0.86, artKey);
+        }
+        if (destination.id === 'final-shape') this.drawPaleHeartTriangle(ctx, x, y, radius);
+      }
+      if (isBlackHole) this.drawBlackHoleFront(ctx, x, y, radius, active);
+      if (destination.id !== 'redwar') {
+        ctx.strokeStyle = active ? `${accent}dd` : 'rgba(221, 239, 239, .28)';
+        ctx.lineWidth = active ? 1.4 : 0.9;
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 0.86, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.textAlign = 'center';
+      ctx.fillStyle = selected ? '#f4f7f1' : 'rgba(231, 238, 234, .92)';
+      ctx.font = `600 ${selected ? 8.2 : 7.4}px "Segoe UI", "PingFang SC", sans-serif`;
+      ctx.fillText(destination.planetCn, x, y + radius + 24);
+      ctx.fillStyle = selected ? `${accent}cc` : 'rgba(151, 174, 178, .62)';
+      ctx.font = '500 5.1px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(destination.regionCn || destination.planetEn, x, y + radius + 34);
+      const progress = this.destinationProgress(destination);
+      const total = this.destinationMissions(destination).length;
+      if (progress > 0) {
+        ctx.fillStyle = progress >= total ? '#7fe3b2' : `${accent}bb`;
+        ctx.font = '600 5px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(progress >= total ? 'ARCHIVE COMPLETE' : `STORY ${progress}/${total}`, x, y + radius + 44);
+      }
+      ctx.restore();
+    }
+
+    drawDirectorRaidMarker(ctx, marker) {
+      const hovered = this.directorHover === marker.key;
+      const accent = marker.raid.accent || '#d2a8ef';
+      ctx.save();
+      ctx.translate(marker.x, marker.y);
+      glowCircle(ctx, 0, 0, hovered ? 24 : 18, `${accent}55`, 0.8);
+      this.drawDiamond(ctx, 0, 0, 9, hovered ? `${accent}44` : 'rgba(9, 14, 19, .9)', `${accent}dd`, 1.2);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = hovered ? '#f5efff' : accent;
+      ctx.font = '600 5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(marker.cleared ? '✓' : 'R', 0, 2);
+      ctx.fillStyle = marker.cleared ? 'rgba(127, 226, 173, .85)' : `${accent}cc`;
+      ctx.font = '600 4.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(marker.cleared ? 'RAID CLEAR' : 'RAID', 0, 22);
+      if (hovered) {
+        ctx.fillStyle = 'rgba(4, 8, 11, .92)';
+        fillRoundRect(ctx, -74, 29, 148, 22, 3, 'rgba(4, 8, 11, .92)');
+        ctx.strokeStyle = `${accent}66`;
+        ctx.strokeRect(-74, 29, 148, 22);
+        ctx.fillStyle = '#f0e8f7';
+        ctx.font = '600 6px "PingFang SC", sans-serif';
+        ctx.fillText(marker.raid.name, 0, 39);
+        ctx.fillStyle = 'rgba(188, 163, 213, .65)';
+        ctx.font = '500 4.5px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(marker.raid.en, 0, 47);
+      }
+      ctx.restore();
+    }
+
+    drawDirectorExoticMarker(ctx, marker) {
+      const hovered = this.directorHover === marker.key;
+      const accent = '#e3b04b';
+      const weapon = marker.weapon;
+      ctx.save();
+      ctx.translate(marker.x, marker.y);
+      glowCircle(ctx, 0, 0, hovered ? 27 : 19, 'rgba(227, 176, 75, .3)', 0.85);
+      ctx.save();
+      ctx.rotate(this.orbitTime * 0.4);
+      this.drawDiamond(ctx, 0, 0, hovered ? 11 : 9, hovered ? 'rgba(227,176,75,.3)' : 'rgba(19, 15, 9, .94)', '#e3b04b', 1.3);
+      ctx.restore();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#f4dda0';
+      ctx.font = '600 5.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('E', 0, 2);
+      ctx.fillStyle = 'rgba(227, 176, 75, .86)';
+      ctx.font = '600 4.7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('EXOTIC QUEST', 0, 23);
+      if (hovered) {
+        fillRoundRect(ctx, -92, 30, 184, 38, 3, 'rgba(6, 9, 10, .94)');
+        ctx.strokeStyle = 'rgba(227, 176, 75, .55)';
+        ctx.strokeRect(-92, 30, 184, 38);
+        ctx.fillStyle = '#f4e4b5';
+        ctx.font = '600 6.6px "PingFang SC", sans-serif';
+        ctx.fillText(marker.quest.name, 0, 42);
+        ctx.fillStyle = 'rgba(231, 205, 151, .7)';
+        ctx.font = '500 5px "PingFang SC", sans-serif';
+        ctx.fillText(`奖励 · ${weapon?.name || '异域武器'}`, 0, 52);
+        ctx.fillStyle = 'rgba(173, 192, 180, .55)';
+        ctx.font = '500 4.6px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('点击开始异域追猎', 0, 62);
+      }
+      ctx.restore();
+    }
+
+    drawDestinationFrame(ctx, x, y, radius, accent, active) {
+      ctx.save();
+      ctx.globalAlpha = active ? 0.58 : 0.28;
+      const halo = ctx.createRadialGradient(x, y, radius * 0.7, x, y, radius * 1.72);
+      halo.addColorStop(0, `${accent}16`);
+      halo.addColorStop(0.62, `${accent}08`);
+      halo.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.72, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `${accent}bb`;
+      ctx.lineWidth = active ? 1 : 0.7;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.28, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([2, 5]);
+      ctx.strokeStyle = `${accent}88`;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.48, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      for (let i = 0; i < 12; i += 1) {
+        const angle = (Math.PI * 2 * i) / 12;
+        const inner = radius * (i % 3 === 0 ? 1.5 : 1.53);
+        const outer = radius * (i % 3 === 0 ? 1.62 : 1.58);
+        ctx.strokeStyle = `${accent}77`;
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(angle) * inner, y + Math.sin(angle) * inner);
+        ctx.lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = `${accent}55`;
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      for (let i = 0; i < 3; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / 3) + this.orbitTime * 0.025;
+        const px = x + Math.cos(angle) * radius * 1.2;
+        const py = y + Math.sin(angle) * radius * 1.2;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.strokeStyle = `${accent}66`;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.7, -0.95, -0.2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.7, 1.9, 2.65);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    drawTowerIcon(ctx, x, y, radius, accent) {
+      ctx.save();
+      ctx.translate(x, y);
+      const disc = ctx.createRadialGradient(-radius * 0.25, -radius * 0.3, radius * 0.1, 0, 0, radius * 0.9);
+      disc.addColorStop(0, 'rgba(57, 73, 82, .96)');
+      disc.addColorStop(1, 'rgba(8, 14, 20, .98)');
+      ctx.fillStyle = disc;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `${accent}aa`;
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(245, 242, 228, .88)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, radius * 0.42);
+      ctx.lineTo(0, -radius * 0.52);
+      ctx.moveTo(-radius * 0.34, -radius * 0.13);
+      ctx.lineTo(0, -radius * 0.38);
+      ctx.lineTo(radius * 0.34, -radius * 0.13);
+      ctx.moveTo(-radius * 0.42, radius * 0.13);
+      ctx.lineTo(0, -radius * 0.06);
+      ctx.lineTo(radius * 0.42, radius * 0.13);
+      ctx.moveTo(-radius * 0.7, radius * 0.42);
+      ctx.lineTo(radius * 0.7, radius * 0.42);
+      ctx.stroke();
+      ctx.fillStyle = `${accent}dd`;
+      ctx.beginPath();
+      ctx.arc(0, -radius * 0.56, radius * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(203, 219, 220, .26)';
+      ctx.lineWidth = 0.8;
+      for (let i = -2; i <= 2; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(i * radius * 0.2, radius * 0.42);
+        ctx.lineTo(i * radius * 0.28, radius * 0.7);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(220, 232, 230, .56)';
+      ctx.font = '500 4.8px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('TOWER', 0, radius * 1.0);
+      ctx.restore();
+    }
+
+    drawPaleHeartTriangle(ctx, x, y, radius) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.sin(this.orbitTime * 0.4) * 0.045);
+      const glow = ctx.createRadialGradient(0, 0, radius * 0.1, 0, 0, radius * 1.15);
+      glow.addColorStop(0, 'rgba(255, 185, 247, .3)');
+      glow.addColorStop(0.55, 'rgba(196, 150, 255, .16)');
+      glow.addColorStop(1, 'rgba(116, 235, 255, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 1.15, 0, Math.PI * 2);
+      ctx.fill();
+      const prism = ctx.createLinearGradient(-radius * 0.45, -radius * 0.5, radius * 0.45, radius * 0.4);
+      prism.addColorStop(0, '#ffb5e9');
+      prism.addColorStop(0.45, '#d5a5ff');
+      prism.addColorStop(0.75, '#91efff');
+      prism.addColorStop(1, '#fff4c9');
+      ctx.globalAlpha = 0.72;
+      ctx.fillStyle = prism;
+      ctx.beginPath();
+      ctx.moveTo(0, -radius * 0.58);
+      ctx.lineTo(radius * 0.48, radius * 0.38);
+      ctx.lineTo(-radius * 0.48, radius * 0.38);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(255, 249, 255, .72)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    drawDirectorPlanetFallback(ctx, x, y, radius, artKey) {
+      const tint = DESTINY_PLANET_TINTS[artKey] || DESTINY_PLANET_TINTS.earth;
+      const planet = ctx.createRadialGradient(x - radius * 0.34, y - radius * 0.4, radius * 0.1, x, y, radius);
+      planet.addColorStop(0, tint[0]);
+      planet.addColorStop(0.52, tint[1]);
+      planet.addColorStop(1, tint[2]);
+      ctx.fillStyle = planet;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.clip();
+      if (artKey === 'earth') {
+        ctx.fillStyle = 'rgba(75, 126, 72, .9)';
+        ctx.beginPath();
+        ctx.ellipse(x - radius * 0.3, y - radius * 0.18, radius * 0.32, radius * 0.2, -0.3, 0, Math.PI * 2);
+        ctx.ellipse(x + radius * 0.28, y + radius * 0.3, radius * 0.28, radius * 0.34, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(240, 250, 255, .5)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.ellipse(x, y, radius * 0.75, radius * 0.3, -0.2, 0.2, Math.PI * 1.2);
+        ctx.stroke();
+      } else if (artKey === 'mars') {
+        ctx.fillStyle = 'rgba(238, 222, 201, .8)';
+        ctx.beginPath();
+        ctx.ellipse(x, y - radius * 0.78, radius * 0.45, radius * 0.18, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(72, 24, 21, .55)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(x - radius * 0.7, y + radius * 0.1);
+        ctx.lineTo(x + radius * 0.4, y + radius * 0.25);
+        ctx.stroke();
+      } else if (artKey === 'paleheart') {
+        ctx.strokeStyle = 'rgba(216, 193, 140, .55)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 0.62, -1.1, 1.1);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(222, 242, 235, .45)';
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 0.36, 1.7, 4.2);
+        ctx.stroke();
+      } else if (artKey === 'europa' || artKey === 'neptune') {
+        ctx.strokeStyle = artKey === 'europa' ? 'rgba(245, 255, 255, .6)' : 'rgba(146, 234, 250, .35)';
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.ellipse(x, y + i * radius * 0.22 - radius * 0.3, radius * 0.8, radius * 0.06, -0.08, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (artKey === 'moon' || artKey === 'mercury') {
+        ctx.fillStyle = 'rgba(54, 58, 54, .38)';
+        ctx.beginPath();
+        ctx.ellipse(x - radius * 0.25, y - radius * 0.2, radius * 0.3, radius * 0.22, 0.2, 0, Math.PI * 2);
+        ctx.ellipse(x + radius * 0.3, y + radius * 0.28, radius * 0.24, radius * 0.17, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (artKey === 'throne') {
+        ctx.fillStyle = 'rgba(43, 65, 35, .45)';
+        ctx.beginPath();
+        ctx.ellipse(x, y + radius * 0.18, radius * 0.48, radius * 0.2, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (artKey === 'dreaming') {
+        ctx.strokeStyle = 'rgba(118, 226, 210, .55)';
+        ctx.lineWidth = 1.3;
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(x - radius * 0.6 + i * radius * 0.4, y + radius * 0.6);
+          ctx.lineTo(x - radius * 0.3 + i * radius * 0.4, y - radius * 0.55);
+          ctx.stroke();
+        }
+      } else if (artKey === 'tangled') {
+        ctx.strokeStyle = 'rgba(218, 166, 112, .35)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 0.62, 0.3, 2.4);
+        ctx.stroke();
+      }
+      const shadow = ctx.createRadialGradient(x + radius * 0.45, y + radius * 0.5, radius * 0.1, x + radius * 0.3, y + radius * 0.35, radius * 1.1);
+      shadow.addColorStop(0, 'rgba(2, 6, 10, .58)');
+      shadow.addColorStop(1, 'rgba(2, 6, 10, 0)');
+      ctx.fillStyle = shadow;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+
+    drawDirectorActivity(ctx, chip) {
+      const hovered = this.directorHover === `act:${chip.id}`;
+      const accent = chip.activity.accent;
+      ctx.save();
+      const fill = hovered ? 'rgba(31, 45, 55, .96)' : 'rgba(10, 17, 24, .84)';
+      fillRoundRect(ctx, chip.x, chip.y, chip.w, chip.h, 5, fill);
+      ctx.strokeStyle = hovered ? accent : 'rgba(159, 191, 198, .15)';
+      ctx.lineWidth = hovered ? 1.2 : 0.9;
+      ctx.strokeRect(chip.x, chip.y, chip.w, chip.h);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = accent;
+      ctx.font = '600 5.4px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(chip.id === 'crucible' ? 'PVP' : chip.id === 'vanguard' ? 'VANGUARD' : chip.id === 'range' ? 'TRAINING' : chip.id === 'gambit' ? 'GAMBIT' : 'TIER III', chip.x + 6, chip.y + 10);
+      ctx.fillStyle = 'rgba(235, 242, 238, .88)';
+      ctx.font = '600 7.6px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText(chip.activity.title, chip.x + 8, chip.y + 21);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = hovered ? accent : 'rgba(145, 169, 173, .5)';
+      ctx.font = '500 5.3px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('DEPLOY →', chip.x + chip.w - 8, chip.y + 17);
+      ctx.restore();
+    }
+
+    drawDirectorPanel(ctx, layout) {
+      const { panel, selected, missions, progress, missionRects, cta } = layout;
+      const accent = selected.accent || '#e9c078';
+      const accent2 = selected.accent2 || '#8fd8cf';
+      const installed = selected.id === 'redwar' || Boolean(selected.installed);
+      ctx.save();
+      const panelGradient = ctx.createLinearGradient(panel.x, panel.y, panel.x + panel.w, panel.y + panel.h);
+      panelGradient.addColorStop(0, 'rgba(19, 29, 37, .97)');
+      panelGradient.addColorStop(1, 'rgba(6, 11, 16, .98)');
+      fillRoundRect(ctx, panel.x, panel.y, panel.w, panel.h, 8, panelGradient);
+      ctx.strokeStyle = `${accent}44`;
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      const close = layout.panelClose;
+      if (close) {
+        fillRoundRect(ctx, close.x, close.y, close.w, close.h, 3, 'rgba(255,255,255,.055)');
+        ctx.strokeStyle = 'rgba(213, 231, 225, .2)';
+        ctx.lineWidth = .8;
+        ctx.strokeRect(close.x, close.y, close.w, close.h);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(236, 243, 236, .82)';
+        ctx.font = '600 11px "Segoe UI", sans-serif';
+        ctx.fillText('×', close.x + close.w / 2, close.y + 12.5);
+        ctx.textAlign = 'left';
+      }
+      const sheen = ctx.createLinearGradient(panel.x, panel.y, panel.x + panel.w, panel.y);
+      sheen.addColorStop(0, 'rgba(255,255,255,0)');
+      sheen.addColorStop(0.5, `${accent}44`);
+      sheen.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sheen;
+      ctx.fillRect(panel.x + 12, panel.y, panel.w - 24, 1);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = `${accent}aa`;
+      ctx.font = '600 5.6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('DIRECTOR // DESTINATION', panel.x + 14, panel.y + 20);
+      ctx.fillStyle = '#f2f6f1';
+      ctx.font = '600 18px "Segoe UI", "PingFang SC", sans-serif';
+      const destinationTitle = selected.regionCn ? `${selected.planetCn || selected.cn} · ${selected.regionCn}` : (selected.planetCn || selected.cn);
+      ctx.fillText(destinationTitle, panel.x + 14, panel.y + 42, panel.w - 28);
+      ctx.fillStyle = 'rgba(160, 184, 186, .68)';
+      ctx.font = '500 5.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${selected.planetEn || 'DESTINY 2'}`, panel.x + 14, panel.y + 56, panel.w - 112);
+      ctx.textAlign = 'right';
+      ctx.fillText(selected.date || '', panel.x + panel.w - 14, panel.y + 56);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = accent;
+      ctx.font = '600 7.2px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText(`${selected.title}${selected.cn && selected.title !== selected.cn ? ` · ${selected.cn}` : ''}`, panel.x + 14, panel.y + 73);
+      ctx.fillStyle = 'rgba(156, 178, 180, .64)';
+      ctx.font = '500 5.4px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`敌对势力 // ${selected.factionCn || this.factionName(selected.faction)}`, panel.x + 14, panel.y + 86);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = installed ? 'rgba(124, 222, 169, .78)' : 'rgba(224, 160, 105, .8)';
+      ctx.font = '600 5.4px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(installed ? '● DESTINATION READY' : '● DLC NOT INSTALLED', panel.x + panel.w - 14, panel.y + 20);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(195, 212, 210, .64)';
+      ctx.font = '500 6.5px "Segoe UI", "PingFang SC", sans-serif';
+      this.drawWrappedText(ctx, selected.story || '', panel.x + 14, panel.y + 103, panel.w - 28, 10);
+      ctx.fillStyle = 'rgba(148, 169, 171, .48)';
+      ctx.font = '500 5.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`战役进度 ${Math.min(progress, missions.length)} / ${missions.length}`, panel.x + 14, panel.y + 166);
+      fillRoundRect(ctx, panel.x + 14, panel.y + 173, panel.w - 28, 3, 2, 'rgba(255,255,255,.09)');
+      fillRoundRect(ctx, panel.x + 14, panel.y + 173, (panel.w - 28) * clamp(progress / Math.max(1, missions.length), 0, 1), 3, 2, accent);
+      ctx.fillStyle = 'rgba(173, 192, 193, .55)';
+      ctx.font = '600 5.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('STORY MISSIONS', panel.x + 14, panel.y + 188);
+
+      missionRects.forEach((rect) => {
+        const hovered = this.directorHover === `mission:${rect.index}`;
+        const complete = rect.index < progress;
+        const current = rect.index === progress && progress < missions.length;
+        const rowFill = hovered ? 'rgba(255,255,255,.075)' : complete ? 'rgba(92, 175, 132, .055)' : 'rgba(255,255,255,.025)';
+        fillRoundRect(ctx, rect.x, rect.y, rect.w, rect.h, 4, rowFill);
+        ctx.strokeStyle = hovered ? `${accent}88` : complete ? 'rgba(101, 202, 148, .17)' : 'rgba(164, 192, 196, .085)';
+        ctx.lineWidth = hovered ? 1.05 : 0.8;
+        ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+        const badgeX = rect.x + 14;
+        const badgeY = rect.y + rect.h / 2;
+        ctx.fillStyle = complete ? 'rgba(111, 224, 162, .9)' : current ? accent : 'rgba(159, 178, 180, .42)';
+        ctx.font = '600 5.6px "SFMono-Regular", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(complete ? '✓' : String(rect.index + 1).padStart(2, '0'), badgeX, badgeY + 2);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = hovered || current ? '#eef6ef' : 'rgba(210, 223, 219, .82)';
+        ctx.font = '550 7.5px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(rect.mission.title, rect.x + 27, rect.y + Math.min(19, rect.h * 0.4), rect.w - 60);
+        ctx.fillStyle = 'rgba(144, 165, 168, .54)';
+        ctx.font = '500 4.9px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(`${rect.mission.en || ''}  ·  ${rect.mission.location || ''}`, rect.x + 27, rect.y + Math.min(32, rect.h * 0.68), rect.w - 45);
+        if (rect.h > 42) {
+          ctx.fillStyle = 'rgba(135, 158, 160, .45)';
+          ctx.font = '500 5.3px "Segoe UI", "PingFang SC", sans-serif';
+          ctx.fillText(rect.mission.objective || '', rect.x + 27, rect.y + rect.h - 8, rect.w - 45);
+        }
+        ctx.textAlign = 'right';
+        ctx.fillStyle = current ? accent : complete ? 'rgba(111, 224, 162, .62)' : 'rgba(144, 164, 166, .32)';
+        ctx.font = '600 5.2px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(complete ? 'CLEARED' : current ? 'CONTINUE' : rect.index === 0 ? 'AVAILABLE' : 'LOCKED', rect.x + rect.w - 9, rect.y + 13);
+        ctx.textAlign = 'left';
+      });
+
+      const lastRow = missionRects[missionRects.length - 1];
+      const intelTop = lastRow ? lastRow.y + lastRow.h + 8 : panel.y + 198;
+      const intelBottom = cta.y - 12;
+      if (intelBottom - intelTop > 40) {
+        fillRoundRect(ctx, panel.x + 13, intelTop, panel.w - 26, intelBottom - intelTop, 4, 'rgba(255,255,255,.023)');
+        ctx.strokeStyle = 'rgba(169, 197, 199, .08)';
+        ctx.strokeRect(panel.x + 13, intelTop, panel.w - 26, intelBottom - intelTop);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = `${accent}99`;
+        ctx.font = '600 5px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('DESTINATION INTEL', panel.x + 21, intelTop + 13);
+        ctx.fillStyle = 'rgba(197, 213, 211, .66)';
+        ctx.font = '500 5.8px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(`敌对势力 // ${selected.factionCn || this.factionName(selected.faction)}`, panel.x + 21, intelTop + 26, panel.w - 42);
+        if (intelBottom - intelTop > 50) {
+        ctx.fillStyle = 'rgba(143, 166, 168, .5)';
+        ctx.font = '500 4.9px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(`${selected.planetEn || 'DESTINY 2'}  ·  ${missions.length} STORY NODES  ·  ${progress >= missions.length ? 'ARCHIVE COMPLETE' : 'LOCAL STATE SAVED'}`, panel.x + 21, intelTop + 38, panel.w - 42);
+        }
+      }
+
+      const ctaFill = cta.enabled
+        ? ctx.createLinearGradient(cta.x, cta.y, cta.x + cta.w, cta.y)
+        : null;
+      if (ctaFill) {
+        ctaFill.addColorStop(0, accent);
+        ctaFill.addColorStop(1, accent2);
+      }
+      fillRoundRect(ctx, cta.x, cta.y, cta.w, cta.h, 4, ctaFill || 'rgba(255,255,255,.055)');
+      ctx.textAlign = 'center';
+      ctx.fillStyle = cta.enabled ? '#0d1714' : 'rgba(173, 185, 184, .42)';
+      ctx.font = '600 7.6px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText(cta.label, cta.x + cta.w / 2, cta.y + 20);
+      ctx.fillStyle = cta.enabled ? 'rgba(13, 23, 20, .55)' : 'rgba(160, 176, 175, .3)';
+      ctx.font = '500 5.1px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(selected.id === 'redwar' ? 'THE RED WAR // 5 MISSIONS' : `${selected.planetEn} // ${missions.length} MISSIONS`, cta.x + cta.w / 2, cta.y + 27);
+      ctx.restore();
+    }
+
+
+    missionProgress() {
+      if (this.mission.type === 'crucible') return this.crucible ? clamp(this.crucible.playerScore / 20, 0, 1) : 0;
+      if (this.mission.type === 'gambit') {
+        if (!this.gambit) return 0;
+        if (this.gambit.primeval) return clamp(0.75 + (1 - this.gambit.primeval.hp / this.gambit.primeval.maxHp) * 0.25, 0, 1);
+        return clamp(this.gambit.banked / this.gambit.target, 0, 0.75);
+      }
+      if (this.mission.type === 'reckoning') return clamp(this.wave / 3, 0, 1);
+      if (this.mission.type === 'range') return 0;
+      if (this.mission.type === 'raid') {
+        const state = this.raidState;
+        if (!state) return 0;
+        const total = state.encounters?.length || this.mission.encounters || 3;
+        const index = state.encounterIndex || 0;
+        let stage = 0;
+        if (state.phase === 'damage' && this.raidBoss) {
+          stage = 0.7 + (1 - this.raidBoss.hp / this.raidBoss.maxHp) * 0.3;
+        } else if (state.target > 0) {
+          stage = clamp(state.progress / state.target, 0, 1) * 0.7;
+        }
+        return clamp((index + stage) / total, 0, 1);
+      }
+      if (this.mission.type === 'exoticQuest') {
+        if (this.dlcBoss) return clamp(0.75 + (1 - this.dlcBoss.hp / this.dlcBoss.maxHp) * 0.25, 0, 1);
+        return clamp(this.wave / (this.waveTarget || 3), 0, 0.75);
+      }
+      if (this.mission.type === 'dlc' || this.mission.type === 'strike') {
+        if (this.fieldObjective && !this.fieldObjective.done) {
+          return clamp(this.fieldObjectiveProgress() * 0.55 + clamp(this.wave / (this.waveTarget || 3), 0, 1) * 0.3, 0, 0.85);
+        }
+        if (this.dlcBoss) return clamp(0.75 + (1 - this.dlcBoss.hp / this.dlcBoss.maxHp) * 0.25, 0, 1);
+        return clamp(this.wave / (this.waveTarget || 3), 0, 0.75);
+      }
+      if (this.mission.type === 'waves') {
+        return this.phase === 'extract' ? 1 : clamp(this.wave / 3, 0, 0.85);
+      }
+      if (this.mission.type === 'shard') return this.shard ? this.shard.charge / 100 : 0;
+      if (this.mission.type === 'conduits') return this.conduits.filter((conduit) => !conduit.alive).length / 3;
+      if (this.mission.type === 'generators') {
+        const destroyed = this.generators.filter((generator) => !generator.alive).length / 3;
+        if (this.elite) return clamp(0.75 + (1 - this.elite.hp / this.elite.maxHp) * 0.25, 0, 1);
+        return destroyed * 0.75;
+      }
+      if (this.mission.type === 'boss' && this.boss) return 1 - this.boss.hp / this.boss.maxHp;
+      return 0;
+    }
+
+    updateHUD() {
+      if (!this.player || !this.mission) return;
+      if (this.currentMode !== 'campaign') {
+        let objective = this.mission.objective;
+        let sub = `${this.mission.chapter} · ${this.mission.cn}`;
+        if (this.currentMode === 'crucible' && this.crucible) {
+          objective = '熔炉竞技场 · 先取得 20 次击破';
+          sub = `守护者 ${this.crucible.playerScore} / 20 · 对手 ${this.crucible.enemyScore} / 20 · ${formatTime(this.crucible.timeLeft)}`;
+        } else if (this.currentMode === 'gambit' && this.gambit) {
+          objective = this.gambit.primeval ? '击败 Primeval' : '收集荧光并在银行存入 25 个';
+          sub = this.gambit.primeval
+            ? `Primeval ${Math.ceil(this.gambit.primeval.hp)} / ${this.gambit.primeval.maxHp} · 携带 ${this.gambit.motes}`
+            : `携带 ${this.gambit.motes} · 已存入 ${this.gambit.banked} / ${this.gambit.target} · 靠近银行按 E`;
+        } else if (this.currentMode === 'reckoning') {
+          objective = '在九层深渊中生存三波';
+          sub = `第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波 · 剩余敌人 ${this.aliveEnemies().length}`;
+        } else if (this.currentMode === 'dlc') {
+          objective = this.mission.objective;
+          sub = `${this.dlcConfig?.title || 'DLC'} · ${this.mission.chapter} · ${this.mission.factionCn || this.factionName(this.mission.faction)} · 第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波${this.dlcBoss ? ` · ${this.dlcBoss.name || '首领'} ${Math.ceil(this.dlcBoss.hp)} HP` : ''}`;
+          if (this.fieldObjective && !this.fieldObjective.done) {
+            objective = `${this.fieldObjective.label} · ${this.fieldObjectiveText()}`;
+            sub = `${this.fieldObjective.hint} · ${this.dlcBoss ? '首领护盾开启' : '完成目标后推进'}`;
+          }
+        } else if (this.currentMode === 'raid') {
+          const state = this.raidState;
+          const total = state?.encounters?.length || this.mission.encounters || 3;
+          const stageNo = Math.min(total, (state?.encounterIndex || 0) + 1);
+          const stageName = state?.config?.name || '突袭关卡';
+          const bossName = state?.config?.bossName || this.raidBoss?.name || '';
+          if (state?.phase === 'mechanic') {
+            objective = `${state.mechanicLabel || '机制'} · ${state.progress}/${state.target}`;
+            sub = `${this.raidConfig?.name || '突袭'} · 第 ${stageNo} / ${total} 关 · ${stageName} · ${bossName ? '首领护盾开启' : '开门关 · 无首领'} · ${state.mechanicHint || ''}`;
+          } else {
+            objective = `输出阶段 · ${Math.ceil(state?.damageTimer || 0)} 秒`;
+            sub = `${this.raidConfig?.name || '突袭'} · 第 ${stageNo} / ${total} 关 · ${stageName} · ${bossName || '首领'} ${Math.ceil(this.raidBoss?.hp || 0)} / ${Math.ceil(this.raidBoss?.maxHp || 0)}`;
+          }
+        } else if (this.currentMode === 'exoticQuest') {
+          objective = this.mission.objective;
+          sub = `异域追猎 · ${this.exoticQuestConfig?.name || '异域任务'} · 第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波${this.dlcBoss ? ` · ${this.dlcBoss.name || '异域守卫'} ${Math.ceil(this.dlcBoss.hp)} HP` : ''}`;
+        } else if (this.currentMode === 'strike') {
+          objective = this.mission.objective;
+          sub = `先锋打击 · ${this.strikeConfig?.title || '打击'} · ${this.strikeConfig?.location || ''} · 第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波${this.dlcBoss ? ` · ${this.dlcBoss.name || '首领'} ${Math.ceil(this.dlcBoss.hp)} HP` : ''}`;
+          if (this.fieldObjective && !this.fieldObjective.done) {
+            objective = `${this.fieldObjective.label} · ${this.fieldObjectiveText()}`;
+            sub = `${this.fieldObjective.hint} · ${this.dlcBoss ? '首领护盾开启' : '完成目标后推进'}`;
+          }
+        } else if (this.currentMode === 'range') {
+          objective = '靶场 · 所有敌人类型';
+          const dps = this.rangeTimer > 0 ? (this.rangeDamage || 0) / this.rangeTimer : 0;
+          sub = `无限弹药 · 无限技能 · 已击破 ${this.rangeKills || 0} 个目标 · 累计伤害 ${Math.round(this.rangeDamage || 0)} · DPS ${Math.round(dps)}`;
+        }
+        if (this.encounter && !this.encounter.done) {
+          objective = `摧毁压制水晶 ${this.encounter.destroyed}/${this.encounter.total} · ${objective}`;
+          sub = `水晶仍在压制战场 · ${sub}`;
+        }
+        const totalHealth = this.player.hp + this.player.shield;
+        const ability = this.player.reload > 0
+          ? `换弹 ${this.player.reload.toFixed(1)}s`
+          : `弹药 ${this.player.ammo}/${this.player.mag} · 手雷 ${this.player.grenadeCd > 0 ? `${this.player.grenadeCd.toFixed(1)}s` : '就绪'} · 超能 ${Math.floor(this.player.superCharge)}%`;
+        this.setHud({
+          objective,
+          sub,
+          score: String(this.kills),
+          scoreLabel: '击杀',
+          status: ability,
+          health: totalHealth / (this.player.maxHp + this.player.maxShield),
+          healthLabel: `生命 ${Math.ceil(this.player.hp)} · 护盾 ${Math.ceil(this.player.shield)}`,
+          progress: this.missionProgress()
+        });
+        return;
+      }
+      let objective = this.mission.objective;
+      let sub = `${this.mission.chapter} · ${this.mission.cn}`;
+      if (this.mission.type === 'waves') {
+        if (this.phase === 'extract') objective = '登上撤离艇，离开塔城广场';
+        else objective = this.wave >= 3 && this.aliveEnemies().length === 0 ? '撤离点正在开启' : `击退红色军团 · 第 ${Math.max(1, this.wave)} / 3 波`;
+        sub += this.phase === 'extract' ? ' · 撤离点已标记' : ` · 剩余敌人 ${this.aliveEnemies().length}`;
+      } else if (this.mission.type === 'shard') {
+        sub += ` · 光能恢复 ${Math.floor(this.shard?.charge || 0)}%`;
+      } else if (this.mission.type === 'conduits') {
+        sub += ` · 已摧毁 ${this.conduits.filter((conduit) => !conduit.alive).length} / 3`;
+      } else if (this.mission.type === 'generators') {
+        if (this.elite) objective = '击败帝国百夫长';
+        else if (this.generators.every((generator) => !generator.alive)) objective = '帝国百夫长正在登舰';
+        else objective = `摧毁护盾发生器 ${this.generators.filter((generator) => !generator.alive).length} / 3`;
+        sub += this.elite ? ` · 百夫长 ${Math.ceil(this.elite.hp)} HP` : '';
+      } else if (this.mission.type === 'boss') {
+        sub += this.boss ? ` · Ghaul ${Math.ceil(this.boss.hp)} / ${this.boss.maxHp}` : '';
+      }
+      if (this.encounter && !this.encounter.done) {
+        objective = `摧毁压制水晶 ${this.encounter.destroyed}/${this.encounter.total} · ${objective}`;
+        sub = `水晶仍在压制战场 · ${sub}`;
+      }
+      const totalHealth = this.player.hp + this.player.shield;
+      const ability = this.player.reload > 0
+        ? `换弹 ${this.player.reload.toFixed(1)}s`
+        : `弹药 ${this.player.ammo}/${this.player.mag} · 手雷 ${this.player.grenadeCd > 0 ? `${this.player.grenadeCd.toFixed(1)}s` : '就绪'} · 超能 ${Math.floor(this.player.superCharge)}%`;
+      this.setHud({
+        objective,
+        sub,
+        score: String(this.kills),
+        scoreLabel: '击杀',
+        status: ability,
+        health: totalHealth / (this.player.maxHp + this.player.maxShield),
+        healthLabel: `生命 ${Math.ceil(this.player.hp)} · 护盾 ${Math.ceil(this.player.shield)}`,
+        progress: this.missionProgress()
+      });
+    }
+
+    draw(ctx, w, h) {
+      this.viewW = w;
+      this.viewH = h;
+      this.w = w;
+      this.h = h;
+      if (this.manager.canvas) {
+        this.manager.canvas.style.cursor = this.screen === 'play' && !this.inventoryOpen && !this.intro && !this.transition && !this.deathState ? 'none' : '';
+      }
+      if (this.screen === 'classSelect') {
+        this.drawClassSelect(ctx, w, h);
+        return;
+      }
+      if (this.screen === 'orbit') {
+        this.drawDirector(ctx, w, h);
+        if (this.inventoryOpen) this.drawInventory(ctx, w, h);
+        return;
+      }
+      this.viewW = w;
+      this.viewH = h;
+      if (this.currentMode === 'raid') {
+        this.w = w * this.raidWorldScale;
+        this.h = h * this.raidWorldScale;
+      } else {
+        this.w = w;
+        this.h = h;
+      }
+      const worldW = this.w;
+      const worldH = this.h;
+      const raidCamera = this.currentMode === 'raid' ? this.raidCameraFor(w, h) : null;
+      ctx.save();
+      if (this.shake > 0) ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
+      if (raidCamera) {
+        ctx.save();
+        ctx.translate(-raidCamera.x, -raidCamera.y);
+      }
+      if (this.currentMode === 'raid' && this.raidConfig) this.drawRaidArena(ctx, worldW, worldH);
+      else if (this.currentMode === 'range') this.drawRangeArena(ctx, worldW, worldH);
+      else this.drawBackground(ctx, worldW, worldH);
+      this.drawObjectives(ctx, worldW, worldH);
+      this.drawHazards(ctx, worldW, worldH);
+      this.drawEncounter(ctx, worldW, worldH);
+      if (this.fieldObjective && !this.fieldObjective.done) this.drawFieldObjective(ctx, worldW, worldH);
+      if (this.currentMode === 'raid') this.drawRaidMechanic(ctx, worldW, worldH);
+      this.drawGrenades(ctx);
+      this.drawEnemies(ctx, worldW, worldH);
+      this.drawLoot(ctx, worldW, worldH);
+      this.drawAmmoDrops(ctx, worldW, worldH);
+      if (this.elite && this.elite.alive) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 205, 121, .65)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(this.elite.x * worldW, this.elite.y * worldH, this.elite.radius + 8 + Math.sin(this.time * 4) * 2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      if (this.currentMode === 'raid' && this.raidBoss) this.drawRaidBoss(ctx, worldW, worldH);
+      if (this.boss && !this.boss.dead) this.drawBoss(ctx, worldW, worldH);
+      this.drawBullets(ctx);
+      this.drawPlayer(ctx, worldW, worldH);
+      this.drawClassEffects(ctx, worldW, worldH);
+      this.drawSuperEffects(ctx, worldW, worldH);
+      this.fx.draw(ctx);
+      this.drawTelegraphs(ctx, worldW, worldH);
+      if (raidCamera) ctx.restore();
+      if (this.inventoryOpen) {
+        const savedWorldW = this.w;
+        const savedWorldH = this.h;
+        this.w = w;
+        this.h = h;
+        this.drawInventory(ctx, w, h);
+        this.w = savedWorldW;
+        this.h = savedWorldH;
+        ctx.restore();
+        return;
+      }
+      this.drawMissionHud(ctx, w, h);
+      if (this.currentMode === 'raid' && !this.intro && !this.transition) this.drawRaidStageBanner(ctx, w, h);
+      if (this.boss && !this.boss.dead && !this.transition) this.drawBossHealth(ctx, w, h);
+      if (this.dlcBoss && this.dlcBoss.alive && !this.transition) this.drawDlcBossHealth(ctx, w, h);
+      if (this.intro) this.drawIntro(ctx, w, h);
+      if (this.transition) this.drawTransition(ctx, w, h);
+      if (this.deathState) this.drawDeath(ctx, w, h);
+      if (!this.intro && !this.transition && !this.deathState && !this.inventoryOpen) this.drawDestinyCrosshair(ctx, w, h);
+      ctx.restore();
+    }
+
+    drawDestinyCrosshair(ctx, w, h) {
+      const mouse = this.manager.mouse;
+      if (!mouse) return;
+      const target = this.cursorAimTarget(mouse, 760);
+      const color = target ? 'rgba(255, 220, 142, .96)' : 'rgba(232, 242, 234, .62)';
+      drawCrosshair(ctx, mouse.x, mouse.y, color, target ? 15 : 10, false);
+      if (target) {
+        const pulse = 1 + Math.sin(this.time * 5) * 0.08;
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, 19 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let i = 0; i < 4; i += 1) {
+          const angle = i * Math.PI / 2 + Math.PI / 4;
+          ctx.beginPath();
+          ctx.moveTo(mouse.x + Math.cos(angle) * 24, mouse.y + Math.sin(angle) * 24);
+          ctx.lineTo(mouse.x + Math.cos(angle) * 30, mouse.y + Math.sin(angle) * 30);
+          ctx.stroke();
+        }
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.font = '600 5.2px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('AA', mouse.x, mouse.y - 25);
+        ctx.restore();
+      }
+    }
+
+    biomeConfig(mission) {
+      return DESTINY_BIOMES[mission?.biomeId || mission?.biome] || DESTINY_BIOMES.mercury;
+    }
+
+    drawBiomeSky(ctx, w, h, mission) {
+      const biome = this.biomeConfig(mission);
+      const horizon = biome.horizon || 'vex-spires';
+      ctx.save();
+      if (horizon === 'blackhole') {
+        this.drawBlackHoleEffects(ctx, w * 0.5, h * 0.24, Math.min(w, h) * 0.09, { core: true, alpha: 0.95 });
+        ctx.fillStyle = 'rgba(169, 139, 255, .1)';
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.68, w * 0.4, h * 0.045, -0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+      if (horizon === 'venus-jungle') {
+        const cloud = ctx.createRadialGradient(w * 0.65, h * 0.18, 4, w * 0.65, h * 0.18, w * 0.2);
+        cloud.addColorStop(0, 'rgba(255, 230, 158, .42)');
+        cloud.addColorStop(0.36, 'rgba(222, 190, 108, .12)');
+        cloud.addColorStop(1, 'rgba(150, 120, 65, 0)');
+        ctx.fillStyle = cloud;
+        ctx.beginPath();
+        ctx.arc(w * 0.65, h * 0.18, w * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < 9; i += 1) {
+          const x = (i / 8) * w;
+          const height = h * (0.08 + ((i * 31) % 40) / 330);
+          ctx.strokeStyle = 'rgba(120, 166, 111, .22)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(x, h * 0.31);
+          ctx.lineTo(x, h * 0.31 - height);
+          ctx.lineTo(x + w * 0.035, h * 0.31 - height * 0.66);
+          ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(232, 212, 154, .07)';
+        ctx.beginPath();
+        ctx.ellipse(w * 0.42, h * 0.16, w * 0.24, h * 0.035, -0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+      if (horizon === 'vex-spires' || horizon === 'vex-forest' || horizon === 'vex-core') {
+        const sunX = w * 0.63;
+        const sunY = h * 0.17;
+        const sun = ctx.createRadialGradient(sunX, sunY, 5, sunX, sunY, w * 0.15);
+        sun.addColorStop(0, 'rgba(255, 236, 190, .9)');
+        sun.addColorStop(0.2, 'rgba(232, 177, 100, .42)');
+        sun.addColorStop(1, 'rgba(130, 73, 38, 0)');
+        ctx.fillStyle = sun;
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, w * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(240, 192, 120, .3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, w * 0.09, 0, Math.PI * 2);
+        ctx.stroke();
+        if (horizon === 'vex-forest') {
+          for (let i = 0; i < 11; i += 1) {
+            const x = (i / 10) * w;
+            const baseY = h * 0.31;
+            const height = h * (0.11 + ((i * 31) % 50) / 300);
+            ctx.strokeStyle = 'rgba(111, 218, 191, .16)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x, baseY);
+            ctx.lineTo(x, baseY - height);
+            ctx.lineTo(x + w * 0.035, baseY - height * 0.76);
+            ctx.lineTo(x + w * 0.018, baseY - height * 0.56);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, baseY - height * 0.72);
+            ctx.lineTo(x - w * 0.028, baseY - height * 0.58);
+            ctx.stroke();
+          }
+        } else if (horizon === 'vex-core') {
+          ctx.strokeStyle = 'rgba(111, 226, 239, .22)';
+          ctx.lineWidth = 1.2;
+          for (let i = 0; i < 4; i += 1) {
+            ctx.beginPath();
+            ctx.ellipse(w * 0.5, h * 0.29, w * (0.14 + i * 0.06), h * (0.045 + i * 0.025), 0, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        } else {
+          for (let i = 0; i < 9; i += 1) {
+            const x = w * (0.03 + i * 0.115);
+            const baseY = h * 0.31;
+            const height = h * (0.06 + ((i * 23) % 40) / 260);
+            ctx.fillStyle = 'rgba(73, 54, 35, .78)';
+            ctx.beginPath();
+            ctx.moveTo(x - w * 0.012, baseY);
+            ctx.lineTo(x, baseY - height);
+            ctx.lineTo(x + w * 0.014, baseY);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(227, 184, 111, .2)';
+            ctx.beginPath();
+            ctx.moveTo(x, baseY);
+            ctx.lineTo(x, baseY - height);
+            ctx.stroke();
+          }
+        }
+      } else if (horizon === 'bray-towers') {
+        const sunX = w * 0.2;
+        const sunY = h * 0.16;
+        glowCircle(ctx, sunX, sunY, w * 0.14, 'rgba(209, 235, 246, .32)', 0.9);
+        for (let i = 0; i < 8; i += 1) {
+          const x = w * (0.08 + i * 0.125);
+          const height = h * (0.08 + ((i * 37) % 44) / 300);
+          const baseY = h * 0.31;
+          ctx.fillStyle = 'rgba(24, 40, 48, .87)';
+          ctx.fillRect(x, baseY - height, w * 0.028, height);
+          ctx.fillStyle = 'rgba(146, 221, 240, .24)';
+          ctx.fillRect(x + 3, baseY - height + 5, 2, Math.max(5, height * 0.5));
+          ctx.fillStyle = 'rgba(221, 242, 250, .22)';
+          ctx.fillRect(x - 5, baseY - height, w * 0.038, 2);
+        }
+        ctx.fillStyle = 'rgba(237, 248, 252, .5)';
+        for (let i = 0; i < 45; i += 1) {
+          const x = ((i * 73 + this.time * 16) % (w + 40)) - 20;
+          const y = h * (0.03 + ((i * 29) % 34) / 100);
+          ctx.globalAlpha = 0.2 + (i % 4) * 0.07;
+          ctx.beginPath();
+          ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      } else if (horizon === 'warmind-core') {
+        const core = ctx.createRadialGradient(w * 0.55, h * 0.22, 6, w * 0.55, h * 0.22, w * 0.16);
+        core.addColorStop(0, 'rgba(255, 221, 168, .8)');
+        core.addColorStop(0.25, 'rgba(227, 105, 68, .4)');
+        core.addColorStop(1, 'rgba(87, 27, 23, 0)');
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(w * 0.55, h * 0.22, w * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(238, 121, 81, .34)';
+        ctx.lineWidth = 1.2;
+        [0.08, 0.12, 0.17].forEach((radius) => {
+          ctx.beginPath();
+          ctx.arc(w * 0.55, h * 0.22, w * radius, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+        for (let i = 0; i < 6; i += 1) {
+          const x = w * (0.12 + i * 0.16);
+          ctx.fillStyle = 'rgba(48, 30, 28, .82)';
+          ctx.fillRect(x, h * 0.09, w * 0.025, h * 0.22);
+          ctx.fillStyle = 'rgba(244, 132, 77, .25)';
+          ctx.fillRect(x + 3, h * 0.11, 2, h * 0.16);
+        }
+      } else if (horizon === 'prison' || horizon === 'asteroids') {
+        const cluster = horizon === 'prison'
+          ? [[.22, .22, 48], [.5, .16, 37], [.76, .25, 55], [.12, .29, 30]]
+          : [[.18, .18, 38], [.4, .1, 26], [.7, .19, 54], [.88, .29, 31], [.55, .28, 22]];
+        cluster.forEach(([x, y, r], index) => {
+          const cx = w * x;
+          const cy = h * y;
+          ctx.fillStyle = horizon === 'prison' ? 'rgba(42, 34, 47, .84)' : 'rgba(63, 44, 32, .82)';
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = horizon === 'prison' ? 'rgba(196, 154, 219, .2)' : 'rgba(217, 155, 99, .18)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r + 4, 0.2 + index, 2.7 + index);
+          ctx.stroke();
+          if (horizon === 'prison') {
+            ctx.strokeStyle = 'rgba(232, 128, 158, .35)';
+            ctx.beginPath();
+            ctx.moveTo(cx - r * 0.5, cy - r * 0.5);
+            ctx.lineTo(cx + r * 0.5, cy + r * 0.5);
+            ctx.stroke();
+          }
+        });
+        for (let i = 0; i < 5; i += 1) {
+          const x = w * (0.08 + i * 0.2);
+          const baseY = h * 0.31;
+          const height = h * (0.08 + ((i * 29) % 30) / 300);
+          ctx.fillStyle = 'rgba(45, 36, 33, .8)';
+          ctx.beginPath();
+          ctx.moveTo(x - 22, baseY);
+          ctx.lineTo(x - 7, baseY - height);
+          ctx.lineTo(x + 16, baseY - height * 0.8);
+          ctx.lineTo(x + 26, baseY);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (horizon === 'hive-spires' || horizon === 'scarlet-keep' || horizon === 'pyramid') {
+        if (horizon === 'scarlet-keep') {
+          ctx.fillStyle = 'rgba(36, 25, 29, .9)';
+          ctx.beginPath();
+          ctx.moveTo(w * 0.64, h * 0.31);
+          ctx.lineTo(w * 0.68, h * 0.12);
+          ctx.lineTo(w * 0.72, h * 0.2);
+          ctx.lineTo(w * 0.76, h * 0.08);
+          ctx.lineTo(w * 0.8, h * 0.31);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(223, 104, 92, .28)';
+          ctx.beginPath();
+          ctx.moveTo(w * 0.68, h * 0.12);
+          ctx.lineTo(w * 0.68, h * 0.3);
+          ctx.stroke();
+        } else if (horizon === 'pyramid') {
+          ctx.fillStyle = 'rgba(14, 13, 18, .9)';
+          ctx.beginPath();
+          ctx.moveTo(w * 0.48, h * 0.31);
+          ctx.lineTo(w * 0.62, h * 0.08);
+          ctx.lineTo(w * 0.76, h * 0.31);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(195, 184, 220, .18)';
+          ctx.beginPath();
+          ctx.moveTo(w * 0.62, h * 0.08);
+          ctx.lineTo(w * 0.62, h * 0.31);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 9; i += 1) {
+          const x = w * (0.02 + i * 0.12);
+          const baseY = h * 0.31;
+          const height = h * (0.05 + ((i * 31) % 42) / 260);
+          ctx.fillStyle = 'rgba(30, 35, 27, .86)';
+          ctx.beginPath();
+          ctx.moveTo(x - 13, baseY);
+          ctx.lineTo(x + 1, baseY - height);
+          ctx.lineTo(x + 14, baseY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(139, 190, 105, .18)';
+          ctx.beginPath();
+          ctx.moveTo(x + 1, baseY - height);
+          ctx.lineTo(x + 1, baseY);
+          ctx.stroke();
+        }
+      } else if (horizon === 'ice-cliffs' || horizon === 'fallen-city') {
+        const aurora = ctx.createLinearGradient(0, 0, w, h * 0.35);
+        aurora.addColorStop(0, 'rgba(85, 188, 218, 0)');
+        aurora.addColorStop(0.5, 'rgba(101, 219, 208, .18)');
+        aurora.addColorStop(1, 'rgba(130, 105, 213, .08)');
+        ctx.fillStyle = aurora;
+        ctx.beginPath();
+        ctx.ellipse(w * 0.56, h * 0.16, w * 0.42, h * 0.13, -0.1, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < 7; i += 1) {
+          const x = w * (0.02 + i * 0.15);
+          const baseY = h * 0.31;
+          const height = h * (0.09 + ((i * 41) % 55) / 300);
+          ctx.fillStyle = horizon === 'fallen-city' ? 'rgba(38, 44, 69, .84)' : 'rgba(195, 229, 238, .34)';
+          ctx.beginPath();
+          ctx.moveTo(x - 26, baseY);
+          ctx.lineTo(x, baseY - height);
+          ctx.lineTo(x + 23, baseY - height * 0.18);
+          ctx.lineTo(x + 38, baseY);
+          ctx.closePath();
+          ctx.fill();
+        }
+        if (horizon === 'fallen-city') {
+          for (let i = 0; i < 5; i += 1) {
+            const x = w * (0.18 + i * 0.15);
+            ctx.fillStyle = 'rgba(36, 54, 83, .9)';
+            ctx.fillRect(x, h * 0.16, w * 0.035, h * 0.15);
+            ctx.fillStyle = 'rgba(128, 190, 238, .32)';
+            ctx.fillRect(x + 4, h * 0.18, 2, h * 0.1);
+          }
+        }
+      } else if (horizon === 'throne-temple' || horizon === 'hive-cathedral') {
+        ctx.fillStyle = 'rgba(221, 244, 185, .08)';
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.27, w * 0.34, h * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(29, 38, 24, .9)';
+        ctx.beginPath();
+        ctx.moveTo(w * 0.12, h * 0.31);
+        ctx.lineTo(w * 0.26, h * 0.11);
+        ctx.lineTo(w * 0.34, h * 0.22);
+        ctx.lineTo(w * 0.42, h * 0.31);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(w * 0.58, h * 0.31);
+        ctx.lineTo(w * 0.7, h * 0.08);
+        ctx.lineTo(w * 0.82, h * 0.2);
+        ctx.lineTo(w * 0.9, h * 0.31);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(187, 225, 134, .26)';
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.arc(w * 0.5, h * 0.31, w * (0.09 + i * 0.045), Math.PI, 0);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 16; i += 1) {
+          const x = (i / 15) * w;
+          ctx.fillStyle = 'rgba(198, 244, 140, .22)';
+          ctx.beginPath();
+          ctx.arc(x, h * 0.18 + ((i * 17) % 50), 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (horizon === 'neon-city') {
+        const skyGlow = ctx.createLinearGradient(0, h * 0.04, 0, h * 0.31);
+        skyGlow.addColorStop(0, 'rgba(238, 116, 204, .12)');
+        skyGlow.addColorStop(1, 'rgba(76, 218, 224, .06)');
+        ctx.fillStyle = skyGlow;
+        ctx.fillRect(0, h * 0.04, w, h * 0.27);
+        for (let i = 0; i < 14; i += 1) {
+          const x = w * (0.02 + i * 0.071);
+          const height = h * (0.05 + ((i * 43) % 55) / 260);
+          ctx.fillStyle = 'rgba(22, 25, 42, .9)';
+          ctx.fillRect(x, h * 0.31 - height, w * 0.03, height);
+          ctx.fillStyle = i % 3 === 0 ? 'rgba(102, 237, 234, .55)' : 'rgba(239, 133, 217, .45)';
+          for (let y = h * 0.31 - height + 4; y < h * 0.3; y += 8) {
+            if ((i + Math.floor(y)) % 3 === 0) ctx.fillRect(x + 3, y, 2, 1);
+          }
+        }
+        ctx.strokeStyle = 'rgba(107, 232, 235, .35)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(w * (0.1 + i * 0.3), h * 0.31);
+          ctx.lineTo(w * (0.14 + i * 0.3), h * 0.24);
+          ctx.stroke();
+        }
+      } else if (horizon === 'awoken-spires') {
+        const glow = ctx.createLinearGradient(0, h * 0.04, 0, h * 0.31);
+        glow.addColorStop(0, 'rgba(164, 113, 220, .16)');
+        glow.addColorStop(1, 'rgba(81, 218, 202, .08)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, h * 0.04, w, h * 0.27);
+        for (let i = 0; i < 8; i += 1) {
+          const x = w * (0.03 + i * 0.135);
+          const baseY = h * 0.31;
+          const height = h * (0.1 + ((i * 43) % 55) / 280);
+          ctx.fillStyle = 'rgba(57, 44, 76, .86)';
+          ctx.beginPath();
+          ctx.moveTo(x - 18, baseY);
+          ctx.lineTo(x + 2, baseY - height);
+          ctx.lineTo(x + 12, baseY - height * 0.55);
+          ctx.lineTo(x + 28, baseY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(185, 157, 236, .3)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x + 2, baseY - height);
+          ctx.lineTo(x + 2, baseY);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 5; i += 1) {
+          const x = w * (0.16 + i * 0.16);
+          const y = h * (0.14 + (i % 3) * 0.05);
+          ctx.strokeStyle = 'rgba(123, 230, 214, .24)';
+          ctx.beginPath();
+          ctx.arc(x, y, 15 + i * 3, 0.2, Math.PI * 1.7);
+          ctx.stroke();
+        }
+      } else if (horizon === 'organic-arches' || horizon === 'sanctum') {
+        ctx.fillStyle = 'rgba(242, 242, 225, .08)';
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.19, w * 0.31, h * 0.16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = horizon === 'sanctum' ? 'rgba(238, 228, 190, .3)' : 'rgba(238, 235, 210, .25)';
+        ctx.lineWidth = 1.3;
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.arc(w * 0.5, h * 0.31, w * (0.09 + i * 0.055), Math.PI, 0);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 7; i += 1) {
+          const x = w * (0.08 + i * 0.14);
+          const height = h * (0.05 + ((i * 31) % 34) / 280);
+          ctx.fillStyle = horizon === 'sanctum' ? 'rgba(43, 44, 49, .8)' : 'rgba(214, 207, 183, .22)';
+          ctx.fillRect(x, h * 0.31 - height, w * 0.018, height);
+        }
+        ctx.fillStyle = 'rgba(247, 241, 219, .35)';
+        for (let i = 0; i < 22; i += 1) {
+          const x = ((i * 83 + this.time * 7) % (w + 40)) - 20;
+          const y = h * (0.08 + ((i * 29) % 60) / 160);
+          ctx.beginPath();
+          ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (horizon === 'typhon') {
+        ctx.fillStyle = 'rgba(93, 48, 92, .16)';
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.22, w * 0.4, h * 0.16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < 5; i += 1) {
+          const x = w * (0.06 + i * 0.21);
+          ctx.strokeStyle = 'rgba(196, 139, 214, .22)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x, h * 0.31);
+          ctx.quadraticCurveTo(x + w * 0.05, h * 0.12, x + w * 0.12, h * 0.31);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = 'rgba(225, 160, 214, .3)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 5; i += 1) {
+          ctx.beginPath();
+          ctx.arc(w * 0.5, h * 0.25, w * (0.06 + i * 0.05), 0.2, Math.PI - 0.2);
+          ctx.stroke();
+        }
+      } else if (horizon === 'city' || horizon === 'forest') {
+        if (horizon === 'city') {
+          glowCircle(ctx, w * 0.5, h * 0.16, w * 0.2, 'rgba(209, 237, 249, .32)', 0.9);
+          const traveler = ctx.createRadialGradient(w * 0.5, h * 0.15, 4, w * 0.5, h * 0.15, w * 0.11);
+          traveler.addColorStop(0, 'rgba(246, 251, 255, .8)');
+          traveler.addColorStop(0.45, 'rgba(178, 217, 236, .2)');
+          traveler.addColorStop(1, 'rgba(95, 147, 181, 0)');
+          ctx.fillStyle = traveler;
+          ctx.beginPath();
+          ctx.arc(w * 0.5, h * 0.15, w * 0.11, 0, Math.PI * 2);
+          ctx.fill();
+          for (let i = 0; i < 12; i += 1) {
+            const x = w * (0.01 + i * 0.085);
+            const height = h * (0.04 + ((i * 37) % 46) / 300);
+            ctx.fillStyle = 'rgba(12, 17, 22, .85)';
+            ctx.fillRect(x, h * 0.31 - height, w * 0.028, height);
+          }
+        } else {
+          for (let i = 0; i < 18; i += 1) {
+            const x = w * (0.01 + i * 0.058);
+            const height = h * (0.06 + ((i * 31) % 40) / 300);
+            ctx.fillStyle = 'rgba(9, 25, 18, .8)';
+            ctx.beginPath();
+            ctx.moveTo(x - 10, h * 0.31);
+            ctx.lineTo(x, h * 0.31 - height);
+            ctx.lineTo(x + 12, h * 0.31);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+      } else {
+        for (let i = 0; i < 7; i += 1) {
+          const x = w * (0.05 + i * 0.145);
+          ctx.fillStyle = 'rgba(27, 25, 24, .86)';
+          ctx.fillRect(x, h * 0.1, w * 0.045, h * 0.21);
+          ctx.fillStyle = 'rgba(237, 157, 82, .2)';
+          ctx.fillRect(x + 5, h * 0.12, 2, h * 0.16);
+        }
+      }
+      ctx.restore();
+    }
+
+    drawBiomeFloor(ctx, w, h, mission) {
+      const biome = this.biomeConfig(mission);
+      const horizon = biome.horizon || '';
+      ctx.save();
+      if (horizon === 'ice-cliffs' || horizon === 'fallen-city') {
+        ctx.strokeStyle = 'rgba(216, 246, 255, .16)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 9; i += 1) {
+          const x = w * (0.03 + i * 0.13);
+          ctx.beginPath();
+          ctx.moveTo(x, h * 0.35);
+          ctx.lineTo(x + w * 0.055, h * 0.62);
+          ctx.lineTo(x + w * 0.02, h);
+          ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(230, 250, 255, .06)';
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.72);
+        ctx.lineTo(w * 0.28, h * 0.57);
+        ctx.lineTo(w * 0.6, h * 0.74);
+        ctx.lineTo(w, h * 0.61);
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        ctx.fill();
+      } else if (horizon === 'neon-city' || horizon === 'typhon') {
+        ctx.strokeStyle = horizon === 'neon-city' ? 'rgba(103, 235, 231, .2)' : 'rgba(208, 139, 217, .18)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 7; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(w * 0.5, h * 0.31);
+          ctx.lineTo(w * (0.04 + i * 0.16), h);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 5; i += 1) {
+          ctx.strokeStyle = 'rgba(241, 125, 213, .16)';
+          ctx.beginPath();
+          ctx.moveTo(0, h * (0.62 + i * 0.075));
+          ctx.lineTo(w, h * (0.6 + i * 0.08));
+          ctx.stroke();
+        }
+      } else if (horizon === 'awoken-spires') {
+        ctx.strokeStyle = 'rgba(162, 226, 220, .18)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 6; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(w * (0.05 + i * 0.17), h * 0.33);
+          ctx.lineTo(w * (0.12 + i * 0.17), h * 0.72);
+          ctx.lineTo(w * (0.02 + i * 0.17), h);
+          ctx.stroke();
+        }
+      } else if (horizon === 'organic-arches' || horizon === 'sanctum') {
+        ctx.strokeStyle = 'rgba(247, 238, 196, .14)';
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 8; i += 1) {
+          ctx.beginPath();
+          ctx.arc(w * 0.5, h * 0.72, w * (0.06 + i * 0.065), Math.PI * 1.05, Math.PI * 1.95);
+          ctx.stroke();
+        }
+      } else if (horizon === 'throne-temple' || horizon === 'hive-cathedral' || horizon === 'hive-spires' || horizon === 'scarlet-keep') {
+        ctx.fillStyle = 'rgba(84, 130, 69, .09)';
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.ellipse(w * (0.15 + i * 0.24), h * (0.58 + i * 0.08), w * 0.13, h * 0.035, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (horizon === 'vex-spires' || horizon === 'vex-forest' || horizon === 'vex-core') {
+        ctx.strokeStyle = 'rgba(108, 226, 202, .13)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 6; i += 1) {
+          ctx.beginPath();
+          ctx.arc(w * 0.5, h * 0.45, w * (0.14 + i * 0.08), Math.PI * 0.1, Math.PI * 0.9);
+          ctx.stroke();
+        }
+      } else if (horizon === 'bray-towers' || horizon === 'warmind-core' || horizon === 'asteroids' || horizon === 'prison') {
+        ctx.fillStyle = 'rgba(238, 179, 112, .055)';
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.ellipse(w * (0.24 + i * 0.26), h * (0.6 + i * 0.1), w * 0.18, h * 0.03, -0.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    prepareMissionScene(mission) {
+      if (!mission || !mission.biome || typeof Image === 'undefined') return;
+      const key = `${mission.biome}:${mission.id || mission.title || 'mission'}`;
+      if (this.sceneAssets[key]) return;
+      const svg = destinySceneSvg(mission.biome, `${mission.id || ''}:${mission.title || ''}`);
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      this.sceneAssets[key] = image;
+      this.sceneOrder.push(key);
+      while (this.sceneOrder.length > 12) {
+        const stale = this.sceneOrder.shift();
+        if (stale && stale !== key) delete this.sceneAssets[stale];
+      }
+    }
+
+    sceneKeyFor(mission) {
+      return mission?.biome ? `${mission.biome}:${mission.id || mission.title || 'mission'}` : null;
+    }
+
+    drawSceneBackdrop(ctx, w, h, mission) {
+      const key = this.sceneKeyFor(mission);
+      const image = key ? this.sceneAssets?.[key] : null;
+      if (!image || !image.complete || !image.naturalWidth) return false;
+      ctx.save();
+      const scale = Math.max(w / 800, h / 450);
+      const sw = 800 * scale;
+      const sh = 450 * scale;
+      ctx.drawImage(image, (w - sw) / 2, (h - sh) / 2, sw, sh);
+      const shade = ctx.createLinearGradient(0, h * 0.34, 0, h);
+      shade.addColorStop(0, 'rgba(4, 7, 10, 0)');
+      shade.addColorStop(0.52, 'rgba(4, 7, 10, .46)');
+      shade.addColorStop(1, 'rgba(4, 7, 10, .88)');
+      ctx.fillStyle = shade;
+      ctx.fillRect(0, h * 0.34, w, h * 0.66);
+      ctx.strokeStyle = 'rgba(235, 222, 191, .055)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 8; i += 1) {
+        const y = h * 0.31 + i * h * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      for (let i = -5; i <= 5; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5 + i * w * 0.035, h * 0.31);
+        ctx.lineTo(w * 0.5 + i * w * 0.19, h);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 16; i += 1) {
+        const x = ((i * 83 + this.time * (7 + i * 0.35)) % (w + 80)) - 40;
+        const y = h * (0.34 + ((i * 37) % 55) / 100);
+        ctx.globalAlpha = 0.1 + Math.sin(this.time * 1.8 + i) * 0.05;
+        ctx.fillStyle = mission.accent;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      return true;
+    }
+
+    drawSceneLabels(ctx, w, h, mission) {
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(234, 213, 172, .48)';
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(mission.location, 20, h * 0.105);
+      ctx.fillStyle = 'rgba(201, 217, 218, .26)';
+      ctx.fillText(this.currentMode === 'campaign'
+        ? `CHAPTER ${String(this.missionIndex + 1).padStart(2, '0')} / 05`
+        : `${mission.chapter.toUpperCase()} · ${(mission.factionCn || this.factionName(mission.faction)).toUpperCase()}`, 20, h * 0.125);
+      ctx.restore();
+    }
+
+    isBlackHoleBiome(mission = this.mission) {
+      return Boolean(mission && (mission.biome === 'blackhole' || mission.biome === 'eventhorizon'));
+    }
+
+    drawBackground(ctx, w, h) {
+      const mission = this.mission;
+      if (this.drawSceneBackdrop(ctx, w, h, mission)) {
+        if (this.isBlackHoleBiome(mission)) {
+          const sceneScale = Math.max(w / 800, h / 450);
+          this.drawBlackHoleEffects(ctx, w * 0.5, h * 0.46, 82 * sceneScale * 0.9, { alpha: 0.62 });
+        }
+        this.drawSceneLabels(ctx, w, h, mission);
+        return;
+      }
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, mission.sky);
+      sky.addColorStop(0.43, mission.sky2);
+      sky.addColorStop(1, '#05070a');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      glowCircle(ctx, w * 0.5, h * 0.16, w * 0.42, mission.accent, 0.12);
+      if (this.currentMode === 'dlc') this.drawBiomeSky(ctx, w, h, mission);
+      if (mission.type === 'waves') {
+        glowCircle(ctx, w * 0.5, h * 0.15, 92, '#d9f0ff', 0.33);
+        const traveler = ctx.createRadialGradient(w * 0.5, h * 0.15, 3, w * 0.5, h * 0.15, 85);
+        traveler.addColorStop(0, 'rgba(238, 250, 255, .7)');
+        traveler.addColorStop(0.4, 'rgba(180, 219, 239, .21)');
+        traveler.addColorStop(1, 'rgba(120, 180, 220, 0)');
+        ctx.fillStyle = traveler;
+        ctx.beginPath();
+        ctx.arc(w * 0.5, h * 0.15, 88, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < 11; i += 1) {
+          const bx = (i / 10) * w;
+          const bw = w * (0.03 + ((i * 29) % 32) / 700);
+          const bh = h * (0.035 + ((i * 41) % 44) / 1400);
+          ctx.fillStyle = 'rgba(10, 15, 20, .78)';
+          ctx.fillRect(bx, h * 0.28 - bh, bw, bh);
+          ctx.fillStyle = 'rgba(255, 185, 103, .18)';
+          for (let y = h * 0.28 - bh + 5; y < h * 0.28; y += 8) {
+            if ((i + Math.floor(y)) % 3 === 0) ctx.fillRect(bx + 4, y, 2, 1);
+          }
+        }
+      } else if (mission.type === 'shard') {
+        for (let i = 0; i < 16; i += 1) {
+          const x = (i / 15) * w;
+          const height = h * (0.06 + ((i * 31) % 40) / 400);
+          ctx.fillStyle = 'rgba(8, 22, 16, .62)';
+          ctx.beginPath();
+          ctx.moveTo(x - 13, h * 0.3);
+          ctx.lineTo(x, h * 0.3 - height);
+          ctx.lineTo(x + 14, h * 0.3);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (mission.type === 'conduits') {
+        ctx.fillStyle = 'rgba(255, 154, 75, .15)';
+        ctx.beginPath();
+        ctx.arc(w * 0.5, h * 0.16, 80, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < 7; i += 1) {
+          const y = h * 0.27 + i * h * 0.065;
+          ctx.strokeStyle = 'rgba(255, 199, 122, .09)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+      } else if (mission.type === 'generators') {
+        for (let i = 0; i < 6; i += 1) {
+          const x = w * (0.08 + i * 0.17);
+          ctx.fillStyle = 'rgba(94, 28, 27, .34)';
+          ctx.fillRect(x, h * 0.1, w * 0.055, h * 0.19);
+          ctx.fillStyle = 'rgba(246, 191, 99, .17)';
+          ctx.fillRect(x + 4, h * 0.12, 2, h * 0.15);
+        }
+      } else if (mission.type === 'boss') {
+        ctx.strokeStyle = 'rgba(238, 188, 102, .13)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(w * 0.5, h * 0.45, w * 0.25, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(w * 0.5, h * 0.45, w * 0.18, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let i = 0; i < 8; i += 1) {
+          const x = (i / 8) * w;
+          ctx.fillStyle = 'rgba(84, 32, 28, .55)';
+          ctx.fillRect(x, h * 0.08, w * 0.028, h * 0.34);
+          ctx.fillStyle = 'rgba(240, 184, 87, .16)';
+          ctx.fillRect(x + 4, h * 0.11, 2, h * 0.25);
+        }
+      }
+      ctx.restore();
+
+      ctx.save();
+      const floor = ctx.createLinearGradient(0, h * 0.31, 0, h);
+      floor.addColorStop(0, mission.ground);
+      floor.addColorStop(0.6, '#111518');
+      floor.addColorStop(1, '#07090b');
+      ctx.fillStyle = floor;
+      ctx.fillRect(0, h * 0.31, w, h * 0.69);
+      ctx.strokeStyle = 'rgba(235, 222, 191, .055)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 8; i += 1) {
+        const y = h * 0.31 + i * h * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      for (let i = -5; i <= 5; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5 + i * w * 0.035, h * 0.31);
+        ctx.lineTo(w * 0.5 + i * w * 0.19, h);
+        ctx.stroke();
+      }
+      if (this.currentMode === 'dlc') this.drawBiomeFloor(ctx, w, h, mission);
+      ctx.strokeStyle = 'rgba(244, 211, 141, .12)';
+      ctx.beginPath();
+      ctx.moveTo(w * 0.08, h * 0.84);
+      ctx.lineTo(w * 0.92, h * 0.84);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      for (let i = 0; i < 14; i += 1) {
+        const x = ((i * 83 + this.time * (8 + i * 0.4)) % (w + 80)) - 40;
+        const y = h * (0.34 + ((i * 37) % 55) / 100);
+        ctx.globalAlpha = 0.12 + Math.sin(this.time * 2 + i) * 0.06;
+        ctx.fillStyle = mission.accent;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(234, 213, 172, .38)';
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(mission.location, 20, h * 0.105);
+      ctx.fillStyle = 'rgba(201, 217, 218, .2)';
+      ctx.fillText(this.currentMode === 'campaign'
+        ? `CHAPTER ${String(this.missionIndex + 1).padStart(2, '0')} / 05`
+        : `${this.mission.chapter.toUpperCase()} · ${(this.mission.factionCn || this.factionName(this.mission.faction)).toUpperCase()}`, 20, h * 0.125);
+      ctx.restore();
+    }
+
+    drawObjectives(ctx, w, h) {
+      if (this.currentMode === 'gambit' && this.gambit) {
+        const x = this.gambit.bank.x * w;
+        const y = this.gambit.bank.y * h;
+        const pulse = 1 + Math.sin(this.time * 3.5) * 0.07;
+        ctx.save();
+        glowCircle(ctx, x, y, 78, 'rgba(99, 229, 166, .22)', 0.9);
+        ctx.strokeStyle = 'rgba(116, 243, 187, .56)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, 36 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([4, 7]);
+        ctx.strokeStyle = 'rgba(232, 202, 126, .4)';
+        ctx.beginPath();
+        ctx.arc(x, y, 51, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(122, 240, 187, .83)';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 18);
+        ctx.lineTo(x + 14, y + 3);
+        ctx.lineTo(x + 5, y + 17);
+        ctx.lineTo(x - 5, y + 17);
+        ctx.lineTo(x - 14, y + 3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'rgba(222, 246, 225, .76)';
+        ctx.font = '600 7px "SFMono-Regular", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`BANK · ${this.gambit.banked}/${this.gambit.target}`, x, y - 45);
+        ctx.fillStyle = 'rgba(236, 205, 127, .68)';
+        ctx.font = '500 6px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(`携带 ${this.gambit.motes} 个荧光 · 靠近后按 E 存入`, x, y + 47);
+        ctx.restore();
+      }
+      if (this.extraction) {
+        const x = this.extraction.x * w;
+        const y = this.extraction.y * h;
+        const pulse = 1 + Math.sin(this.time * 4) * 0.09;
+        ctx.save();
+        glowCircle(ctx, x, y, 58, 'rgba(255, 218, 128, .28)', 0.9);
+        ctx.strokeStyle = 'rgba(255, 221, 139, .77)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, 31 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([5, 7]);
+        ctx.beginPath();
+        ctx.arc(x, y, 45 + Math.sin(this.time * 3) * 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ffe1a0';
+        ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('撤离点', x, y - 48);
+        ctx.fillStyle = 'rgba(255, 230, 174, .56)';
+        ctx.font = '500 5.5px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('EXTRACTION', x, y + 52);
+        ctx.restore();
+      }
+      if (this.shard) {
+        const x = this.shard.x * w;
+        const y = this.shard.y * h;
+        const charge = this.shard.charge / 100;
+        ctx.save();
+        glowCircle(ctx, x, y, 95, 'rgba(118, 239, 209, .22)', 0.9);
+        ctx.strokeStyle = `rgba(154, 255, 226, ${0.25 + charge * 0.45})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, 44 + Math.sin(this.time * 2.4) * 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(161, 255, 229, .67)';
+        ctx.beginPath();
+        ctx.arc(x, y, 53, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * charge);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(178, 255, 235, .82)';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 34);
+        ctx.lineTo(x + 15, y - 8);
+        ctx.lineTo(x + 7, y + 31);
+        ctx.lineTo(x - 8, y + 20);
+        ctx.lineTo(x - 15, y - 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.7)';
+        ctx.beginPath();
+        ctx.moveTo(x - 1, y - 25);
+        ctx.lineTo(x + 3, y - 8);
+        ctx.lineTo(x - 2, y + 10);
+        ctx.lineTo(x - 5, y - 3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#d5fff0';
+        ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('旅行者碎片', x, y - 55);
+        ctx.fillStyle = 'rgba(189, 255, 233, .7)';
+        ctx.font = '500 7px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(`${Math.floor(this.shard.charge)}%`, x, y + 65);
+        ctx.restore();
+      }
+      this.conduits.forEach((conduit) => {
+        if (!conduit.alive) {
+          ctx.save();
+          ctx.globalAlpha = 0.28;
+          ctx.strokeStyle = 'rgba(233, 158, 100, .7)';
+          ctx.beginPath();
+          ctx.moveTo(conduit.x * w - 18, conduit.y * h + 20);
+          ctx.lineTo(conduit.x * w + 13, conduit.y * h - 20);
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+        const x = conduit.x * w;
+        const y = conduit.y * h;
+        ctx.save();
+        glowCircle(ctx, x, y, 48, 'rgba(255, 148, 66, .27)', 0.9);
+        ctx.fillStyle = '#2a2622';
+        ctx.fillRect(x - 12, y - 3, 24, 30);
+        ctx.fillStyle = '#ba6e38';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 44);
+        ctx.lineTo(x + 15, y - 6);
+        ctx.lineTo(x + 8, y + 20);
+        ctx.lineTo(x - 8, y + 20);
+        ctx.lineTo(x - 15, y - 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 212, 140, .65)';
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255, 185, 89, .75)';
+        ctx.fillRect(x - 2, y - 57, 4, 15);
+        this.drawHealthBar(ctx, x, y - 68, 56, conduit.hp / conduit.maxHp, '#ffbb67');
+        ctx.fillStyle = 'rgba(255, 221, 161, .68)';
+        ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('SOLAR CONDUIT', x, y + 43);
+        ctx.restore();
+      });
+      this.generators.forEach((generator) => {
+        if (!generator.alive) {
+          ctx.save();
+          ctx.globalAlpha = 0.3;
+          ctx.strokeStyle = 'rgba(230, 107, 84, .6)';
+          ctx.beginPath();
+          ctx.arc(generator.x * w, generator.y * h, 22, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+        const x = generator.x * w;
+        const y = generator.y * h;
+        ctx.save();
+        glowCircle(ctx, x, y, 55, 'rgba(229, 100, 80, .18)', 0.8);
+        ctx.strokeStyle = 'rgba(255, 174, 122, .56)';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.arc(x, y, 25, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(239, 98, 79, .38)';
+        ctx.setLineDash([5, 6]);
+        ctx.beginPath();
+        ctx.arc(x, y, 39, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#3a2523';
+        ctx.beginPath();
+        ctx.arc(x, y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#e99765';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        this.drawHealthBar(ctx, x, y - 53, 58, generator.hp / generator.maxHp, '#e99a5c');
+        ctx.fillStyle = 'rgba(255, 208, 161, .6)';
+        ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('SHIELD GENERATOR', x, y + 51);
+        ctx.restore();
+      });
+    }
+
+    drawHealthBar(ctx, x, y, width, ratio, color) {
+      fillRoundRect(ctx, x - width / 2, y, width, 4, 2, 'rgba(0,0,0,.55)');
+      fillRoundRect(ctx, x - width / 2, y, width * clamp(ratio, 0, 1), 4, 2, color);
+    }
+
+    drawEnemies(ctx, w, h) {
+      this.enemies.slice().sort((a, b) => a.y - b.y).forEach((enemy) => {
+        if (!enemy.alive) return;
+        if (enemy === this.raidBoss) return;
+        const x = enemy.x * w;
+        const y = enemy.y * h;
+        if (enemy.training) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(121, 224, 193, .28)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.arc(x, y, enemy.radius + 9, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(201, 241, 225, .78)';
+          ctx.font = '500 5.4px "PingFang SC", sans-serif';
+          ctx.fillText(enemy.name || DESTINY_ENEMY_LABELS[enemy.type] || enemy.type, x, y - enemy.radius - 11);
+          ctx.fillStyle = 'rgba(121, 224, 193, .45)';
+          ctx.font = '500 4.4px "SFMono-Regular", Consolas, monospace';
+          ctx.fillText('TARGET', x, y - enemy.radius - 4);
+          ctx.restore();
+        }
+        const point = this.playerPoint();
+        const angle = Math.atan2(point.y - y, point.x - x);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle + Math.PI / 2);
+        if (enemy.flash > 0) ctx.globalAlpha = 0.65;
+        const radius = enemy.radius;
+        ctx.fillStyle = 'rgba(0,0,0,.4)';
+        ctx.beginPath();
+        ctx.ellipse(0, radius * 0.5, radius * 0.9, radius * 0.38, 0, 0, Math.PI * 2);
+        ctx.fill();
+        const enemyAsset = !['guardian', 'primeval', 'dlc-boss'].includes(enemy.skin) ? this.enemyAssetFor(enemy) : null;
+        const hasEnemyAsset = Boolean(enemyAsset && enemyAsset.complete && enemyAsset.naturalWidth);
+        if (hasEnemyAsset) {
+          const span = radius * 2.72;
+          const bob = Math.sin(this.time * 2.4 + (enemy.phase || 0)) * 1.4;
+          ctx.save();
+          glowCircle(ctx, 0, 1, radius * 1.32, `${enemy.color}12`, 0.55);
+          if (enemy.flash > 0) {
+            ctx.globalAlpha = 0.62;
+            ctx.shadowColor = '#fff4dd';
+            ctx.shadowBlur = 10;
+          }
+          ctx.drawImage(enemyAsset, -span / 2, -span / 2 + bob, span, span);
+          ctx.restore();
+        } else if (enemy.skin === 'guardian') {
+          ctx.fillStyle = enemy.flash > 0 ? '#e4f4ff' : '#2e4b68';
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#79c6ff';
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(127, 196, 255, .32)';
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.9, -radius * 0.1);
+          ctx.lineTo(0, radius * 1.15);
+          ctx.lineTo(radius * 0.9, -radius * 0.1);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#d5efff';
+          ctx.beginPath();
+          ctx.arc(0, -radius * 0.35, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#b0d9f1';
+          ctx.fillRect(radius * 0.2, -2, radius * 1.15, 3.4);
+        } else if (enemy.skin === 'primeval') {
+          const accent = '#80e3b1';
+          glowCircle(ctx, 0, 0, radius * 2.1, `${accent}33`, 0.9);
+          ctx.fillStyle = enemy.flash > 0 ? '#ffe2a3' : 'rgba(31, 37, 34, .96)';
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = accent;
+          ctx.lineWidth = 2.3;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.8, -radius * 0.62);
+          ctx.lineTo(-radius * 1.25, -radius * 1.45);
+          ctx.moveTo(radius * 0.8, -radius * 0.62);
+          ctx.lineTo(radius * 1.25, -radius * 1.45);
+          ctx.stroke();
+          ctx.fillStyle = accent;
+          ctx.beginPath();
+          ctx.arc(0, -radius * 0.12, radius * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = `${accent}88`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 1.3 + Math.sin(this.time * 3) * 2, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (enemy.skin === 'dlc-boss') {
+          this.drawDlcBossShape(ctx, enemy, radius);
+        } else if (enemy.faction && enemy.faction !== 'cabal') {
+          this.drawFactionEnemy(ctx, enemy, radius);
+        } else if (enemy.type === 'phalanx') {
+          ctx.fillStyle = '#5c3128';
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#f0a25d';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(244, 187, 115, .38)';
+          ctx.beginPath();
+          ctx.arc(0, -radius * 0.45, radius * 0.8, Math.PI * 1.05, Math.PI * 1.95);
+          ctx.fill();
+          ctx.fillStyle = '#e1a265';
+          ctx.fillRect(-2, -radius - 6, 4, radius * 0.9);
+        } else if (enemy.type === 'incendior') {
+          ctx.fillStyle = '#653725';
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#f49b50';
+          ctx.stroke();
+          ctx.fillStyle = '#e78243';
+          ctx.fillRect(-radius * 0.7, radius * 0.25, radius * 1.4, 5);
+          glowCircle(ctx, 0, radius * 0.4, 13, 'rgba(255, 127, 54, .44)', 0.7);
+        } else if (enemy.type === 'gladiator') {
+          ctx.fillStyle = enemy.flash > 0 ? '#ffc189' : '#633027';
+          ctx.beginPath();
+          ctx.moveTo(0, -radius * 1.2);
+          ctx.lineTo(radius * 0.9, radius * 0.5);
+          ctx.lineTo(0, radius * 1.05);
+          ctx.lineTo(-radius * 0.9, radius * 0.5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#e98358';
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(243, 196, 124, .7)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(radius * 0.6, -radius * 0.4);
+          ctx.lineTo(radius * 1.35, radius * 0.75);
+          ctx.stroke();
+        } else if (enemy.type === 'centurion') {
+          ctx.fillStyle = enemy.flash > 0 ? '#ffe0a0' : '#5c2d25';
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#e4b263';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.strokeStyle = '#f0ca84';
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.7, -radius * 0.75);
+          ctx.lineTo(-radius * 0.3, -radius * 1.4);
+          ctx.moveTo(radius * 0.7, -radius * 0.75);
+          ctx.lineTo(radius * 0.3, -radius * 1.4);
+          ctx.stroke();
+          ctx.fillStyle = '#fc9c68';
+          ctx.beginPath();
+          ctx.arc(0, -radius * 0.3, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = enemy.flash > 0 ? '#ffce95' : '#5d342c';
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#d66a4d';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          ctx.fillStyle = '#e38d55';
+          ctx.beginPath();
+          ctx.moveTo(radius * 0.93, 0);
+          ctx.lineTo(radius * 0.4, -4);
+          ctx.lineTo(radius * 0.4, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#ffd292';
+          ctx.beginPath();
+          ctx.arc(radius * 0.32, 0, 2.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.fillStyle = 'rgba(0,0,0,.55)';
+        ctx.fillRect(x - radius, y - radius - 11, radius * 2, 3);
+        ctx.fillStyle = enemy.barColor || (enemy.type === 'centurion' ? '#f1c26f' : '#de7251');
+        ctx.fillRect(x - radius, y - radius - 11, radius * 2 * clamp(enemy.hp / enemy.maxHp, 0, 1), 3);
+        if (enemy.name) {
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(241, 233, 210, .7)';
+          ctx.font = '500 5.4px "SFMono-Regular", Consolas, monospace';
+          ctx.fillText(enemy.name, x, y - radius - 18);
+        }
+        if (enemy.slowTimer > 0) {
+          ctx.strokeStyle = 'rgba(155, 229, 255, .7)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(x, y, radius + 5 + Math.sin(this.time * 4) * 1.5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      });
+    }
+
+    drawFactionEnemy(ctx, enemy, radius) {
+      const faction = enemy.faction;
+      const flash = enemy.flash > 0;
+      if (faction === 'vex') {
+        const teal = flash ? '#e4fff7' : '#4d8e86';
+        const glow = '#8ff5df';
+        ctx.fillStyle = flash ? '#e4fff7' : '#2a4b48';
+        ctx.beginPath();
+        if (enemy.type === 'minotaur') {
+          ctx.moveTo(0, -radius * 1.2);
+          ctx.lineTo(radius * 0.95, -radius * 0.25);
+          ctx.lineTo(radius * 0.62, radius * 1.0);
+          ctx.lineTo(-radius * 0.62, radius * 1.0);
+          ctx.lineTo(-radius * 0.95, -radius * 0.25);
+        } else {
+          ctx.moveTo(0, -radius * 1.1);
+          ctx.lineTo(radius * 0.72, 0);
+          ctx.lineTo(0, radius * 1.05);
+          ctx.lineTo(-radius * 0.72, 0);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = teal;
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(157, 244, 224, .5)';
+        ctx.beginPath();
+        ctx.moveTo(-radius * 1.45, radius * 0.15);
+        ctx.lineTo(-radius * 0.6, radius * 0.35);
+        ctx.moveTo(radius * 1.45, radius * 0.15);
+        ctx.lineTo(radius * 0.6, radius * 0.35);
+        ctx.stroke();
+        if (enemy.type === 'hobgoblin') {
+          ctx.strokeStyle = 'rgba(141, 237, 217, .38)';
+          ctx.beginPath();
+          ctx.moveTo(-radius * 1.25, -radius * 0.75);
+          ctx.lineTo(-radius * 0.7, -radius * 0.45);
+          ctx.moveTo(radius * 1.25, -radius * 0.75);
+          ctx.lineTo(radius * 0.7, -radius * 0.45);
+          ctx.stroke();
+        }
+        glowCircle(ctx, 0, -radius * 0.16, radius * 0.55, `${glow}44`, 0.8);
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.16, radius * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#102f2b';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.16, radius * 0.11, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (faction === 'hive') {
+        const green = flash ? '#e0ffcf' : '#527744';
+        ctx.fillStyle = flash ? '#e0ffcf' : '#20291e';
+        ctx.beginPath();
+        if (enemy.type === 'thrall') {
+          ctx.moveTo(0, -radius * 1.0);
+          ctx.lineTo(radius * 0.62, radius * 0.8);
+          ctx.lineTo(-radius * 0.62, radius * 0.8);
+        } else if (enemy.type === 'knight') {
+          ctx.moveTo(0, -radius * 1.25);
+          ctx.lineTo(radius * 0.92, -radius * 0.3);
+          ctx.lineTo(radius * 0.66, radius * 1.0);
+          ctx.lineTo(-radius * 0.66, radius * 1.0);
+          ctx.lineTo(-radius * 0.92, -radius * 0.3);
+        } else {
+          ctx.moveTo(0, -radius * 1.05);
+          ctx.lineTo(radius * 0.8, radius * 0.55);
+          ctx.lineTo(0, radius * 1.05);
+          ctx.lineTo(-radius * 0.8, radius * 0.55);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = green;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(153, 202, 119, .45)';
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.7, -radius * 0.75);
+        ctx.lineTo(-radius * 1.1, -radius * 1.3);
+        ctx.moveTo(radius * 0.7, -radius * 0.75);
+        ctx.lineTo(radius * 1.1, -radius * 1.3);
+        ctx.stroke();
+        if (enemy.type === 'knight') {
+          ctx.strokeStyle = '#b7d67f';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(radius * 0.72, -radius * 0.1);
+          ctx.lineTo(radius * 1.4, radius * 0.9);
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#b6ed7f';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.22, radius * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#25331e';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.22, radius * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (faction === 'scorn') {
+        ctx.fillStyle = flash ? '#ffe1ec' : '#4b3646';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.92, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#bc8bad';
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(78, 52, 72, .9)';
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.9, radius * 0.35);
+        ctx.lineTo(-radius * 1.35, radius * 1.05);
+        ctx.lineTo(-radius * 0.28, radius * 0.75);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(radius * 0.9, radius * 0.35);
+        ctx.lineTo(radius * 1.35, radius * 1.05);
+        ctx.lineTo(radius * 0.28, radius * 0.75);
+        ctx.closePath();
+        ctx.fill();
+        glowCircle(ctx, radius * 0.7, radius * 0.1, radius * 0.55, 'rgba(220, 139, 177, .35)', 0.8);
+        ctx.fillStyle = '#e8a4c4';
+        ctx.beginPath();
+        ctx.arc(radius * 0.68, radius * 0.1, radius * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+        if (enemy.type === 'chieftain') {
+          ctx.strokeStyle = '#c59bb5';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.8, -radius * 0.7);
+          ctx.lineTo(-radius * 1.1, -radius * 1.5);
+          ctx.moveTo(radius * 0.05, -radius * 0.95);
+          ctx.lineTo(radius * 0.05, -radius * 1.65);
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#f0b7cd';
+        ctx.beginPath();
+        ctx.arc(-radius * 0.22, -radius * 0.2, radius * 0.11, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (faction === 'fallen') {
+        ctx.fillStyle = flash ? '#e5f3ff' : '#354b6b';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.78, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#85b2e0';
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(92, 122, 177, .72)';
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.75, -radius * 0.2);
+        ctx.lineTo(-radius * 1.45, radius * 0.9);
+        ctx.lineTo(-radius * 0.2, radius * 0.6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#9ed3ff';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.18, radius * 0.21, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#20324f';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.18, radius * 0.09, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(160, 207, 245, .55)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.8, -radius * 0.25);
+        ctx.lineTo(-radius * 1.35, -radius * 0.55);
+        ctx.moveTo(radius * 0.8, -radius * 0.25);
+        ctx.lineTo(radius * 1.35, -radius * 0.55);
+        ctx.stroke();
+        if (enemy.type === 'captain') {
+          ctx.fillStyle = '#5a71a4';
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.7, -radius * 0.7);
+          ctx.lineTo(0, -radius * 1.65);
+          ctx.lineTo(radius * 0.7, -radius * 0.7);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (faction === 'taken') {
+        ctx.fillStyle = flash ? '#f0fffb' : 'rgba(18, 20, 25, .95)';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(218, 244, 237, .55)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(218, 244, 237, .78)';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.22, radius * 0.17, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(213, 245, 236, .3)';
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * (0.5 + i * 0.28), this.time * 0.7 + i, this.time * 0.7 + i + 1.6);
+          ctx.stroke();
+        }
+      } else if (faction === 'dread') {
+        ctx.fillStyle = flash ? '#f2f0ff' : 'rgba(14, 14, 19, .97)';
+        ctx.beginPath();
+        if (enemy.type === 'subjugator') {
+          ctx.moveTo(0, -radius * 1.25);
+          ctx.lineTo(radius * 0.78, -radius * 0.2);
+          ctx.lineTo(radius * 0.58, radius * 1.0);
+          ctx.lineTo(-radius * 0.58, radius * 1.0);
+          ctx.lineTo(-radius * 0.78, -radius * 0.2);
+        } else {
+          ctx.moveTo(0, -radius * 0.95);
+          ctx.lineTo(radius * 0.85, radius * 0.45);
+          ctx.lineTo(0, radius * 1.05);
+          ctx.lineTo(-radius * 0.85, radius * 0.45);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(228, 231, 245, .7)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(247, 245, 255, .9)';
+        ctx.beginPath();
+        ctx.arc(-radius * 0.18, -radius * 0.2, radius * 0.12, 0, Math.PI * 2);
+        ctx.arc(radius * 0.18, -radius * 0.2, radius * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(223, 225, 242, .4)';
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.7, radius * 0.35);
+        ctx.lineTo(-radius * 1.3, radius * 0.85);
+        ctx.moveTo(radius * 0.7, radius * 0.35);
+        ctx.lineTo(radius * 1.3, radius * 0.85);
+        ctx.stroke();
+      } else if (faction === 'barant') {
+        ctx.fillStyle = flash ? '#ffe2d1' : '#3f2423';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#d99b67';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(38, 20, 21, .9)';
+        ctx.beginPath();
+        ctx.ellipse(-radius * 0.72, -radius * 0.04, radius * 0.38, radius * 0.28, -0.3, 0, Math.PI * 2);
+        ctx.ellipse(radius * 0.72, -radius * 0.04, radius * 0.38, radius * 0.28, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(233, 181, 127, .58)';
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.7, -radius * 0.1);
+        ctx.lineTo(-radius * 1.05, -radius * 0.42);
+        ctx.moveTo(radius * 0.7, -radius * 0.1);
+        ctx.lineTo(radius * 1.05, -radius * 0.42);
+        ctx.stroke();
+        ctx.fillStyle = '#f2d3ab';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.34, radius * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6f3b35';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.34, radius * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (faction === 'shadow') {
+        ctx.fillStyle = flash ? '#eadfff' : '#342c45';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#b697e0';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(220, 184, 255, .55)';
+        ctx.fillRect(-radius * 0.65, -radius * 0.25, radius * 1.3, radius * 0.16);
+        ctx.fillStyle = '#e9d3ff';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.35, radius * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    drawDlcBossShape(ctx, enemy, radius) {
+      const kind = enemy.bossKind || enemy.faction || 'vex';
+      const accent = this.mission.accent || '#e5b96d';
+      glowCircle(ctx, 0, 0, radius * 2.4, `${accent}33`, 0.95);
+      if (kind === 'vex') {
+        ctx.strokeStyle = `${accent}aa`;
+        ctx.lineWidth = 1.4;
+        [1.35, 1.7, 2.05].forEach((scale, index) => {
+          ctx.beginPath();
+          ctx.ellipse(0, 0, radius * scale, radius * scale * 0.38, this.time * 0.18 + index * 0.7, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+        ctx.fillStyle = '#233f3d';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0a1515';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 'hive') {
+        ctx.fillStyle = '#20291c';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radius * 0.82, radius * 1.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(172, 219, 126, .65)';
+        ctx.lineWidth = 2.2;
+        for (let i = -2; i <= 2; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(i * radius * 0.3, -radius * 0.8);
+          ctx.lineTo(i * radius * 0.48, -radius * 1.6);
+          ctx.stroke();
+        }
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.35, radius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#182114';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.35, radius * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 'scorn') {
+        ctx.fillStyle = '#3d2d3a';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radius * 1.18, radius * 0.85, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(194, 133, 169, .56)';
+        ctx.beginPath();
+        ctx.moveTo(-radius * 1.1, -radius * 0.4);
+        ctx.lineTo(-radius * 1.8, -radius * 1.2);
+        ctx.lineTo(-radius * 0.5, -radius * 0.8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(radius * 1.1, -radius * 0.4);
+        ctx.lineTo(radius * 1.8, -radius * 1.2);
+        ctx.lineTo(radius * 0.5, -radius * 0.8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#f0b7cd';
+        ctx.beginPath();
+        ctx.arc(-radius * 0.3, -radius * 0.18, radius * 0.13, 0, Math.PI * 2);
+        ctx.arc(radius * 0.3, -radius * 0.18, radius * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 'fallen') {
+        ctx.fillStyle = '#2d4059';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(160, 207, 245, .6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-radius * 1.2, -radius * 0.8);
+        ctx.lineTo(-radius * 1.8, radius * 0.2);
+        ctx.moveTo(radius * 1.2, -radius * 0.8);
+        ctx.lineTo(radius * 1.8, radius * 0.2);
+        ctx.stroke();
+        ctx.fillStyle = '#c9e9ff';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#14273b';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 'taken') {
+        ctx.fillStyle = 'rgba(16, 18, 22, .98)';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(219, 247, 238, .75)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(236, 255, 248, .86)';
+        ctx.beginPath();
+        ctx.ellipse(0, -radius * 0.1, radius * 0.2, radius * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(210, 246, 238, .35)';
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 4; i += 1) {
+          const angle = Math.PI * 2 * i / 4 + this.time * 0.2;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * radius * 0.6, Math.sin(angle) * radius * 0.6);
+          ctx.quadraticCurveTo(Math.cos(angle + 0.4) * radius * 1.1, Math.sin(angle + 0.4) * radius * 1.1, Math.cos(angle + 0.2) * radius * 1.5, Math.sin(angle + 0.2) * radius * 1.5);
+          ctx.stroke();
+        }
+      } else if (kind === 'dread') {
+        ctx.fillStyle = 'rgba(12, 12, 17, .98)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radius * 0.9, radius * 1.25, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(235, 232, 245, .8)';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(247, 245, 255, .92)';
+        ctx.beginPath();
+        ctx.ellipse(0, -radius * 0.55, radius * 0.42, radius * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#15151b';
+        ctx.beginPath();
+        ctx.arc(-radius * 0.14, -radius * 0.58, radius * 0.07, 0, Math.PI * 2);
+        ctx.arc(radius * 0.14, -radius * 0.58, radius * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(214, 213, 230, .45)';
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * (0.8 + i * 0.3), this.time * 0.5 + i, this.time * 0.5 + i + 1.4);
+          ctx.stroke();
+        }
+      } else if (kind === 'cabal' || kind === 'shadow' || kind === 'barant') {
+        const purple = kind === 'shadow';
+        const barant = kind === 'barant';
+        ctx.fillStyle = barant ? '#3f2423' : purple ? '#3d304e' : '#4b2d24';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.92, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = barant ? '#e0a567' : purple ? '#c7a0ec' : '#e5b263';
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
+        ctx.fillStyle = barant ? 'rgba(116, 60, 49, .72)' : purple ? 'rgba(202, 172, 237, .55)' : 'rgba(227, 169, 92, .5)';
+        ctx.beginPath();
+        ctx.ellipse(-radius * 0.72, -radius * 0.1, radius * 0.38, radius * 0.26, -0.35, 0, Math.PI * 2);
+        ctx.ellipse(radius * 0.72, -radius * 0.1, radius * 0.38, radius * 0.26, 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = barant ? '#f1d0a5' : purple ? '#ead9ff' : '#f2d39a';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.34, radius * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = purple ? 'rgba(220, 188, 255, .6)' : 'rgba(244, 200, 124, .6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.6, radius * 0.45);
+        ctx.lineTo(radius * 0.6, radius * 0.45);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = '#3b2934';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.2, radius * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.strokeStyle = `${accent}88`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 1.45 + Math.sin(this.time * 3) * 3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    drawBoss(ctx, w, h) {
+      const boss = this.boss;
+      const x = boss.x * w;
+      const y = boss.y * h;
+      const point = this.playerPoint();
+      const angle = Math.atan2(point.y - y, point.x - x);
+      const scale = this.metric / 460;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI / 2);
+      glowCircle(ctx, 0, 0, 120 * scale, boss.phase === 3 ? 'rgba(255, 92, 64, .32)' : 'rgba(235, 177, 91, .22)', 0.9);
+      ctx.fillStyle = boss.flash > 0 ? '#ffe0a3' : boss.phase === 3 ? '#4d201d' : '#362a24';
+      ctx.beginPath();
+      ctx.moveTo(0, -55 * scale);
+      ctx.lineTo(30 * scale, -28 * scale);
+      ctx.lineTo(40 * scale, 30 * scale);
+      ctx.lineTo(15 * scale, 54 * scale);
+      ctx.lineTo(-15 * scale, 54 * scale);
+      ctx.lineTo(-40 * scale, 30 * scale);
+      ctx.lineTo(-30 * scale, -28 * scale);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = boss.phase === 3 ? '#f06a4e' : '#d9ad63';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.strokeStyle = '#dba85d';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-22 * scale, -45 * scale);
+      ctx.quadraticCurveTo(-52 * scale, -66 * scale, -38 * scale, -85 * scale);
+      ctx.moveTo(22 * scale, -45 * scale);
+      ctx.quadraticCurveTo(52 * scale, -66 * scale, 38 * scale, -85 * scale);
+      ctx.stroke();
+      ctx.fillStyle = boss.phase === 3 ? '#ff7d59' : '#f1c07a';
+      ctx.beginPath();
+      ctx.arc(0, -20 * scale, 11 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1a0c09';
+      ctx.beginPath();
+      ctx.arc(0, -20 * scale, 4 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#aa8e64';
+      ctx.lineWidth = 5 * scale;
+      ctx.beginPath();
+      ctx.moveTo(36 * scale, 12 * scale);
+      ctx.lineTo(56 * scale, -36 * scale);
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = 'rgba(247, 212, 147, .72)';
+      ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('DOMINUS GHAUL', x, y - 78);
+    }
+
+    drawBullets(ctx) {
+      this.bullets.forEach((bullet) => {
+        ctx.save();
+        ctx.strokeStyle = bullet.color || '#ffe5a6';
+        ctx.fillStyle = bullet.color || '#ffe5a6';
+        ctx.lineWidth = bullet.width || 1.4;
+        ctx.shadowColor = bullet.color || '#ffc04e';
+        ctx.shadowBlur = bullet.melee || bullet.explosive ? 11 : 7;
+        if (bullet.melee) {
+          ctx.translate(bullet.x, bullet.y);
+          const angle = Math.atan2(bullet.vy, bullet.vx);
+          if (bullet.meleeType === 'transcendent') {
+            ctx.rotate(this.time * 7);
+            ctx.fillStyle = 'rgba(255,232,176,.9)';
+            ctx.beginPath();
+            ctx.arc(-5, 0, 7, -Math.PI / 2, Math.PI / 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(181,140,255,.92)';
+            ctx.beginPath();
+            ctx.arc(5, 0, 7, Math.PI / 2, Math.PI * 1.5);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,.85)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (bullet.meleeType === 'smoke' || bullet.meleeType === 'void') {
+            glowCircle(ctx, 0, 0, bullet.meleeType === 'smoke' ? 14 : 11, `${bullet.color}55`, 0.8);
+            ctx.beginPath();
+            ctx.arc(0, 0, bullet.meleeType === 'smoke' ? 5 : 4, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.rotate(angle);
+            if (bullet.meleeType === 'ice' || bullet.meleeType === 'freeze') {
+              ctx.beginPath();
+              ctx.moveTo(-13, 0);
+              ctx.lineTo(7, 0);
+              ctx.moveTo(7, -4);
+              ctx.lineTo(16, 0);
+              ctx.lineTo(7, 4);
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+            } else if (bullet.meleeType === 'hammer') {
+              ctx.rotate(this.time * 13);
+              ctx.fillRect(-8, -4, 16, 8);
+              ctx.fillRect(5, -1.5, 10, 3);
+            } else if (bullet.meleeType === 'knife' || bullet.meleeType === 'needle') {
+              ctx.beginPath();
+              ctx.moveTo(-9, 0);
+              ctx.lineTo(3, -3);
+              ctx.lineTo(12, 0);
+              ctx.lineTo(3, 3);
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+            } else if (bullet.meleeType === 'arc') {
+              ctx.beginPath();
+              ctx.moveTo(-10, 2);
+              ctx.lineTo(-2, -3);
+              ctx.lineTo(2, 3);
+              ctx.lineTo(10, -2);
+              ctx.stroke();
+            } else {
+              ctx.beginPath();
+              ctx.moveTo(-8, 0);
+              ctx.lineTo(9, 0);
+              ctx.stroke();
+            }
+          }
+        } else if (bullet.projectileType === 'rocket' || bullet.projectileType === 'grenade') {
+          ctx.translate(bullet.x, bullet.y);
+          ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
+          if (bullet.projectileType === 'rocket') {
+            ctx.fillStyle = bullet.color;
+            ctx.fillRect(-11, -3, 20, 6);
+            ctx.beginPath();
+            ctx.moveTo(9, -5);
+            ctx.lineTo(17, 0);
+            ctx.lineTo(9, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255, 223, 159, .8)';
+            ctx.beginPath();
+            ctx.moveTo(-11, -3);
+            ctx.lineTo(-20 - Math.random() * 8, 0);
+            ctx.lineTo(-11, 3);
+            ctx.closePath();
+            ctx.fill();
+          } else {
+            glowCircle(ctx, 0, 0, 13, `${bullet.color}55`, 0.8);
+            ctx.beginPath();
+            ctx.arc(0, 0, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,.65)';
+            ctx.stroke();
+          }
+        } else if (bullet.projectileType === 'beam') {
+          ctx.strokeStyle = bullet.color;
+          ctx.lineWidth = bullet.width || 2.4;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(bullet.x, bullet.y);
+          ctx.lineTo(bullet.x - bullet.vx * 0.035, bullet.y - bullet.vy * 0.035);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,255,255,.7)';
+          ctx.lineWidth = Math.max(1, (bullet.width || 2.4) * 0.35);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(bullet.x, bullet.y);
+          ctx.lineTo(bullet.x - bullet.vx * 0.015, bullet.y - bullet.vy * 0.015);
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+      this.enemyBullets.forEach((bullet) => {
+        ctx.save();
+        ctx.strokeStyle = bullet.damage > 12 ? '#ff855f' : '#ffad7a';
+        ctx.lineWidth = 1.6;
+        ctx.shadowColor = '#e64c38';
+        ctx.shadowBlur = 7;
+        ctx.beginPath();
+        ctx.moveTo(bullet.x, bullet.y);
+        ctx.lineTo(bullet.x - bullet.vx * 0.017, bullet.y - bullet.vy * 0.017);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    drawGrenades(ctx) {
+      const color = this.activeSubclass().color;
+      this.grenades.forEach((grenade) => {
+        if (grenade.transcendent) {
+          const spin = this.time * 5.5 + (grenade.phase || 0);
+          ctx.save();
+          ctx.translate(grenade.x, grenade.y);
+          glowCircle(ctx, 0, 0, 28, 'rgba(255,232,178,.28)', 0.9);
+          glowCircle(ctx, 0, 0, 30, 'rgba(181,140,255,.24)', 0.9);
+          ctx.rotate(spin);
+          ctx.fillStyle = '#ffe8b0';
+          ctx.beginPath();
+          ctx.arc(-7, 0, 6.5, -Math.PI / 2, Math.PI / 2);
+          ctx.fill();
+          ctx.fillStyle = '#a87cff';
+          ctx.beginPath();
+          ctx.arc(7, 0, 6.5, Math.PI / 2, Math.PI * 1.5);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.9)';
+          ctx.beginPath();
+          ctx.arc(-2, 0, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(35,20,55,.9)';
+          ctx.beginPath();
+          ctx.arc(2, 0, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,.55)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.arc(0, 0, 11, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+        glowCircle(ctx, grenade.x, grenade.y, 18, `${color}66`, 0.8);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(grenade.x, grenade.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      this.hammers.forEach((hammer) => {
+        const hcolor = hammer.profile?.color || color;
+        const kind = hammer.profile?.kind || 'projectile';
+        const trail = hammer.trail || [];
+        if (trail.length > 1) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          trail.forEach((point, index) => {
+            if (index === 0) return;
+            const ratio = index / trail.length;
+            ctx.globalAlpha = ratio * 0.5;
+            ctx.strokeStyle = hcolor;
+            ctx.lineWidth = Math.max(1, 10 * ratio);
+            ctx.beginPath();
+            ctx.moveTo(trail[index - 1].x, trail[index - 1].y);
+            ctx.lineTo(point.x, point.y);
+            ctx.stroke();
+          });
+          ctx.restore();
+        }
+        glowCircle(ctx, hammer.x, hammer.y, kind === 'projectile' ? 42 : 31, `${hcolor}88`, 0.9);
+        ctx.save();
+        ctx.translate(hammer.x, hammer.y);
+        ctx.rotate(hammer.spin);
+        ctx.fillStyle = hcolor;
+        ctx.strokeStyle = 'rgba(255,255,255,.78)';
+        ctx.lineWidth = 1;
+        if (kind === 'storm') {
+          this.drawDiamond(ctx, 0, 0, 12, `${hcolor}bb`, 'rgba(224, 250, 255, .9)', 1.4);
+          ctx.strokeStyle = 'rgba(198, 244, 255, .55)';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < 3; i += 1) {
+            ctx.beginPath();
+            ctx.arc(0, 0, 17 + i * 4, this.time * (1.2 + i * 0.2), this.time * (1.2 + i * 0.2) + Math.PI * 1.2);
+            ctx.stroke();
+          }
+        } else if (kind === 'volley') {
+          ctx.shadowColor = hcolor;
+          ctx.shadowBlur = 16;
+          if (hammer.element === 'solar') {
+            ctx.beginPath();
+            ctx.moveTo(-19, 0);
+            ctx.lineTo(1, -5);
+            ctx.lineTo(19, 0);
+            ctx.lineTo(1, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#ffe6ad';
+            ctx.beginPath();
+            ctx.moveTo(-7, 0);
+            ctx.lineTo(10, 0);
+            ctx.moveTo(-8, -7);
+            ctx.lineTo(-8, 7);
+            ctx.stroke();
+            ctx.fillStyle = `${hcolor}88`;
+            ctx.beginPath();
+            ctx.moveTo(-18, 0);
+            ctx.quadraticCurveTo(-28, -8, -24, -16);
+            ctx.quadraticCurveTo(-14, -9, -10, 0);
+            ctx.fill();
+          } else if (hammer.element === 'strand') {
+            ctx.beginPath();
+            ctx.moveTo(-21, 0);
+            ctx.lineTo(20, 0);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-21, 0);
+            ctx.lineTo(-12, -6);
+            ctx.moveTo(-21, 0);
+            ctx.lineTo(-12, 6);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#e6ffdc';
+            ctx.beginPath();
+            ctx.arc(-21, 0, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.moveTo(-16, 0);
+            ctx.lineTo(3, -5);
+            ctx.lineTo(17, 0);
+            ctx.lineTo(3, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255,255,255,.5)';
+            ctx.beginPath();
+            ctx.moveTo(-9, 0);
+            ctx.lineTo(8, 0);
+            ctx.stroke();
+          }
+        } else {
+          const orb = ctx.createRadialGradient(-3, -3, 1, 0, 0, 15);
+          orb.addColorStop(0, '#ffffff');
+          orb.addColorStop(0.28, hcolor);
+          orb.addColorStop(1, `${hcolor}22`);
+          ctx.fillStyle = orb;
+          ctx.beginPath();
+          ctx.arc(0, 0, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,.72)';
+          ctx.stroke();
+          ctx.strokeStyle = `${hcolor}aa`;
+          ctx.lineWidth = 1.2;
+          for (let i = 0; i < 2; i += 1) {
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 19 + i * 5, 8 + i * 4, this.time * (0.8 + i * 0.25), 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      });
+      this.chainBolts.forEach((bolt) => {
+        ctx.save();
+        ctx.globalAlpha = clamp(bolt.time / bolt.max, 0, 1);
+        ctx.strokeStyle = bolt.color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(bolt.x1, bolt.y1);
+        const midX = (bolt.x1 + bolt.x2) / 2 + Math.sin(this.time * 20 + bolt.y1) * 12;
+        const midY = (bolt.y1 + bolt.y2) / 2 + Math.cos(this.time * 18 + bolt.x1) * 9;
+        ctx.lineTo(midX, midY);
+        ctx.lineTo(bolt.x2, bolt.y2);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.vortexes.forEach((vortex) => {
+        ctx.save();
+        const ratio = clamp(vortex.time / vortex.max, 0, 1);
+        ctx.globalAlpha = 0.4 + ratio * 0.5;
+        ctx.strokeStyle = vortex.color;
+        ctx.lineWidth = 1.4;
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.arc(vortex.x, vortex.y, vortex.radius * (0.35 + i * 0.2) + Math.sin(this.time * 2 + i) * 4, this.time * (0.7 + i * 0.2), this.time * (0.7 + i * 0.2) + Math.PI * 1.2);
+          ctx.stroke();
+        }
+        glowCircle(ctx, vortex.x, vortex.y, vortex.radius, `${vortex.color}22`, 0.5);
+        ctx.restore();
+      });
+    }
+
+    drawTelegraphs(ctx, w, h) {
+      this.telegraphs.forEach((telegraph) => {
+        if (telegraph.done) return;
+        const progress = 1 - telegraph.time / telegraph.max;
+        const x = telegraph.x * w;
+        const y = telegraph.y * h;
+        ctx.save();
+        ctx.fillStyle = progress > 0.75 ? 'rgba(237, 94, 66, .23)' : 'rgba(213, 141, 81, .12)';
+        ctx.beginPath();
+        ctx.arc(x, y, telegraph.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 190, 119, .72)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, telegraph.radius * progress, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    drawSuperEffects(ctx, w, h) {
+      this.superBeams.forEach((beam) => {
+        const alpha = clamp(beam.time / beam.max, 0, 1);
+        if (beam.kind === 'golden-gun') {
+          const dx = beam.x2 - beam.x1;
+          const dy = beam.y2 - beam.y1;
+          const length = Math.hypot(dx, dy) || 1;
+          const angle = Math.atan2(dy, dx);
+          const width = beam.width || 24;
+          ctx.save();
+          ctx.translate(beam.x1, beam.y1);
+          ctx.rotate(angle);
+          ctx.globalAlpha = alpha;
+          ctx.globalCompositeOperation = 'lighter';
+          const beamGradient = ctx.createLinearGradient(0, 0, length, 0);
+          beamGradient.addColorStop(0, 'rgba(255, 244, 206, .96)');
+          beamGradient.addColorStop(0.18, 'rgba(255, 198, 96, .92)');
+          beamGradient.addColorStop(0.62, 'rgba(255, 139, 45, .82)');
+          beamGradient.addColorStop(1, 'rgba(255, 103, 26, 0)');
+          ctx.strokeStyle = beamGradient;
+          ctx.lineWidth = width * (0.75 + alpha * 0.25);
+          ctx.shadowColor = '#ff9e34';
+          ctx.shadowBlur = 32;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(length, 0);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(255, 249, 224, .96)';
+          ctx.lineWidth = Math.max(2, width * 0.18);
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.moveTo(10, 0);
+          ctx.lineTo(length, 0);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          for (let i = 0; i < 22; i += 1) {
+            const progress = i / 21;
+            const lx = length * progress;
+            const spread = Math.sin(this.time * 18 + i * 1.7) * width * (0.2 + progress * 0.7);
+            const size = Math.max(1, width * 0.12 * (1 - progress * 0.5));
+            ctx.fillStyle = i % 3 === 0 ? 'rgba(255, 247, 210, .9)' : 'rgba(255, 154, 58, .7)';
+            ctx.beginPath();
+            ctx.arc(lx, spread, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          const muzzle = ctx.createRadialGradient(0, 0, 2, 0, 0, width * 1.6);
+          muzzle.addColorStop(0, 'rgba(255, 255, 244, .98)');
+          muzzle.addColorStop(0.34, 'rgba(255, 197, 93, .7)');
+          muzzle.addColorStop(1, 'rgba(255, 112, 25, 0)');
+          ctx.fillStyle = muzzle;
+          ctx.beginPath();
+          ctx.arc(0, 0, width * 1.6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 245, 207, .9)';
+          ctx.lineWidth = Math.max(1, width * 0.08);
+          for (let i = 0; i < 8; i += 1) {
+            const ray = (i / 8) * Math.PI * 2 + this.time * 0.6;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(ray) * width * 0.7, Math.sin(ray) * width * 0.7);
+            ctx.lineTo(Math.cos(ray) * width * (1.25 + (i % 2) * 0.28), Math.sin(ray) * width * (1.25 + (i % 2) * 0.28));
+            ctx.stroke();
+          }
+          ctx.restore();
+          return;
+        }
+        if (beam.kind === 'meteor') {
+          const startX = beam.x1;
+          const startY = beam.y1;
+          const endX = beam.x2;
+          const endY = beam.y2;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.globalCompositeOperation = 'lighter';
+          const meteorGradient = ctx.createLinearGradient(startX, startY, endX, endY);
+          meteorGradient.addColorStop(0, 'rgba(157, 236, 255, 0)');
+          meteorGradient.addColorStop(0.36, 'rgba(111, 210, 255, .38)');
+          meteorGradient.addColorStop(0.78, 'rgba(211, 246, 255, .92)');
+          meteorGradient.addColorStop(1, '#ffffff');
+          ctx.strokeStyle = meteorGradient;
+          ctx.lineWidth = (beam.width || 22) * (0.45 + alpha * 0.9);
+          ctx.shadowColor = beam.color;
+          ctx.shadowBlur = 30;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(255, 255, 255, .8)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY + 18);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          const head = ctx.createRadialGradient(endX, endY, 3, endX, endY, 76);
+          head.addColorStop(0, 'rgba(255,255,255,.98)');
+          head.addColorStop(0.25, 'rgba(183,240,255,.82)');
+          head.addColorStop(1, 'rgba(80,160,255,0)');
+          ctx.fillStyle = head;
+          ctx.beginPath();
+          ctx.arc(endX, endY, 76, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          return;
+        }
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = beam.color;
+        ctx.lineWidth = beam.width * (0.6 + alpha * 0.5);
+        ctx.shadowColor = beam.color;
+        ctx.shadowBlur = 22;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(beam.x1, beam.y1);
+        ctx.lineTo(beam.x2, beam.y2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.72)';
+        ctx.lineWidth = Math.max(1, beam.width * 0.2);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.superEffects.forEach((effect) => {
+        const x = effect.x;
+        const y = effect.y;
+        const color = effect.color || '#e9f3ef';
+        const radius = effect.radius || 100;
+        const age = (effect.max || 1) - effect.time;
+        const fade = clamp(effect.time / 0.8, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = 0.45 + fade * 0.45;
+        if (effect.kind === 'silence-squall') {
+          glowCircle(ctx, x, y, radius * 2.35, `${color}16`, 0.9);
+          glowCircle(ctx, x, y, radius * 1.45, `${color}22`, 0.8);
+          ctx.strokeStyle = 'rgba(217, 249, 255, .3)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.ellipse(x, y, radius * 1.72, radius * 0.56, age * 0.18, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(x, y, radius * 1.3, radius * 0.76, -age * 0.24, 0, Math.PI * 2);
+          ctx.stroke();
+          for (let i = 0; i < 18; i += 1) {
+            const angle = i * 2.399 + age * 0.8;
+            const distance = radius * (0.7 + (i % 5) * 0.12);
+            const sx = x + Math.cos(angle) * distance;
+            const sy = y + Math.sin(angle) * distance * 0.62;
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.rotate(angle + age);
+            ctx.fillStyle = i % 3 === 0 ? 'rgba(245, 255, 255, .74)' : `${color}77`;
+            ctx.beginPath();
+            ctx.moveTo(0, -4);
+            ctx.lineTo(2.4, 0);
+            ctx.lineTo(0, 4);
+            ctx.lineTo(-2.4, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+          ctx.strokeStyle = `${color}99`;
+          ctx.lineWidth = 1.3;
+          for (let i = 0; i < 3; i += 1) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius * (0.38 + i * 0.22) + Math.sin(age * 2 + i) * 4, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.strokeStyle = 'rgba(227, 247, 255, .8)';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < 12; i += 1) {
+            const angle = age * 0.55 + i * Math.PI / 6;
+            const inner = radius * 0.35;
+            const outer = radius * (0.9 + Math.sin(age * 2 + i) * 0.08);
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(angle) * inner, y + Math.sin(angle) * inner);
+            ctx.lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer);
+            ctx.stroke();
+          }
+          ctx.fillStyle = 'rgba(235, 251, 255, .8)';
+          for (let i = 0; i < 28; i += 1) {
+            const angle = i * 2.399 + age * 0.7;
+            const distance = (radius * 0.25) + (i % 9) * radius * 0.075;
+            ctx.beginPath();
+            ctx.arc(x + Math.cos(angle) * distance, y + Math.sin(angle) * distance + Math.sin(age * 3 + i) * 7, 1.25, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (effect.kind === 'aura') {
+          if (effect.aura === 'arcstaff') {
+            ctx.translate(x, y);
+            ctx.rotate(age * 9);
+            ctx.strokeStyle = 'rgba(177, 238, 255, .9)';
+            ctx.lineWidth = 4;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.moveTo(-radius * 0.8, 0);
+            ctx.lineTo(radius * 0.8, 0);
+            ctx.stroke();
+            ctx.lineWidth = 1.5;
+            for (let i = -2; i <= 2; i += 1) {
+              ctx.beginPath();
+              ctx.moveTo(i * 20, -8);
+              ctx.lineTo(i * 20 + 8, 8);
+              ctx.lineTo(i * 20 - 4, 2);
+              ctx.stroke();
+            }
+          } else if (effect.aura === 'spectral') {
+            ctx.translate(x, y);
+            ctx.rotate(age * 2.2);
+            for (let i = 0; i < 3; i += 1) {
+              ctx.strokeStyle = i % 2 ? 'rgba(196, 162, 255, .8)' : 'rgba(112, 72, 176, .75)';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(0, 0, radius * (0.55 + i * 0.12), i * 2.1, i * 2.1 + Math.PI * 0.7);
+              ctx.stroke();
+            }
+          } else {
+            ctx.strokeStyle = 'rgba(161, 244, 177, .8)';
+            ctx.lineWidth = 1.4;
+            ctx.translate(x, y);
+            for (let i = 0; i < 3; i += 1) {
+              const angle = age * 1.8 + i * 2.1;
+              ctx.beginPath();
+              ctx.arc(0, 0, radius * 0.56, angle, angle + Math.PI * 1.2);
+              ctx.stroke();
+            }
+          }
+        } else if (effect.kind === 'chainbeam') {
+          glowCircle(ctx, x, y, radius * 0.5, `${color}18`, 0.7);
+          ctx.strokeStyle = 'rgba(185, 240, 255, .85)';
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 12;
+          this.enemies.filter((enemy) => enemy.alive && dist(x, y, enemy.x * w, enemy.y * h) < radius).slice(0, 4).forEach((enemy, index) => {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            const mx = (x + enemy.x * w) / 2 + Math.sin(age * 15 + index) * 18;
+            const my = (y + enemy.y * h) / 2 + Math.cos(age * 13 + index) * 14;
+            ctx.lineTo(mx, my);
+            ctx.lineTo(enemy.x * w, enemy.y * h);
+            ctx.stroke();
+          });
+        } else if (effect.kind === 'freeze') {
+          ctx.strokeStyle = 'rgba(195, 240, 255, .82)';
+          ctx.lineWidth = 1.3;
+          for (let i = 0; i < 3; i += 1) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius * (0.42 + i * 0.24), age * (0.4 + i * 0.2), age * (0.4 + i * 0.2) + Math.PI * 1.4);
+            ctx.stroke();
+          }
+          for (let i = 0; i < 8; i += 1) {
+            const angle = i * Math.PI / 4;
+            this.drawDiamond(ctx, x + Math.cos(angle) * radius * 0.7, y + Math.sin(angle) * radius * 0.7, 5, 'rgba(191, 240, 255, .18)', 'rgba(214, 249, 255, .78)', 0.8);
+          }
+        } else if (effect.kind === 'tornado') {
+          ctx.strokeStyle = 'rgba(255, 178, 86, .78)';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 4; i += 1) {
+            ctx.beginPath();
+            for (let p = 0; p < 18; p += 1) {
+              const t = p / 17;
+              const angle = age * 4 + i * 1.6 + t * Math.PI * 4;
+              const r = radius * (0.15 + t * 0.7);
+              const px = x + Math.cos(angle) * r;
+              const py = y + Math.sin(angle) * r * 0.4 + t * radius * 0.35;
+              if (!p) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+          }
+          glowCircle(ctx, x, y + radius * 0.25, radius * 0.8, 'rgba(255, 126, 45, .2)', 0.8);
+        } else if (effect.kind === 'icequake' || effect.kind === 'wave') {
+          ctx.strokeStyle = effect.kind === 'icequake' ? 'rgba(198, 242, 255, .8)' : 'rgba(193, 255, 195, .8)';
+          ctx.lineWidth = 1.5;
+          for (let i = 0; i < 3; i += 1) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius * (0.4 + i * 0.25), age * 0.5, age * 0.5 + Math.PI * 1.5);
+            ctx.stroke();
+          }
+          if (effect.kind === 'icequake') {
+            for (let i = 0; i < 10; i += 1) {
+              const angle = i * Math.PI / 5;
+              ctx.beginPath();
+              ctx.moveTo(x + Math.cos(angle) * radius * 0.28, y + Math.sin(angle) * radius * 0.28);
+              ctx.lineTo(x + Math.cos(angle - 0.08) * radius * 0.9, y + Math.sin(angle - 0.08) * radius * 0.9);
+              ctx.lineTo(x + Math.cos(angle + 0.08) * radius * 0.9, y + Math.sin(angle + 0.08) * radius * 0.9);
+              ctx.closePath();
+              ctx.fillStyle = 'rgba(202, 244, 255, .16)';
+              ctx.fill();
+              ctx.stroke();
+            }
+          }
+        }
+        ctx.restore();
+      });
+    }
+
+    drawRangeArena(ctx, w, h) {
+      const accent = '#79e0c1';
+      const horizon = h * 0.46;
+      ctx.save();
+      const wall = ctx.createLinearGradient(0, 0, 0, horizon);
+      wall.addColorStop(0, '#14262c');
+      wall.addColorStop(0.65, '#0b1519');
+      wall.addColorStop(1, '#050b0e');
+      ctx.fillStyle = wall;
+      ctx.fillRect(0, 0, w, horizon + 1);
+      ctx.fillStyle = 'rgba(121, 224, 193, .08)';
+      ctx.fillRect(0, h * 0.085, w, 3);
+      ctx.fillRect(0, h * 0.18, w, 1);
+      for (let i = 0; i < 8; i += 1) {
+        const x = w * (0.06 + i * 0.125);
+        ctx.fillStyle = 'rgba(171, 211, 202, .07)';
+        ctx.fillRect(x, h * 0.05, 1, horizon - h * 0.05);
+      }
+      for (let i = 0; i < 4; i += 1) {
+        const x = w * (0.12 + i * 0.25);
+        glowCircle(ctx, x, h * 0.07, 42, 'rgba(160, 236, 218, .12)', 0.6);
+        ctx.fillStyle = 'rgba(213, 245, 235, .65)';
+        ctx.fillRect(x - 18, h * 0.065, 36, 2);
+      }
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(121, 224, 193, .2)';
+      ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('TOWER FIRING RANGE // ALL ENEMY TYPES', w * 0.5, h * 0.115);
+      const floor = ctx.createLinearGradient(0, horizon, 0, h);
+      floor.addColorStop(0, '#1b2b2d');
+      floor.addColorStop(0.42, '#101a1c');
+      floor.addColorStop(1, '#050809');
+      ctx.fillStyle = floor;
+      ctx.fillRect(0, horizon, w, h - horizon);
+      ctx.strokeStyle = 'rgba(121, 224, 193, .16)';
+      ctx.lineWidth = 0.8;
+      for (let i = -7; i <= 7; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5 + i * w * 0.035, horizon);
+        ctx.lineTo(w * 0.5 + i * w * 0.14, h);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 8; i += 1) {
+        const y = horizon + (h - horizon) * (i / 7) ** 1.75;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(232, 198, 108, .22)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, horizon + 4);
+      ctx.lineTo(w, horizon + 4);
+      ctx.stroke();
+      for (let i = 0; i < 6; i += 1) {
+        const x = w * (0.06 + i * 0.175);
+        ctx.strokeStyle = 'rgba(139, 172, 168, .18)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, horizon);
+        ctx.lineTo(x - w * 0.04, h * 0.91);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(121, 224, 193, .05)';
+        ctx.fillRect(x - 2, h * 0.91, 4, h * 0.09);
+      }
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(205, 232, 224, .22)';
+      ctx.font = '500 5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('LIVE TARGETS · RESPAWN ENABLED', w * 0.045, h * 0.52);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(232, 198, 108, .28)';
+      ctx.fillText('INFINITE AMMO // INFINITE ABILITIES', w * 0.955, h * 0.52);
+      ctx.restore();
+    }
+
+    drawRaidArena(ctx, w, h) {
+      const raid = this.raidConfig || {};
+      const id = raid.id || 'leviathan';
+      const palettes = {
+        scourge: ['#15232b', '#080b0d', '#e0b56b', '#5c4a32'],
+        eater: ['#0f272a', '#05090a', '#73e0ca', '#2c4b49'],
+        spire: ['#2a1e12', '#090809', '#f0c473', '#5a452b'],
+        leviathan: ['#2d2414', '#08090a', '#e4c078', '#5a4a2c'],
+        crown: ['#261520', '#07080a', '#d397c5', '#4b2f43'],
+        'last-wish': ['#1b1930', '#080910', '#d2a8ef', '#363858'],
+        garden: ['#12251f', '#060b09', '#a8e2b0', '#294c3b'],
+        'deep-stone': ['#102633', '#050a0e', '#9fd8df', '#294b58'],
+        vow: ['#171d1a', '#070908', '#c7e69a', '#33453a'],
+        root: ['#25101f', '#08060a', '#ed9fcf', '#4c2b41'],
+        salvation: ['#25251d', '#090a08', '#f1dc99', '#55533f'],
+        'deserted-spire': ['#1b1730', '#07070c', '#c79cff', '#39325a'],
+        'renegade-sanctum': ['#2b1b11', '#090807', '#e2a35f', '#5a3d28'],
+        'vault-of-glass': ['#2b2415', '#080907', '#e8d18a', '#5c5232'],
+        'event-horizon': ['#130d20', '#020104', '#e7b96e', '#40305f']
+      };
+      const [skyTop, skyBottom, accent, structure] = palettes[id] || palettes.leviathan;
+      const stage = this.raidState?.encounterIndex || 0;
+      const stageSeed = stage * 37;
+      const horizon = h * (0.445 + (stage % 3) * 0.009);
+      ctx.save();
+      const sky = ctx.createLinearGradient(0, 0, 0, horizon);
+      sky.addColorStop(0, skyTop);
+      sky.addColorStop(0.62, skyBottom);
+      sky.addColorStop(1, '#020304');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, horizon + 2);
+      const seed = (n) => {
+        const value = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+        return value - Math.floor(value);
+      };
+      for (let i = 0; i < 80; i += 1) {
+        const sx = seed(i + 11 + stageSeed) * w;
+        const sy = seed(i + 71) * horizon;
+        ctx.fillStyle = `rgba(232, 241, 231, ${0.12 + seed(i + 33) * 0.2})`;
+        ctx.fillRect(sx, sy, i % 9 === 0 ? 2 : 1, i % 9 === 0 ? 2 : 1);
+      }
+      if (id === 'event-horizon') {
+        this.drawBlackHoleEffects(ctx, w * 0.5, horizon * 0.52, Math.min(w, h) * 0.075, { core: true, alpha: 0.98 });
+      } else if (id === 'vault-of-glass') {
+        ctx.save();
+        ctx.strokeStyle = `${accent}55`;
+        ctx.lineWidth = 1.4;
+        [0, 1, 2].forEach((i) => {
+          ctx.beginPath();
+          ctx.ellipse(w * 0.5, horizon * 0.62, w * (0.16 + i * 0.075), h * (0.045 + i * 0.022), -0.16, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+        ctx.strokeStyle = `${accent}aa`;
+        ctx.beginPath();
+        ctx.arc(w * 0.5, horizon * 0.62, Math.min(w, h) * 0.055, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      const horizonGlow = ctx.createRadialGradient(w * 0.5, horizon, 8, w * 0.5, horizon, w * 0.55);
+      horizonGlow.addColorStop(0, `${accent}22`);
+      horizonGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = horizonGlow;
+      ctx.fillRect(0, 0, w, horizon + 70);
+      ctx.globalAlpha = 0.75;
+      if (id === 'last-wish' || id === 'garden' || id === 'eater') {
+        ctx.strokeStyle = `${accent}55`;
+        ctx.lineWidth = 1.3;
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.ellipse(w * 0.5, horizon * 0.55, w * (0.25 + i * 0.14), h * (0.035 + i * 0.016), -0.18, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (id === 'leviathan' || id === 'spire' || id === 'crown' || id === 'scourge') {
+        const planetX = w * (0.7 - stage * 0.055);
+        const planet = ctx.createRadialGradient(planetX, horizon * 0.3, 5, planetX, horizon * 0.3, w * 0.23);
+        planet.addColorStop(0, `${accent}55`);
+        planet.addColorStop(0.48, `${structure}77`);
+        planet.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = planet;
+        ctx.beginPath();
+        ctx.arc(planetX, horizon * 0.3, w * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `${accent}44`;
+        ctx.beginPath();
+        ctx.ellipse(planetX, horizon * 0.3, w * 0.3, h * 0.045, -0.24, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (id === 'deep-stone') {
+        ctx.fillStyle = `${structure}aa`;
+        for (let i = 0; i < 7; i += 1) {
+          const x = w * (0.12 + i * 0.13);
+          const top = horizon * (0.28 + seed(i + 2) * 0.25);
+          ctx.beginPath();
+          ctx.moveTo(x - w * 0.04, horizon);
+          ctx.lineTo(x, top);
+          ctx.lineTo(x + w * 0.04, horizon);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (id === 'vow' || id === 'salvation' || id === 'root') {
+        ctx.fillStyle = `${structure}88`;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5, horizon * 0.1);
+        ctx.lineTo(w * 0.77, horizon);
+        ctx.lineTo(w * 0.23, horizon);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = `${accent}55`;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = `${structure}88`;
+        for (let i = 0; i < 5; i += 1) {
+          const x = w * (0.12 + i * 0.19);
+          const top = horizon * (0.25 + seed(i + 13) * 0.2);
+          ctx.fillRect(x - w * 0.025, top, w * 0.05, horizon - top);
+        }
+      }
+      ctx.globalAlpha = 1;
+      const floor = ctx.createLinearGradient(0, horizon, 0, h);
+      floor.addColorStop(0, `${structure}cc`);
+      floor.addColorStop(0.24, '#10161a');
+      floor.addColorStop(1, '#040708');
+      ctx.fillStyle = floor;
+      ctx.fillRect(0, horizon, w, h - horizon);
+      ctx.strokeStyle = `${accent}22`;
+      ctx.lineWidth = 0.8;
+      const vanishX = w * 0.5;
+      for (let i = -8; i <= 8; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(vanishX + i * w * 0.035, horizon);
+        ctx.lineTo(vanishX + i * w * 0.13, h);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 8; i += 1) {
+        const y = horizon + (h - horizon) * (i / 7) ** 1.7;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.quadraticCurveTo(w * 0.5, y - (y - horizon) * 0.08, w, y);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = `${accent}33`;
+      for (let i = 0; i < 3; i += 1) {
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.66, w * (0.18 + i * 0.1), h * (0.055 + i * 0.028), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = `${accent}12`;
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.66, Math.min(w, h) * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `${accent}66`;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.66, Math.min(w, h) * 0.2, 0, Math.PI * 2);
+      ctx.stroke();
+      for (let i = 0; i < 22; i += 1) {
+        const x = seed(i + 4 + stageSeed) * w;
+        const y = horizon + seed(i + 36 + stageSeed) * (h - horizon);
+        const alpha = 0.15 + seed(i + 17) * 0.4;
+        ctx.fillStyle = `${accent}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
+        ctx.fillRect(x, y + Math.sin(this.time * 0.7 + i) * 4, 1.2, 1.2);
+      }
+      const pylonCount = 2 + (stage % 3);
+      for (let i = 0; i < pylonCount; i += 1) {
+        const side = i % 2 === 0 ? -1 : 1;
+        const px = w * 0.5 + side * w * (0.32 + Math.floor(i / 2) * 0.1);
+        const py = h * (0.58 + (i % 2) * 0.05);
+        const ph = h * (0.14 + (i / pylonCount) * 0.08);
+        ctx.fillStyle = `${structure}dd`;
+        ctx.fillRect(px - 5, py - ph, 10, ph);
+        ctx.fillStyle = `${accent}55`;
+        ctx.fillRect(px - 2, py - ph + 4, 4, ph * 0.55);
+        ctx.strokeStyle = `${accent}66`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px - 9, py - ph);
+        ctx.lineTo(px, py - ph - 8);
+        ctx.lineTo(px + 9, py - ph);
+        ctx.stroke();
+      }
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `${accent}14`;
+      ctx.font = `600 ${Math.round(34 + stage * 2)}px "SFMono-Regular", Consolas, monospace`;
+      ctx.fillText(String(stage + 1).padStart(2, '0'), w * 0.5, h * 0.93);
+      ctx.restore();
+    }
+
+    drawRaidStageBanner(ctx, w, h) {
+      const banner = this.raidStageBanner;
+      if (!banner || banner.time <= 0) return;
+      const fadeIn = clamp((banner.max - banner.time) / 0.35, 0, 1);
+      const fadeOut = clamp(banner.time / 0.55, 0, 1);
+      const alpha = Math.min(fadeIn, fadeOut);
+      const accent = banner.accent;
+      const centerY = h * 0.335;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const band = ctx.createLinearGradient(w * 0.16, 0, w * 0.84, 0);
+      band.addColorStop(0, 'rgba(5, 8, 10, 0)');
+      band.addColorStop(0.18, 'rgba(5, 8, 10, .86)');
+      band.addColorStop(0.82, 'rgba(5, 8, 10, .86)');
+      band.addColorStop(1, 'rgba(5, 8, 10, 0)');
+      ctx.fillStyle = band;
+      ctx.fillRect(w * 0.16, centerY - 33, w * 0.68, 70);
+      ctx.strokeStyle = `${accent}66`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.24, centerY - 33);
+      ctx.lineTo(w * 0.76, centerY - 33);
+      ctx.moveTo(w * 0.24, centerY + 37);
+      ctx.lineTo(w * 0.76, centerY + 37);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = accent;
+      ctx.font = '600 6.4px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`RAID // ENCOUNTER ${String(banner.index).padStart(2, '0')} OF ${String(banner.total).padStart(2, '0')}`, w * 0.5, centerY - 15);
+      ctx.fillStyle = '#f2eee0';
+      ctx.font = '600 19px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText(banner.name, w * 0.5, centerY + 8);
+      ctx.fillStyle = banner.bossName ? 'rgba(240, 208, 138, .82)' : 'rgba(165, 224, 201, .82)';
+      ctx.font = '500 6.6px "PingFang SC", sans-serif';
+      ctx.fillText(banner.bossName ? `首领 · ${banner.bossName}` : '开门关 · 无首领 · 完成机制后推进', w * 0.5, centerY + 24);
+      ctx.restore();
+    }
+
+    drawRaidBoss(ctx, w, h) {
+      const boss = this.raidBoss;
+      if (!boss || boss.dead) return;
+      const x = boss.x * w;
+      const y = boss.y * h;
+      const kind = boss.bossKind || 'cabal';
+      const accent = boss.color || '#d9b06c';
+      const player = this.playerPoint();
+      const damagePhase = this.raidState?.phase === 'damage';
+      const shield = !damagePhase;
+      const scale = clamp(this.metric / 820, 0.92, 1.3);
+      const size = clamp(this.metric * 0.27, 138, 212) * scale;
+      const bob = Math.sin(boss.step * 2.15) * 3.2;
+      ctx.save();
+      ctx.translate(x, y + bob);
+      ctx.fillStyle = 'rgba(0, 0, 0, .48)';
+      ctx.beginPath();
+      ctx.ellipse(0, size * 0.39, size * 0.29, size * 0.065, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `${accent}33`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(0, size * 0.39, size * 0.38, size * 0.09, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      glowCircle(ctx, 0, -size * 0.03, size * 0.59, `${accent}20`, 0.9);
+      glowCircle(ctx, 0, -size * 0.03, size * 0.37, `${accent}18`, 0.7);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 7; i += 1) {
+        const angle = boss.step * 0.28 + i * (Math.PI * 2 / 7);
+        const distance = size * (0.36 + (i % 3) * 0.035);
+        ctx.globalAlpha = 0.32 + Math.sin(this.time * 2 + i) * 0.16;
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * distance, Math.sin(angle) * distance * 0.42 - size * 0.05, Math.max(1, size * 0.008), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      if (kind === 'vex') {
+        for (let i = 0; i < 3; i += 1) {
+          ctx.strokeStyle = `${accent}${i === 0 ? 'aa' : '55'}`;
+          ctx.lineWidth = 1.3;
+          ctx.beginPath();
+          ctx.ellipse(0, -size * 0.04, size * (0.3 + i * 0.09), size * (0.07 + i * 0.015), boss.step * 0.18 + i * 0.5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (kind === 'fallen') {
+        ctx.fillStyle = `${accent}20`;
+        for (let i = 0; i < 4; i += 1) {
+          const angle = -Math.PI / 2 + (i - 1.5) * 0.34;
+          ctx.save();
+          ctx.rotate(angle);
+          ctx.beginPath();
+          ctx.moveTo(-size * 0.04, 0);
+          ctx.lineTo(size * 0.04, -size * 0.36);
+          ctx.lineTo(size * 0.08, size * 0.05);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+      } else if (kind === 'hive') {
+        ctx.fillStyle = `${accent}25`;
+        for (let i = 0; i < 6; i += 1) {
+          const angle = -Math.PI / 2 + (i - 2.5) * 0.28;
+          ctx.save();
+          ctx.rotate(angle);
+          ctx.beginPath();
+          ctx.moveTo(-size * 0.025, 0);
+          ctx.lineTo(size * 0.04, -size * (0.34 + (i % 2) * 0.1));
+          ctx.lineTo(size * 0.065, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+      } else if (kind === 'taken' || kind === 'dread') {
+        ctx.strokeStyle = `${accent}55`;
+        ctx.lineWidth = 1.4;
+        for (let i = 0; i < 6; i += 1) {
+          const side = i % 2 ? 1 : -1;
+          const lift = size * (0.08 + i * 0.045);
+          ctx.beginPath();
+          ctx.moveTo(side * size * 0.16, -size * 0.08);
+          ctx.bezierCurveTo(side * size * 0.4, -size * 0.22, side * size * 0.43, lift, side * size * 0.33, size * 0.28);
+          ctx.stroke();
+        }
+      } else if (kind === 'cabal' || kind === 'barant' || kind === 'shadow') {
+        ctx.fillStyle = `${accent}20`;
+        [-1, 1].forEach((side) => {
+          ctx.beginPath();
+          ctx.moveTo(side * size * 0.27, -size * 0.18);
+          ctx.lineTo(side * size * 0.4, size * 0.03);
+          ctx.lineTo(side * size * 0.28, size * 0.2);
+          ctx.lineTo(side * size * 0.18, -size * 0.06);
+          ctx.closePath();
+          ctx.fill();
+        });
+      }
+      ctx.restore();
+      const asset = this.bossAssetFor(boss);
+      if (asset && asset.complete && asset.naturalWidth) {
+        ctx.drawImage(asset, -size * 0.5, -size * 0.52, size, size);
+      } else {
+        glowCircle(ctx, 0, -size * 0.08, size * 0.23, `${accent}44`, 0.8);
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(0, -size * 0.08, size * 0.04, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const handX = size * 0.23;
+      const handY = -size * 0.05;
+      glowCircle(ctx, handX, handY, size * 0.12, `${accent}33`, 0.8);
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(handX, handY, size * 0.027, 0, Math.PI * 2);
+      ctx.fill();
+      if (shield) {
+        ctx.save();
+        ctx.globalAlpha = 0.7 + Math.sin(this.time * 2.2) * 0.1;
+        ctx.strokeStyle = `${accent}cc`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, -size * 0.04, size * 0.49, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([5, 9]);
+        ctx.strokeStyle = 'rgba(236, 246, 236, .5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, -size * 0.04, size * 0.53, this.time * 0.5, this.time * 0.5 + Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      } else {
+        glowCircle(ctx, 0, 0, size * 0.12, `${accent}55`, 0.8);
+        ctx.fillStyle = '#fff4cf';
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.018, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (boss.windup > 0) {
+        const aim = Math.atan2(player.y - y, player.x - x);
+        const charge = 1 - boss.windup / 0.6;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = `${accent}99`;
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([6, 8]);
+        ctx.beginPath();
+        ctx.moveTo(handX, handY);
+        ctx.lineTo(player.x - x, player.y - y + bob);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const chargeGlow = ctx.createRadialGradient(handX, handY, 1, handX, handY, size * 0.16);
+        chargeGlow.addColorStop(0, 'rgba(255, 248, 214, .92)');
+        chargeGlow.addColorStop(0.35, `${accent}bb`);
+        chargeGlow.addColorStop(1, `${accent}00`);
+        ctx.fillStyle = chargeGlow;
+        ctx.beginPath();
+        ctx.arc(handX, handY, size * 0.16, Math.max(0.01, charge), Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      const barW = size * 0.72;
+      const barY = -size * 0.66;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = accent;
+      ctx.font = '600 6.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(String(boss.name || 'RAID BOSS').toUpperCase(), 0, barY - 8);
+      fillRoundRect(ctx, -barW / 2, barY, barW, 3, 1.5, 'rgba(4, 8, 10, .86)');
+      fillRoundRect(ctx, -barW / 2, barY, barW * clamp(boss.hp / boss.maxHp, 0, 1), 3, 1.5, accent);
+      ctx.fillStyle = 'rgba(224, 234, 221, .5)';
+      ctx.font = '500 5.2px "PingFang SC", sans-serif';
+      ctx.fillText(damagePhase ? '护盾解除 · 输出阶段' : '护盾开启 · 完成机制', 0, barY + 11);
+      ctx.restore();
+      ctx.restore();
+    }
+
+    drawRaidMechanic(ctx, w, h) {
+      const state = this.raidState;
+      if (!state || state.phase !== 'mechanic') return;
+      const type = state.mechanicType;
+      const info = DESTINY_MECHANIC_INFO[type];
+      if (!info) return;
+      const visual = state.script?.visual || type;
+      const player = this.playerPoint();
+      const order = state.sequenceOrder || [];
+      ctx.save();
+      if (['stand', 'sequence', 'tether', 'lightdark'].includes(type)) {
+        if (type === 'tether' && state.objects.length > 1) {
+          const a = state.objects[0];
+          const b = state.objects[1];
+          ctx.strokeStyle = 'rgba(158, 225, 255, .22)';
+          ctx.lineWidth = 1.4;
+          ctx.setLineDash([4, 7]);
+          ctx.beginPath();
+          ctx.moveTo(a.x * w, a.y * h);
+          ctx.bezierCurveTo((a.x + b.x) * 0.5 * w, (a.y + b.y) * 0.5 * h - 36, (a.x + b.x) * 0.5 * w, (a.y + b.y) * 0.5 * h + 36, b.x * w, b.y * h);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        state.objects.forEach((object, index) => {
+          const x = object.x * w;
+          const y = object.y * h;
+          const active = object.active;
+          const orderIndex = order.length ? order.indexOf(index) : index;
+          const next = orderIndex === state.sequenceStep && !active;
+          const radius = object.radius;
+          glowCircle(ctx, x, y, radius * (next ? 2 : 1.5), `${object.color}${next ? '2c' : '18'}`, 0.8);
+          ctx.strokeStyle = active ? `${object.color}ee` : next ? `${object.color}cc` : `${object.color}55`;
+          ctx.lineWidth = active || next ? 2 : 1.2;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = `${object.color}aa`;
+          ctx.lineWidth = 2.6;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * object.progress);
+          ctx.stroke();
+          if (type === 'lightdark') {
+            ctx.strokeStyle = object.color;
+            ctx.lineWidth = 2;
+            if (index === 0) {
+              ctx.beginPath();
+              ctx.arc(x, y, 14, 0, Math.PI * 2);
+              ctx.stroke();
+              for (let ray = 0; ray < 8; ray += 1) {
+                const angle = (ray / 8) * Math.PI * 2 + this.time * 0.15;
+                ctx.beginPath();
+                ctx.moveTo(x + Math.cos(angle) * 18, y + Math.sin(angle) * 18);
+                ctx.lineTo(x + Math.cos(angle) * 25, y + Math.sin(angle) * 25);
+                ctx.stroke();
+              }
+            } else {
+              ctx.beginPath();
+              ctx.arc(x, y, 17, Math.PI * 0.35, Math.PI * 1.65);
+              ctx.stroke();
+            }
+          } else if (type === 'sequence' || type === 'tether') {
+            this.drawDiamond(ctx, x, y, active ? 9 : 7, `${object.color}33`, `${object.color}cc`, 1.2);
+          }
+          ctx.textAlign = 'center';
+          ctx.fillStyle = active ? object.color : 'rgba(224, 236, 229, .8)';
+          ctx.font = '600 6px "SFMono-Regular", Consolas, monospace';
+          ctx.fillText(active ? '✓' : (order.length ? String(orderIndex + 1) : String(index + 1)), x, y + 2);
+          ctx.fillStyle = `${object.color}aa`;
+          ctx.font = '500 6px "PingFang SC", sans-serif';
+          ctx.fillText(type === 'lightdark' ? (index ? '暗' : '光') : visual === 'obelisk' ? '方尖碑' : visual === 'terminal' ? '终端' : '共鸣节点', x, y + radius + 15);
+        });
+      } else if (type === 'weakpoints') {
+        state.objects.forEach((object, index) => {
+          if (!object.alive) return;
+          const x = object.x * w;
+          const y = object.y * h;
+          if (this.raidBoss) {
+            ctx.strokeStyle = `${object.color}55`;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 6]);
+            ctx.beginPath();
+            ctx.moveTo(this.raidBoss.x * w, this.raidBoss.y * h);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+          glowCircle(ctx, x, y, 36 + Math.sin(this.time * 5 + index) * 4, `${object.color}44`, 0.85);
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(this.time * 1.5 + index);
+          for (let arm = 0; arm < 4; arm += 1) {
+            ctx.rotate(Math.PI / 2);
+            ctx.fillStyle = object.color;
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(10, 0);
+            ctx.lineTo(0, 8);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+          const barW = 44;
+          fillRoundRect(ctx, x - barW / 2, y + 26, barW, 3, 1.5, 'rgba(4, 8, 10, .82)');
+          fillRoundRect(ctx, x - barW / 2, y + 26, barW * clamp(object.hp / object.maxHp, 0, 1), 3, 1.5, object.color);
+          ctx.textAlign = 'center';
+          ctx.fillStyle = `${object.color}cc`;
+          ctx.font = '500 5.5px "PingFang SC", sans-serif';
+          ctx.fillText('护盾弱点', x, y + 20);
+        });
+      } else if (type === 'hunt') {
+        const target = state.huntTarget;
+        if (target && target.alive) {
+          const x = target.x * w;
+          const y = target.y * h;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(this.time * 0.45);
+          ctx.strokeStyle = 'rgba(240, 201, 122, .72)';
+          ctx.lineWidth = 1.6;
+          ctx.setLineDash([8, 9]);
+          ctx.beginPath();
+          ctx.arc(0, 0, target.radius + 28, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#f0ca7a';
+          ctx.font = '600 6px "PingFang SC", sans-serif';
+          ctx.fillText('猎杀目标', x, y - target.radius - 30);
+        }
+      } else if (type === 'shoot' || type === 'sweep') {
+        state.objects.forEach((object, index) => {
+          if (!object.alive) return;
+          const x = object.x * w;
+          const y = object.y * h;
+          ctx.save();
+          ctx.translate(x, y);
+          if (visual === 'stabilizer') {
+            ctx.rotate(this.time * 0.4 + index);
+            ctx.strokeStyle = `${object.color}88`;
+            ctx.lineWidth = 1.4;
+            for (let ring = 0; ring < 3; ring += 1) {
+              ctx.beginPath();
+              ctx.arc(0, 0, 17 + ring * 6, ring * 1.2, ring * 1.2 + Math.PI * 1.4);
+              ctx.stroke();
+            }
+          } else if (visual === 'turret') {
+            fillRoundRect(ctx, -13, 10, 26, 9, 3, 'rgba(31, 25, 19, .95)');
+            ctx.fillStyle = object.color;
+            ctx.fillRect(-4, -17, 8, 28);
+            ctx.fillStyle = '#f5d58e';
+            ctx.beginPath();
+            ctx.arc(0, -17, 5, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.rotate(this.time * 0.8);
+            this.drawDiamond(ctx, 0, 0, 12, `${object.color}33`, `${object.color}dd`, 1.4);
+          }
+          ctx.restore();
+          const barW = 42;
+          fillRoundRect(ctx, x - barW / 2, y + 22, barW, 3, 1.5, 'rgba(4, 8, 10, .82)');
+          fillRoundRect(ctx, x - barW / 2, y + 22, barW * clamp(object.hp / object.maxHp, 0, 1), 3, 1.5, object.color);
+          ctx.textAlign = 'center';
+          ctx.fillStyle = `${object.color}cc`;
+          ctx.font = '500 5.5px "PingFang SC", sans-serif';
+          ctx.fillText(visual === 'stabilizer' ? '稳定器' : visual === 'turret' ? '自动炮台' : '机制目标', x, y + 35);
+        });
+      } else {
+        state.objects.forEach((object) => {
+          if (object.collected) return;
+          const x = object.x * w;
+          const y = object.y * h;
+          glowCircle(ctx, x, y, 30, `${object.color}44`, 0.8);
+          fillRoundRect(ctx, x - 5, y - 13, 10, 26, 4, object.color);
+          ctx.fillStyle = 'rgba(7, 16, 20, .88)';
+          ctx.fillRect(x - 2, y - 9, 4, 18);
+        });
+        const bx = state.bank.x * w;
+        const by = state.bank.y * h;
+        glowCircle(ctx, bx, by, 62, 'rgba(158, 223, 255, .12)', 0.7);
+        ctx.strokeStyle = 'rgba(158, 223, 255, .68)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(bx, by, 48, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(203, 240, 245, .82)';
+        ctx.textAlign = 'center';
+        ctx.font = '500 5.8px "PingFang SC", sans-serif';
+        ctx.fillText(`存入核心 ${state.deposited}/${state.target}`, bx, by + 3);
+        if (state.carried > 0) {
+          ctx.strokeStyle = 'rgba(158, 223, 255, .45)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(player.x, player.y);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    updateHazards(dt, w, h) {
+      const player = this.player;
+      if (!player) return;
+      player.hazardCd = Math.max(0, (player.hazardCd || 0) - dt);
+      const px = player.x * w;
+      const py = player.y * h;
+      this.hazards.forEach((hazard) => {
+        hazard.angle += hazard.speed * dt;
+        const length = Math.max(w, h) * hazard.length;
+        const x1 = hazard.x * w - Math.cos(hazard.angle) * length * 0.5;
+        const y1 = hazard.y * h - Math.sin(hazard.angle) * length * 0.5;
+        const x2 = hazard.x * w + Math.cos(hazard.angle) * length * 0.5;
+        const y2 = hazard.y * h + Math.sin(hazard.angle) * length * 0.5;
+        const vx = x2 - x1;
+        const vy = y2 - y1;
+        const t = clamp(((px - x1) * vx + (py - y1) * vy) / (vx * vx + vy * vy || 1), 0, 1);
+        const distance = Math.hypot(px - (x1 + vx * t), py - (y1 + vy * t));
+        if (distance < 10 && player.hazardCd <= 0) {
+          player.hazardCd = 1.1;
+          this.damagePlayer(18);
+          this.fx.ring(px, py, '#f08e68', 30, 0.35, 2);
+        }
+      });
+      if (this.encounter?.objects) {
+        this.encounter.objects.forEach((crystal) => {
+          crystal.flash = Math.max(0, crystal.flash - dt);
+        });
+      }
+    }
+
+    drawHazards(ctx, w, h) {
+      this.hazards.forEach((hazard) => {
+        const length = Math.max(w, h) * hazard.length;
+        const x1 = hazard.x * w - Math.cos(hazard.angle) * length * 0.5;
+        const y1 = hazard.y * h - Math.sin(hazard.angle) * length * 0.5;
+        const x2 = hazard.x * w + Math.cos(hazard.angle) * length * 0.5;
+        const y2 = hazard.y * h + Math.sin(hazard.angle) * length * 0.5;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = 'rgba(244, 110, 72, .18)';
+        ctx.lineWidth = hazard.width * 5;
+        ctx.shadowColor = '#f06a43';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 168, 105, .82)';
+        ctx.lineWidth = hazard.width;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 234, 202, .7)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    drawEncounter(ctx, w, h) {
+      const encounter = this.encounter;
+      if (!encounter || encounter.done) return;
+      encounter.objects.forEach((crystal) => {
+        if (!crystal.alive) return;
+        const x = crystal.x * w;
+        const y = crystal.y * h;
+        const phase = this.time * 2 + crystal.phase;
+        ctx.save();
+        glowCircle(ctx, x, y, 34, 'rgba(150, 208, 255, .24)', 0.8);
+        ctx.translate(x, y + Math.sin(phase) * 3);
+        ctx.rotate(phase * 0.3);
+        this.drawDiamond(ctx, 0, 0, 14, crystal.flash > 0 ? 'rgba(255,255,255,.9)' : 'rgba(145, 221, 255, .25)', 'rgba(206, 242, 255, .9)', 1.5);
+        ctx.setLineDash([2, 5]);
+        ctx.strokeStyle = 'rgba(153, 222, 255, .35)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 27, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+        const barW = 46;
+        const barY = y + 32;
+        fillRoundRect(ctx, x - barW / 2, barY, barW, 3, 1.5, 'rgba(4, 9, 12, .8)');
+        fillRoundRect(ctx, x - barW / 2, barY, barW * clamp(crystal.hp / crystal.maxHp, 0, 1), 3, 1.5, '#9edfff');
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(196, 234, 246, .72)';
+        ctx.font = '500 5.2px "PingFang SC", sans-serif';
+        ctx.fillText('压制水晶', x, barY + 12);
+      });
+      ctx.textAlign = 'left';
+    }
+
+    damageCrystal(crystal, amount) {
+      if (!crystal || !crystal.alive) return;
+      crystal.hp -= amount;
+      crystal.flash = 0.12;
+      const x = crystal.x * this.w;
+      const y = crystal.y * this.h;
+      this.fx.burst(x, y, '#a9e7ff', 5, 85, 1.6);
+      if (crystal.hp > 0) return;
+      crystal.alive = false;
+      crystal.hp = 0;
+      this.encounter.destroyed += 1;
+      this.fx.ring(x, y, '#bdefff', 55, 0.5, 2.4);
+      this.shake = Math.max(this.shake, 3);
+      if (this.encounter.destroyed >= this.encounter.total) {
+        this.encounter.done = true;
+        this.toast('压制解除 · 首领护盾已关闭', 'success');
+        this.fx.ring(this.playerPoint().x, this.playerPoint().y, '#9edfff', 90, 0.7, 2);
+      } else {
+        this.toast(`压制水晶 ${this.encounter.destroyed} / ${this.encounter.total}`);
+      }
+    }
+
+    drawClassEffects(ctx, w, h) {
+      this.rifts.forEach((rift) => {
+        const fade = clamp(rift.time / 0.7, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = 0.45 + fade * 0.4;
+        glowCircle(ctx, rift.x, rift.y, rift.radius * 1.15, `${rift.color}22`, 0.75);
+        ctx.strokeStyle = `${rift.color}aa`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(rift.x, rift.y, rift.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = `${rift.color}55`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.arc(rift.x, rift.y, rift.radius * 0.7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = `${rift.color}cc`;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(rift.x - 9, rift.y);
+        ctx.lineTo(rift.x + 9, rift.y);
+        ctx.moveTo(rift.x, rift.y - 9);
+        ctx.lineTo(rift.x, rift.y + 9);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.barricades.forEach((barricade) => {
+        const fade = clamp(barricade.time / 0.6, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = 0.5 + fade * 0.45;
+        ctx.translate(barricade.x, barricade.y);
+        ctx.rotate(barricade.angle);
+        glowCircle(ctx, 0, 0, 58, 'rgba(240, 188, 111, .2)', 0.7);
+        fillRoundRect(ctx, -50, -6, 100, 12, 3, 'rgba(58, 42, 30, .9)');
+        ctx.strokeStyle = 'rgba(255, 215, 151, .9)';
+        ctx.lineWidth = 1.4;
+        ctx.strokeRect(-50, -6, 100, 12);
+        ctx.fillStyle = 'rgba(246, 197, 116, .7)';
+        ctx.fillRect(-44, -3, 88, 2);
+        [-34, 0, 34].forEach((x) => {
+          ctx.strokeStyle = 'rgba(255, 231, 183, .6)';
+          ctx.beginPath();
+          ctx.moveTo(x, -6);
+          ctx.lineTo(x, 6);
+          ctx.stroke();
+        });
+        ctx.restore();
+      });
+    }
+
+    drawPlayer(ctx, w, h) {
+      const player = this.player;
+      const x = player.x * w;
+      const y = player.y * h;
+      const worldMouse = this.worldMouse();
+      const angle = Math.atan2(worldMouse.y - y, worldMouse.x - x);
+      const subclass = this.activeSubclass();
+      const glowColor = subclass.color || '#e9c078';
+      ctx.save();
+      if (player.invuln > 0) ctx.globalAlpha = 0.55 + Math.sin(this.time * 35) * 0.28;
+      if (player.flash > 0) ctx.globalAlpha *= 0.68;
+      glowCircle(ctx, x, y, 50, `${glowColor}20`, 0.85);
+      glowCircle(ctx, x, y, 35, `${glowColor}19`, 0.7);
+      if (this.subclassId === 'prismatic') {
+        glowCircle(ctx, x - 7, y, 34, 'rgba(255, 230, 166, .12)', 0.8);
+        glowCircle(ctx, x + 7, y, 34, 'rgba(181, 140, 255, .12)', 0.8);
+        if (this.transcendenceTime > 0) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(this.time * 0.8);
+          ctx.strokeStyle = 'rgba(255, 232, 176, .48)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 34, 0, Math.PI * 1.35);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(181, 140, 255, .48)';
+          ctx.beginPath();
+          ctx.arc(0, 0, 40, Math.PI, Math.PI * 2.15);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+      if (player.shield > 0) {
+        ctx.strokeStyle = `rgba(119, 210, 255, ${0.1 + (player.shield / player.maxShield) * 0.11})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(x, y, 28, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 17, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const sprite = this.playerAssetFor();
+      const hasSprite = Boolean(sprite && sprite.complete && sprite.naturalWidth);
+      if (hasSprite) {
+        const span = 82;
+        const bob = Math.sin(this.time * 3.1) * 0.8;
+        ctx.drawImage(sprite, -span / 2, -span / 2 + bob, span, span);
+      } else {
+        ctx.fillStyle = '#343a3d';
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = glowColor;
+        ctx.beginPath();
+        ctx.arc(0, -10, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1b1e20';
+        ctx.beginPath();
+        ctx.arc(0, -10, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#d6a653';
+        ctx.fillRect(8, -30, 4, 25);
+      }
+      if (player.muzzle > 0) {
+        glowCircle(ctx, 11.5, -36.7, 20, 'rgba(255, 216, 128, .62)', 0.9);
+        ctx.fillStyle = '#fff0b3';
+        ctx.beginPath();
+        ctx.arc(11.5, -36.7, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.52)';
+      ctx.fillRect(x - 27, y - 33, 54, 4);
+      ctx.fillStyle = '#e8c47a';
+      ctx.fillRect(x - 27, y - 33, 54 * clamp(player.hp / player.maxHp, 0, 1), 4);
+      if (player.shield > 0) {
+        ctx.fillStyle = 'rgba(106, 207, 255, .74)';
+        ctx.fillRect(x - 27, y - 38, 54 * clamp(player.shield / player.maxShield, 0, 1), 2);
+      }
+    }
+
+    prismaticNodeRects(w, h) {
+      if (this.subclassId !== 'prismatic') return [];
+      const cx = w * 0.28;
+      const cy = h * 0.53;
+      const spreadX = clamp(w * 0.105, 74, 118);
+      const spreadY = clamp(h * 0.13, 64, 88);
+      const nodeSize = clamp(w * 0.048, 44, 60);
+      return [
+        { key: 'prism:super', slot: 'super', x: cx - nodeSize * 0.85, y: cy - nodeSize * 0.85, w: nodeSize * 1.7, h: nodeSize * 1.7 },
+        { key: 'prism:grenade', slot: 'grenade', x: cx - spreadX - nodeSize * 0.55, y: cy - spreadY - nodeSize * 0.55, w: nodeSize * 1.1, h: nodeSize * 1.1 },
+        { key: 'prism:melee', slot: 'melee', x: cx + spreadX - nodeSize * 0.55, y: cy - spreadY - nodeSize * 0.55, w: nodeSize * 1.1, h: nodeSize * 1.1 },
+        { key: 'prism:classAbility', slot: 'classAbility', x: cx - spreadX - nodeSize * 0.55, y: cy + spreadY - nodeSize * 0.55, w: nodeSize * 1.1, h: nodeSize * 1.1 }
+      ];
+    }
+
+    prismaticOriginRects(w, h) {
+      if (this.subclassId !== 'prismatic') return [];
+      const infoW = Math.min(330, w * 0.36);
+      const infoX = w * 0.43;
+      const panelY = 124 + 150;
+      const origins = ['solar', 'arc', 'void', 'stasis', 'strand'];
+      const gap = 6;
+      const chipW = (infoW - 24 - gap * (origins.length - 1)) / origins.length;
+      return origins.map((origin, index) => ({
+        key: `prism-origin:${origin}`,
+        origin,
+        x: infoX + 12 + index * (chipW + gap),
+        y: panelY + 25,
+        w: chipW,
+        h: 24
+      }));
+    }
+
+    inventoryLayout(w, h) {
+      const pad = Math.max(18, w * 0.034);
+      const tile = clamp(w * 0.06, 58, 80);
+      const tabs = [
+        ['character', '角色', 'CHARACTER'],
+        ['skills', '技能', 'SUBCLASS'],
+        ['inventory', '背包', 'INVENTORY']
+      ].map(([key, label, en], index) => ({
+        key: `tab:${key}`,
+        tab: key,
+        label,
+        en,
+        x: w * 0.5 - 168 + index * 112,
+        y: 24,
+        w: 104,
+        h: 30
+      }));
+      const close = { key: 'close', x: w - pad - 78, y: 22, w: 78, h: 26 };
+      const leftX = w * 0.19 - tile / 2;
+      const rightX = w * 0.81 - tile / 2;
+      const subclassTile = {
+        key: 'subclass-tile',
+        x: leftX,
+        y: 116,
+        w: tile + 8,
+        h: tile + 8
+      };
+      const weaponSlots = this.gearSlots.slice(0, 3).map((slot, index) => ({
+        key: `gear:${slot.id}`,
+        slot,
+        item: this.equipment[slot.id],
+        x: leftX,
+        y: 214 + index * (tile + 9),
+        w: tile,
+        h: tile
+      }));
+      const ghostSlot = {
+        x: leftX + (tile - 46) / 2,
+        y: 214 + 3 * (tile + 9) + 8,
+        w: 46,
+        h: 46
+      };
+      const armorSlots = this.gearSlots.slice(3).map((slot, index) => ({
+        key: `gear:${slot.id}`,
+        slot,
+        item: this.equipment[slot.id],
+        x: rightX,
+        y: 138 + index * (tile + 9),
+        w: tile,
+        h: tile
+      }));
+      const emblemSlot = {
+        x: rightX + (tile - 40) / 2,
+        y: 138 + 5 * (tile + 9) + 7,
+        w: 40,
+        h: 40
+      };
+      const gearRects = [...weaponSlots, ...armorSlots];
+      const gridX = pad + 62;
+      const gridY = 136;
+      const gridBottom = h - 172;
+      const invCols = 6;
+      const gap = 8;
+      const cardW = (w - pad - gridX - gap * (invCols - 1)) / invCols;
+      const cardH = Math.max(42, Math.min(78, (gridBottom - gridY - gap * 3) / 4));
+      const pageSize = 24;
+      const pageCount = Math.max(1, Math.ceil(this.inventory.length / pageSize));
+      const page = clamp(this.inventoryPage || 0, 0, pageCount - 1);
+      this.inventoryPage = page;
+      const inventoryRects = this.inventory.slice(page * pageSize, page * pageSize + pageSize).map((item, index) => ({
+        key: `item:${item.id}`,
+        item,
+        x: gridX + (index % invCols) * (cardW + gap),
+        y: gridY + Math.floor(index / invCols) * (cardH + gap),
+        w: cardW,
+        h: cardH
+      }));
+      const pagePrev = { key: 'inv-prev', x: pad + 150, y: 116, w: 20, h: 14, enabled: page > 0 };
+      const pageNext = { key: 'inv-next', x: pad + 174, y: 116, w: 20, h: 14, enabled: page < pageCount - 1 };
+      const detailW = Math.max(430, Math.min(540, w * 0.52));
+      const detail = { x: w * 0.5 - detailW / 2, y: h - 190, w: detailW, h: 164 };
+      const hoveredRect = [...gearRects, ...inventoryRects].find((rect) => rect.key === this.inventoryHover);
+      const selected = this.inventoryTab === 'character' && hoveredRect?.item ? hoveredRect.item : this.selectedGear();
+      const equipButton = {
+        key: 'equip-button',
+        x: detail.x + detail.w - 126,
+        y: detail.y + detail.h - 36,
+        w: 114,
+        h: 28,
+        enabled: Boolean(selected && this.inventory.some((item) => item.id === selected.id) && !this.exoticEquipConflict(selected) && !this.armorClassMismatch(selected))
+      };
+      const subclassRects = DESTINY_SUBCLASSES.map((subclass, index) => ({
+        key: `subclass:${subclass.id}`,
+        subclass,
+        x: w * 0.5 - 204 + index * 68,
+        y: h - pad - 54,
+        w: 60,
+        h: 42
+      }));
+      const prismaticRects = this.inventoryTab === 'skills' ? this.prismaticNodeRects(w, h) : [];
+      const prismaticOriginRects = this.inventoryTab === 'skills' ? this.prismaticOriginRects(w, h) : [];
+      const contentHits = this.inventoryTab === 'skills'
+        ? [...subclassRects, ...prismaticRects, ...prismaticOriginRects, close]
+        : this.inventoryTab === 'inventory'
+          ? [...inventoryRects, pagePrev, pageNext, equipButton, close]
+          : [subclassTile, ...gearRects, equipButton, close];
+      return {
+        pad, tile, tabs, close, leftX, rightX, subclassTile, weaponSlots, armorSlots,
+        ghostSlot, emblemSlot, gearRects, inventoryRects, detail, equipButton, subclassRects, prismaticRects, prismaticOriginRects, selected,
+        page, pageCount, pagePrev, pageNext,
+        cols: invCols, cardW, cardH, hits: [...tabs, ...contentHits]
+      };
+    }
+
+    handleInventoryClick(x, y) {
+      const layout = this.inventoryLayout(this.w, this.h);
+      const hit = layout.hits.find((entry) => x >= entry.x && x <= entry.x + entry.w && y >= entry.y && y <= entry.y + entry.h);
+      if (!hit) {
+        this.detailPinned = false;
+        return;
+      }
+      if (hit.key === 'close') {
+        this.inventoryOpen = false;
+        this.detailPinned = false;
+        this.manager.mouse.down = false;
+        this.manager.canvas?.classList.remove('is-inventory-open');
+        return;
+      }
+      if (hit.key?.startsWith('tab:')) {
+        this.inventoryTab = hit.tab;
+        this.detailPinned = hit.tab === 'inventory';
+        return;
+      }
+      if (hit.key === 'subclass-tile') {
+        this.inventoryTab = 'skills';
+        this.detailPinned = false;
+        return;
+      }
+      if (hit.key?.startsWith('prism-origin:')) {
+        this.setPrismaticOrigin(this.prismaticSlot, hit.origin);
+        return;
+      }
+      if (hit.key?.startsWith('prism:')) {
+        const slot = hit.key.split(':')[1];
+        if (DESTINY_PRISMATIC_SLOTS.some(([key]) => key === slot)) this.prismaticSlot = slot;
+        return;
+      }
+      if (hit.key?.startsWith('subclass:')) {
+        this.setSubclass(hit.subclass.id);
+        return;
+      }
+      if (hit.key === 'inv-prev') {
+        if (hit.enabled) this.inventoryPage = Math.max(0, this.inventoryPage - 1);
+        return;
+      }
+      if (hit.key === 'inv-next') {
+        if (hit.enabled) this.inventoryPage = Math.min(layout.pageCount - 1, this.inventoryPage + 1);
+        return;
+      }
+      if (hit.key === 'equip-button') {
+        if (hit.enabled && layout.selected) this.equipGear(layout.selected.id);
+        return;
+      }
+      if (hit.item) {
+        this.selectedGearId = hit.item.id;
+        this.detailPinned = true;
+      }
+    }
+
+
+    drawGearIcon(ctx, x, y, size, item, glowing = false, plain = false) {
+      if (!item) return;
+      const rarity = DESTINY_RARITY[item.rarity] || DESTINY_RARITY.common;
+      ctx.save();
+      if (glowing && !plain) glowCircle(ctx, x + size / 2, y + size / 2, size * 0.9, `${rarity.color}33`, 0.7);
+      if (!plain) {
+        const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
+        gradient.addColorStop(0, `${rarity.color}35`);
+        gradient.addColorStop(1, 'rgba(5, 9, 13, .94)');
+        fillRoundRect(ctx, x, y, size, size, 4, gradient);
+        ctx.strokeStyle = `${rarity.color}99`;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, size, size);
+      }
+      ctx.translate(x + size / 2, y + size / 2);
+      ctx.strokeStyle = plain ? 'rgba(240, 246, 240, .94)' : item.rarity === 'common' ? 'rgba(210, 219, 220, .72)' : rarity.color;
+      ctx.fillStyle = plain ? 'rgba(240, 246, 240, .8)' : item.rarity === 'common' ? 'rgba(210, 219, 220, .6)' : `${rarity.color}bb`;
+      ctx.lineWidth = plain ? Math.max(1, size * 0.045) : 1.4;
+      if (item.kind === 'weapon') {
+        const weaponType = item.weaponType || 'auto';
+        ctx.save();
+        if (weaponType === 'rocket') {
+          ctx.rotate(-0.28);
+          ctx.fillRect(-size * 0.34, -size * 0.09, size * 0.55, size * 0.18);
+          ctx.beginPath();
+          ctx.moveTo(size * 0.21, -size * 0.09);
+          ctx.lineTo(size * 0.4, 0);
+          ctx.lineTo(size * 0.21, size * 0.09);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillRect(-size * 0.31, -size * 0.16, size * 0.08, size * 0.07);
+          ctx.fillRect(-size * 0.31, size * 0.09, size * 0.08, size * 0.07);
+          ctx.fillStyle = 'rgba(255,255,255,.5)';
+          ctx.fillRect(-size * 0.28, -size * 0.02, size * 0.34, size * 0.035);
+        } else if (['grenade', 'heavygl', 'micro', 'wave'].includes(weaponType)) {
+          ctx.rotate(-0.2);
+          ctx.fillRect(-size * 0.33, -size * 0.1, size * 0.62, size * 0.2);
+          ctx.beginPath();
+          ctx.arc(-size * 0.02, size * 0.15, size * 0.15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.45)';
+          ctx.beginPath();
+          ctx.arc(-size * 0.02, size * 0.15, size * 0.08, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.5)';
+          ctx.fillRect(size * 0.12, -size * 0.04, size * 0.18, size * 0.08);
+        } else if (weaponType === 'fusion' || weaponType === 'linear') {
+          ctx.rotate(-0.42);
+          ctx.fillRect(-size * 0.36, -size * 0.055, size * 0.7, size * 0.11);
+          ctx.strokeStyle = 'rgba(255,255,255,.5)';
+          [0.12, 0.24, 0.36].forEach((offset) => {
+            ctx.beginPath();
+            ctx.arc(-size * 0.18 + size * offset, 0, size * 0.065, 0, Math.PI * 2);
+            ctx.stroke();
+          });
+          ctx.fillRect(-size * 0.2, size * 0.05, size * 0.09, size * 0.18);
+        } else if (weaponType === 'bow' || weaponType === 'heavybow') {
+          ctx.strokeStyle = ctx.strokeStyle;
+          ctx.lineWidth = Math.max(1, size * 0.055);
+          ctx.beginPath();
+          ctx.arc(-size * 0.03, 0, size * 0.31, -Math.PI * 0.72, Math.PI * 0.72);
+          ctx.stroke();
+          ctx.lineWidth = Math.max(0.7, size * 0.025);
+          ctx.beginPath();
+          ctx.moveTo(-size * 0.03, -size * 0.3);
+          ctx.lineTo(-size * 0.03, size * 0.3);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-size * 0.3, 0);
+          ctx.lineTo(size * 0.28, 0);
+          ctx.stroke();
+        } else if (weaponType === 'handcannon') {
+          ctx.rotate(-0.18);
+          ctx.fillRect(-size * 0.3, -size * 0.09, size * 0.55, size * 0.16);
+          ctx.fillRect(-size * 0.22, size * 0.04, size * 0.15, size * 0.24);
+          ctx.fillRect(size * 0.02, -size * 0.14, size * 0.12, size * 0.05);
+        } else {
+          ctx.rotate(-0.48);
+          ctx.beginPath();
+          ctx.moveTo(-size * 0.38, -size * 0.03);
+          ctx.lineTo(-size * 0.28, -size * 0.08);
+          ctx.lineTo(-size * 0.19, -size * 0.08);
+          ctx.lineTo(size * 0.14, -size * 0.07);
+          ctx.lineTo(size * 0.38, -size * 0.025);
+          ctx.lineTo(size * 0.38, size * 0.02);
+          ctx.lineTo(size * 0.12, size * 0.055);
+          ctx.lineTo(-size * 0.12, size * 0.06);
+          ctx.lineTo(-size * 0.22, size * 0.2);
+          ctx.lineTo(-size * 0.34, size * 0.2);
+          ctx.lineTo(-size * 0.29, size * 0.05);
+          ctx.lineTo(-size * 0.38, size * 0.04);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillRect(size * 0.005, size * 0.045, size * 0.09, size * 0.2);
+          ctx.fillRect(-size * 0.14, -size * 0.13, size * 0.16, size * 0.04);
+          ctx.strokeStyle = 'rgba(240, 246, 244, .5)';
+          ctx.beginPath();
+          ctx.moveTo(-size * 0.15, -size * 0.045);
+          ctx.lineTo(size * 0.13, -size * 0.04);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (item.slot === 'helmet') {
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.28, Math.PI * 0.2, Math.PI * 0.8, true);
+        ctx.lineTo(size * 0.24, size * 0.24);
+        ctx.lineTo(-size * 0.24, size * 0.24);
+        ctx.closePath();
+        ctx.fill();
+      } else if (item.slot === 'gauntlets') {
+        ctx.fillRect(-size * 0.3, -size * 0.31, size * 0.6, size * 0.14);
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.26, -size * 0.15);
+        ctx.lineTo(size * 0.26, -size * 0.15);
+        ctx.lineTo(size * 0.2, size * 0.2);
+        ctx.lineTo(size * 0.1, size * 0.29);
+        ctx.lineTo(-size * 0.1, size * 0.29);
+        ctx.lineTo(-size * 0.2, size * 0.2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(240, 246, 244, .32)';
+        ctx.lineWidth = 1;
+        [-0.16, 0, 0.16].forEach((offset) => {
+          ctx.beginPath();
+          ctx.moveTo(size * offset, -size * 0.08);
+          ctx.lineTo(size * offset, size * 0.08);
+          ctx.stroke();
+        });
+      } else if (item.slot === 'legs') {
+        [-1, 1].forEach((side) => {
+          ctx.beginPath();
+          ctx.moveTo(size * side * 0.07, -size * 0.31);
+          ctx.lineTo(size * side * 0.28, -size * 0.24);
+          ctx.lineTo(size * side * 0.24, size * 0.28);
+          ctx.lineTo(size * side * 0.07, size * 0.28);
+          ctx.closePath();
+          ctx.fill();
+        });
+        ctx.strokeStyle = 'rgba(240, 246, 244, .28)';
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.21, size * 0.04);
+        ctx.lineTo(-size * 0.09, size * 0.04);
+        ctx.moveTo(size * 0.09, size * 0.04);
+        ctx.lineTo(size * 0.21, size * 0.04);
+        ctx.stroke();
+      } else if (item.slot === 'classItem') {
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.3);
+        ctx.lineTo(size * 0.27, size * 0.1);
+        ctx.lineTo(0, size * 0.31);
+        ctx.lineTo(-size * 0.27, size * 0.1);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.3);
+        ctx.lineTo(size * 0.28, -size * 0.12);
+        ctx.lineTo(size * 0.22, size * 0.28);
+        ctx.lineTo(-size * 0.22, size * 0.28);
+        ctx.lineTo(-size * 0.28, -size * 0.12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(240, 246, 244, .3)';
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.18, 0);
+        ctx.lineTo(size * 0.18, 0);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    drawLoot(ctx, w, h) {
+      if (!this.lootDrops.length) return;
+      this.lootDrops.forEach((drop) => {
+        const x = drop.x * w;
+        const y = drop.y * h;
+        const bob = Math.sin(this.time * 2.4 + drop.phase) * 4;
+        const color = drop.item.color;
+        ctx.save();
+        glowCircle(ctx, x, y - 13 + bob, 34, `${color}44`, 0.7);
+        const beam = ctx.createLinearGradient(x, y - 78, x, y + 2);
+        beam.addColorStop(0, 'rgba(255,255,255,0)');
+        beam.addColorStop(0.5, `${color}18`);
+        beam.addColorStop(1, `${color}66`);
+        ctx.fillStyle = beam;
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y);
+        ctx.lineTo(x - 2, y - 78);
+        ctx.lineTo(x + 2, y - 78);
+        ctx.lineTo(x + 10, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.translate(x, y - 14 + bob);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = `${color}dd`;
+        ctx.fillRect(-6, -6, 12, 12);
+        ctx.strokeStyle = 'rgba(255,255,255,.76)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-6, -6, 12, 12);
+        ctx.restore();
+        ctx.save();
+        ctx.strokeStyle = `${color}77`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x, y + 3, 15 + Math.sin(this.time * 3 + drop.phase) * 2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    drawInventory(ctx, w, h) {
+      this.manager.canvas?.classList.add('is-inventory-open');
+      const layout = this.inventoryLayout(w, h);
+      this.drawF1Backdrop(ctx, w, h);
+      this.drawF1Header(ctx, w, h, layout);
+      if (this.inventoryTab === 'skills') {
+        this.drawF1Skills(ctx, w, h, layout);
+      } else if (this.inventoryTab === 'inventory') {
+        this.drawF1Inventory(ctx, w, h, layout);
+        this.drawF1Detail(ctx, w, h, layout);
+      } else {
+        this.drawF1Character(ctx, w, h, layout);
+        if (this.detailPinned || this.inventoryHover?.startsWith('gear:') || this.inventoryHover?.startsWith('item:')) {
+          this.drawF1Detail(ctx, w, h, layout);
+        }
+      }
+      ctx.save();
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(218, 227, 220, .54)';
+      ctx.font = '500 6.5px "SFMono-Regular", Consolas, monospace';
+      const hint = this.inventoryTab === 'skills'
+        ? (this.subclassId === 'prismatic'
+          ? '棱镜：点击技能节点选择槽位，再点来源芯片  ·  底部切换副职业'
+          : '点击底部副职业切换分支  ·  手雷、近战与超能效果立即改变')
+        : this.inventoryTab === 'inventory'
+          ? '点击装备查看属性  ·  装备按钮替换当前槽位  ·  异域武器/护甲各限一件'
+          : 'F1 / ESC 关闭  ·  悬停或点击装备查看属性';
+      ctx.fillText(hint, w - layout.pad, h - 14);
+      ctx.restore();
+    }
+
+    drawF1Backdrop(ctx, w, h) {
+      const key = this.sceneKeyFor(this.mission);
+      const image = key ? this.sceneAssets?.[key] : null;
+      ctx.save();
+      if (image && image.complete && image.naturalWidth) {
+        const scale = Math.max(w / 800, h / 450);
+        const sw = 800 * scale;
+        const sh = 450 * scale;
+        ctx.save();
+        ctx.filter = 'blur(22px)';
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(image, (w - sw) / 2, (h - sh) / 2, sw, sh);
+        ctx.restore();
+      } else {
+        const bg = ctx.createLinearGradient(0, 0, w, h);
+        bg.addColorStop(0, '#334d50');
+        bg.addColorStop(0.55, '#1a2b30');
+        bg.addColorStop(1, '#090f13');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+      }
+      const overlay = ctx.createLinearGradient(0, 0, 0, h);
+      overlay.addColorStop(0, 'rgba(6, 13, 17, .68)');
+      overlay.addColorStop(0.48, 'rgba(5, 10, 14, .54)');
+      overlay.addColorStop(1, 'rgba(3, 7, 10, .84)');
+      ctx.fillStyle = overlay;
+      ctx.fillRect(0, 0, w, h);
+      const subclass = this.activeSubclass();
+      const backlight = ctx.createRadialGradient(w * 0.5, h * 0.48, 20, w * 0.5, h * 0.48, w * 0.4);
+      backlight.addColorStop(0, `${subclass.color}20`);
+      backlight.addColorStop(0.55, 'rgba(95, 143, 147, .06)');
+      backlight.addColorStop(1, 'rgba(4, 8, 11, 0)');
+      ctx.fillStyle = backlight;
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(194, 220, 216, .08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.48, Math.min(w, h) * 0.31, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.48, Math.min(w, h) * 0.25, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    drawF1Header(ctx, w, h, layout) {
+      const subclass = this.activeSubclass();
+      ctx.save();
+      const bar = ctx.createLinearGradient(0, 0, 0, 64);
+      bar.addColorStop(0, 'rgba(3, 9, 12, .88)');
+      bar.addColorStop(1, 'rgba(5, 11, 14, .22)');
+      ctx.fillStyle = bar;
+      ctx.fillRect(0, 0, w, 64);
+      ctx.strokeStyle = 'rgba(172, 202, 198, .1)';
+      ctx.beginPath();
+      ctx.moveTo(0, 64);
+      ctx.lineTo(w, 64);
+      ctx.stroke();
+      const markX = layout.pad + 24;
+      ctx.fillStyle = `${subclass.color}22`;
+      ctx.beginPath();
+      ctx.arc(markX, 31, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `${subclass.color}99`;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = subclass.color;
+      ctx.font = '600 14px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(subclass.name.slice(0, 1), markX, 36);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#f0f4ec';
+      ctx.font = '600 18px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText('Sniper', layout.pad + 56, 28);
+      ctx.fillStyle = 'rgba(174, 199, 194, .6)';
+      ctx.font = '500 6.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`// ${this.classProfile().name} · ${subclass.name} · ${subclass.en}`, layout.pad + 56, 42);
+      fillRoundRect(ctx, layout.pad + 56, 49, 138, 3, 2, 'rgba(255,255,255,.13)');
+      fillRoundRect(ctx, layout.pad + 56, 49, 138 * clamp(this.currentLight() / 100, 0, 1), 3, 2, `${subclass.color}bb`);
+      layout.tabs.forEach((tab) => {
+        const active = this.inventoryTab === tab.tab;
+        const hovered = this.inventoryHover === tab.key;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = active ? '#f3f1e7' : hovered ? 'rgba(239, 245, 235, .9)' : 'rgba(189, 204, 200, .46)';
+        ctx.font = '600 10px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(tab.label, tab.x + tab.w / 2, tab.y + 15);
+        ctx.fillStyle = active ? 'rgba(191, 222, 207, .68)' : 'rgba(137, 161, 159, .28)';
+        ctx.font = '500 5.8px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(tab.en, tab.x + tab.w / 2, tab.y + 25);
+        if (active) {
+          ctx.fillStyle = 'rgba(230, 230, 211, .88)';
+          ctx.fillRect(tab.x + 24, 64, tab.w - 48, 2);
+        }
+      });
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(211, 225, 219, .72)';
+      ctx.font = '500 6.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('F1 / ESC', layout.close.x + layout.close.w / 2, layout.close.y + 17);
+      ctx.strokeStyle = 'rgba(170, 199, 195, .17)';
+      ctx.strokeRect(layout.close.x, layout.close.y, layout.close.w, layout.close.h);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(174, 198, 193, .5)';
+      ctx.font = '500 6.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('POWER / 光等', w - layout.pad - 8, 90);
+      ctx.fillStyle = '#e9f1e7';
+      ctx.font = '600 36px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(String(this.currentLight()), w - layout.pad - 8, 121);
+      ctx.fillStyle = 'rgba(160, 205, 194, .68)';
+      ctx.font = '500 6.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('✦ 825   ◆ 0   ● 0', w - layout.pad - 8, 135);
+      ctx.fillStyle = 'rgba(227, 176, 75, .72)';
+      ctx.font = '500 5.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`异域 ${Object.keys(this.exoticCollection || {}).length} · 异域各限一件`, w - layout.pad - 8, 147);
+      ctx.restore();
+    }
+
+    drawDiamond(ctx, x, y, size, fill, stroke, lineWidth = 1) {
+      ctx.beginPath();
+      ctx.moveTo(x, y - size);
+      ctx.lineTo(x + size, y);
+      ctx.lineTo(x, y + size);
+      ctx.lineTo(x - size, y);
+      ctx.closePath();
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+    drawF1Guardian(ctx, cx, cy, scale, subclass) {
+      const s = scale;
+      const color = subclass.color;
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      const aura = ctx.createRadialGradient(0, -12 * s, 8 * s, 0, 24 * s, 178 * s);
+      aura.addColorStop(0, `${color}38`);
+      aura.addColorStop(0.42, `${color}16`);
+      aura.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(0, 8 * s, 182 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(0,0,0,.42)';
+      ctx.beginPath();
+      ctx.ellipse(0, 178 * s, 88 * s, 15 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `${color}30`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(0, 178 * s, 112 * s, 23 * s, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const cloak = ctx.createLinearGradient(0, -96 * s, 0, 166 * s);
+      cloak.addColorStop(0, `${color}66`);
+      cloak.addColorStop(0.3, 'rgba(39, 53, 57, .98)');
+      cloak.addColorStop(1, 'rgba(8, 13, 16, .99)');
+      ctx.fillStyle = cloak;
+      ctx.beginPath();
+      ctx.moveTo(-42 * s, -96 * s);
+      ctx.bezierCurveTo(-100 * s, -68 * s, -118 * s, 42 * s, -72 * s, 142 * s);
+      ctx.lineTo(-48 * s, 166 * s);
+      ctx.quadraticCurveTo(0, 150 * s, 48 * s, 166 * s);
+      ctx.lineTo(72 * s, 142 * s);
+      ctx.bezierCurveTo(118 * s, 42 * s, 100 * s, -68 * s, 42 * s, -96 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = `${color}3a`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      const legFill = ctx.createLinearGradient(-34 * s, 44 * s, 36 * s, 160 * s);
+      legFill.addColorStop(0, '#4c5d61');
+      legFill.addColorStop(0.55, '#2e3b3f');
+      legFill.addColorStop(1, '#162023');
+      const drawLeg = (mirror) => {
+        ctx.save();
+        ctx.scale(mirror ? -1 : 1, 1);
+        ctx.fillStyle = legFill;
+        ctx.beginPath();
+        ctx.moveTo(8 * s, 40 * s);
+        ctx.lineTo(33 * s, 40 * s);
+        ctx.lineTo(38 * s, 103 * s);
+        ctx.lineTo(37 * s, 151 * s);
+        ctx.lineTo(13 * s, 151 * s);
+        ctx.lineTo(9 * s, 103 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(183, 207, 202, .22)';
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(13, 20, 23, .98)';
+        ctx.beginPath();
+        ctx.moveTo(10 * s, 142 * s);
+        ctx.lineTo(38 * s, 142 * s);
+        ctx.lineTo(42 * s, 170 * s);
+        ctx.lineTo(7 * s, 170 * s);
+        ctx.lineTo(4 * s, 160 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = `${color}55`;
+        ctx.stroke();
+        ctx.fillStyle = `${color}2e`;
+        ctx.beginPath();
+        ctx.moveTo(23 * s, 55 * s);
+        ctx.lineTo(36 * s, 64 * s);
+        ctx.lineTo(34 * s, 79 * s);
+        ctx.lineTo(21 * s, 70 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#596b6f';
+        ctx.beginPath();
+        ctx.moveTo(20 * s, 80 * s);
+        ctx.lineTo(34 * s, 84 * s);
+        ctx.lineTo(32 * s, 98 * s);
+        ctx.lineTo(17 * s, 94 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(215, 230, 222, .28)';
+        ctx.beginPath();
+        ctx.moveTo(18 * s, 112 * s);
+        ctx.lineTo(33 * s, 116 * s);
+        ctx.stroke();
+        ctx.restore();
+      };
+      drawLeg(false);
+      drawLeg(true);
+
+      const armor = ctx.createLinearGradient(-52 * s, -86 * s, 54 * s, 54 * s);
+      armor.addColorStop(0, '#65767a');
+      armor.addColorStop(0.35, '#364549');
+      armor.addColorStop(0.72, '#202c30');
+      armor.addColorStop(1, '#11191c');
+      ctx.fillStyle = armor;
+      ctx.beginPath();
+      ctx.moveTo(-52 * s, -72 * s);
+      ctx.lineTo(-30 * s, -84 * s);
+      ctx.lineTo(30 * s, -84 * s);
+      ctx.lineTo(52 * s, -72 * s);
+      ctx.lineTo(39 * s, 38 * s);
+      ctx.lineTo(26 * s, 48 * s);
+      ctx.lineTo(-26 * s, 48 * s);
+      ctx.lineTo(-39 * s, 38 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(191, 216, 208, .24)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(14, 22, 25, .86)';
+      ctx.beginPath();
+      ctx.moveTo(-33 * s, -62 * s);
+      ctx.lineTo(0, -72 * s);
+      ctx.lineTo(33 * s, -62 * s);
+      ctx.lineTo(25 * s, 22 * s);
+      ctx.lineTo(0, 32 * s);
+      ctx.lineTo(-25 * s, 22 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = `${color}55`;
+      ctx.stroke();
+
+      ctx.strokeStyle = `${color}aa`;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(-23 * s, -67 * s);
+      ctx.lineTo(0, -55 * s);
+      ctx.lineTo(23 * s, -67 * s);
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(0, -27 * s, 4.2 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(11, 18, 21, .96)';
+      ctx.fillRect(-38 * s, 36 * s, 76 * s, 15 * s);
+      this.drawDiamond(ctx, 0, 43.5 * s, 6 * s, `${color}55`, color, 1);
+      ctx.strokeStyle = 'rgba(213, 229, 221, .18)';
+      ctx.beginPath();
+      ctx.moveTo(-38 * s, 42 * s);
+      ctx.lineTo(38 * s, 42 * s);
+      ctx.stroke();
+
+      const shoulder = (mirror) => {
+        ctx.save();
+        ctx.scale(mirror ? -1 : 1, 1);
+        const plate = ctx.createLinearGradient(50 * s, -80 * s, 86 * s, -38 * s);
+        plate.addColorStop(0, '#6b7d80');
+        plate.addColorStop(0.55, '#38484c');
+        plate.addColorStop(1, '#1b272b');
+        ctx.fillStyle = plate;
+        ctx.beginPath();
+        ctx.moveTo(46 * s, -77 * s);
+        ctx.lineTo(73 * s, -71 * s);
+        ctx.lineTo(86 * s, -55 * s);
+        ctx.lineTo(70 * s, -37 * s);
+        ctx.lineTo(50 * s, -47 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = `${color}66`;
+        ctx.lineWidth = 1.1;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(223, 236, 228, .24)';
+        ctx.beginPath();
+        ctx.moveTo(55 * s, -68 * s);
+        ctx.lineTo(70 * s, -58 * s);
+        ctx.stroke();
+        ctx.restore();
+      };
+      shoulder(false);
+      shoulder(true);
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#263438';
+      ctx.lineWidth = 17 * s;
+      ctx.beginPath();
+      ctx.moveTo(-56 * s, -60 * s);
+      ctx.quadraticCurveTo(-63 * s, -40 * s, -82 * s, -27 * s);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(56 * s, -60 * s);
+      ctx.quadraticCurveTo(51 * s, -26 * s, -20 * s, 2 * s);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(165, 190, 185, .22)';
+      ctx.lineWidth = 3 * s;
+      ctx.beginPath();
+      ctx.moveTo(-61 * s, -52 * s);
+      ctx.lineTo(-76 * s, -31 * s);
+      ctx.moveTo(51 * s, -51 * s);
+      ctx.quadraticCurveTo(43 * s, -20 * s, -11 * s, 3 * s);
+      ctx.stroke();
+
+      ctx.fillStyle = '#111b1e';
+      ctx.beginPath();
+      ctx.ellipse(0, -99 * s, 27 * s, 10 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(33, 47, 51, .99)';
+      ctx.beginPath();
+      ctx.moveTo(-35 * s, -94 * s);
+      ctx.bezierCurveTo(-44 * s, -128 * s, -24 * s, -151 * s, 0, -151 * s);
+      ctx.bezierCurveTo(24 * s, -151 * s, 44 * s, -128 * s, 35 * s, -94 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = `${color}66`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = '#0a1215';
+      ctx.beginPath();
+      ctx.ellipse(0, -116 * s, 18 * s, 24 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.88;
+      ctx.beginPath();
+      ctx.moveTo(-15 * s, -121 * s);
+      ctx.lineTo(15 * s, -121 * s);
+      ctx.lineTo(11 * s, -110 * s);
+      ctx.lineTo(-11 * s, -110 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(233, 240, 230, .3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-10 * s, -102 * s);
+      ctx.lineTo(-9 * s, -93 * s);
+      ctx.moveTo(10 * s, -102 * s);
+      ctx.lineTo(9 * s, -93 * s);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(32 * s, 26 * s);
+      ctx.rotate(-2.7);
+      const metal = ctx.createLinearGradient(0, -10 * s, 0, 10 * s);
+      metal.addColorStop(0, '#7e8d8e');
+      metal.addColorStop(0.35, '#3d4b4e');
+      metal.addColorStop(1, '#1a2427');
+      ctx.fillStyle = '#33251b';
+      ctx.beginPath();
+      ctx.moveTo(-40 * s, -8 * s);
+      ctx.lineTo(16 * s, -8 * s);
+      ctx.lineTo(18 * s, 7 * s);
+      ctx.lineTo(-29 * s, 9 * s);
+      ctx.lineTo(-42 * s, 3 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(226, 213, 188, .24)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = metal;
+      ctx.fillRect(14 * s, -8 * s, 80 * s, 16 * s);
+      ctx.fillStyle = '#263337';
+      ctx.fillRect(92 * s, -5 * s, 64 * s, 10 * s);
+      ctx.fillStyle = '#607074';
+      ctx.fillRect(156 * s, -2.5 * s, 98 * s, 5 * s);
+      ctx.fillStyle = '#141d20';
+      ctx.fillRect(248 * s, -5 * s, 15 * s, 10 * s);
+      ctx.fillStyle = '#1b2528';
+      ctx.save();
+      ctx.translate(56 * s, 7 * s);
+      ctx.rotate(0.25);
+      ctx.fillRect(0, 0, 18 * s, 29 * s);
+      ctx.restore();
+      ctx.fillStyle = '#202b2e';
+      ctx.fillRect(31 * s, -21 * s, 48 * s, 8 * s);
+      ctx.fillStyle = '#728184';
+      ctx.beginPath();
+      ctx.arc(31 * s, -17 * s, 5 * s, 0, Math.PI * 2);
+      ctx.arc(79 * s, -17 * s, 5 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.fillRect(88 * s, -2 * s, 12 * s, 4 * s);
+      ctx.fillRect(111 * s, -2 * s, 4 * s, 4 * s);
+      ctx.restore();
+
+      ctx.fillStyle = '#111a1d';
+      ctx.beginPath();
+      ctx.ellipse(-82 * s, -27 * s, 11 * s, 9 * s, -0.35, 0, Math.PI * 2);
+      ctx.ellipse(-20 * s, 2 * s, 11 * s, 9 * s, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `${color}88`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(-82 * s, -27 * s, 6 * s, 0, Math.PI * 2);
+      ctx.arc(-20 * s, 2 * s, 6 * s, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const pulse = 0.72 + Math.sin((this.time || 0) * 2.4) * 0.2;
+      glowCircle(ctx, -82 * s, -27 * s, 30 * s, `${color}44`, pulse);
+      glowCircle(ctx, -20 * s, 2 * s, 26 * s, `${color}3a`, pulse);
+      if (subclass.id === 'arc') {
+        ctx.strokeStyle = `${color}cc`;
+        ctx.lineWidth = 1.3;
+        [-82, -20].forEach((hx, index) => {
+          ctx.beginPath();
+          for (let i = 0; i < 4; i += 1) {
+            const px = (hx + (index ? -1 : 1) * (10 + i * 12)) * s;
+            const py = (-27 + (index ? 8 : 4) + (i % 2 ? -8 : 8)) * s;
+            if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        });
+      } else if (subclass.id === 'void') {
+        const orb = ctx.createRadialGradient(-82 * s, -27 * s, 1, -82 * s, -27 * s, 24 * s);
+        orb.addColorStop(0, 'rgba(255,255,255,.9)');
+        orb.addColorStop(0.28, `${color}dd`);
+        orb.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = orb;
+        ctx.beginPath();
+        ctx.arc(-82 * s, -27 * s, 24 * s, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (subclass.id === 'stasis') {
+        [0, 1, 2].forEach((index) => {
+          const angle = (this.time || 0) * 0.6 + index * 2.1;
+          this.drawDiamond(ctx, Math.cos(angle) * 74 * s, -42 * s + Math.sin(angle) * 34 * s, 7 * s, `${color}55`, `${color}cc`, 1);
+        });
+      } else if (subclass.id === 'strand') {
+        ctx.strokeStyle = `${color}aa`;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo((-20 - i * 6) * s, (2 + i * 4) * s);
+          ctx.bezierCurveTo((-52 - i * 16) * s, (24 + i * 12) * s, (-88 + i * 12) * s, (-52 - i * 8) * s, (-108 - i * 10) * s, (-20 + i * 12) * s);
+          ctx.stroke();
+        }
+      } else if (subclass.id === 'solar' || subclass.id === 'prismatic') {
+        ctx.strokeStyle = subclass.id === 'solar' ? `${color}bb` : 'rgba(255, 232, 160, .78)';
+        ctx.lineWidth = 1.4;
+        for (let i = 0; i < 3; i += 1) {
+          const hx = i % 2 ? -82 : -20;
+          const hy = i % 2 ? -27 : 2;
+          ctx.beginPath();
+          ctx.moveTo(hx * s, hy * s);
+          ctx.quadraticCurveTo((hx - 10 + i * 5) * s, (hy - 22 - i * 5) * s, (hx - 4 + i * 8) * s, (hy - 38 - i * 6) * s);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+      ctx.restore();
+    }
+
+    drawF1GearTile(ctx, rect, subclass) {
+      const item = rect.item;
+      const selected = this.selectedGear()?.id === item?.id;
+      const hovered = this.inventoryHover === rect.key;
+      ctx.save();
+      ctx.fillStyle = hovered ? 'rgba(255,255,255,.09)' : 'rgba(7, 13, 17, .62)';
+      fillRoundRect(ctx, rect.x, rect.y, rect.w, rect.h, 5, ctx.fillStyle);
+      ctx.strokeStyle = selected ? '#e8d28c' : hovered ? 'rgba(219, 238, 226, .5)' : 'rgba(173, 203, 202, .22)';
+      ctx.lineWidth = selected ? 1.5 : 0.9;
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+      this.drawGearIcon(ctx, rect.x + 8, rect.y + 8, rect.w - 16, item, hovered || selected);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = item?.color || 'rgba(178, 193, 191, .4)';
+      ctx.font = '600 9.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(item ? String(item.light) : '—', rect.x + rect.w - 5, rect.y + 14);
+      ctx.restore();
+    }
+
+    drawF1GhostSlot(ctx, rect, subclass) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(6, 12, 16, .5)';
+      fillRoundRect(ctx, rect.x, rect.y, rect.w, rect.h, 5, ctx.fillStyle);
+      ctx.strokeStyle = 'rgba(173, 203, 202, .18)';
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+      const cx = rect.x + rect.w / 2;
+      const cy = rect.y + rect.h / 2 + 1;
+      glowCircle(ctx, cx, cy, 18, `${subclass.color}25`, 0.5);
+      ctx.translate(cx, cy);
+      ctx.fillStyle = 'rgba(228, 235, 227, .82)';
+      ctx.beginPath();
+      ctx.moveTo(-13, 4);
+      ctx.quadraticCurveTo(-17, -6, -7, -11);
+      ctx.lineTo(0, -16);
+      ctx.lineTo(7, -11);
+      ctx.quadraticCurveTo(17, -6, 13, 4);
+      ctx.lineTo(9, 12);
+      ctx.lineTo(3, 8);
+      ctx.lineTo(0, 13);
+      ctx.lineTo(-3, 8);
+      ctx.lineTo(-9, 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = subclass.color;
+      ctx.beginPath();
+      ctx.arc(-4.5, -3, 1.8, 0, Math.PI * 2);
+      ctx.arc(4.5, -3, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `${subclass.color}88`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(171, 197, 192, .42)';
+      ctx.font = '500 5.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('GHOST', rect.x + rect.w / 2, rect.y + rect.h + 11);
+      ctx.restore();
+    }
+
+    drawF1EmblemSlot(ctx, rect, subclass) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(6, 12, 16, .42)';
+      fillRoundRect(ctx, rect.x, rect.y, rect.w, rect.h, 5, ctx.fillStyle);
+      ctx.strokeStyle = 'rgba(173, 203, 202, .13)';
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+      const cx = rect.x + rect.w / 2;
+      const cy = rect.y + rect.h / 2;
+      this.drawDiamond(ctx, cx, cy, 10, `${subclass.color}22`, `${subclass.color}77`, 1);
+      ctx.strokeStyle = 'rgba(219, 231, 223, .33)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx - 5, cy + 4);
+      ctx.lineTo(cx, cy - 5);
+      ctx.lineTo(cx + 5, cy + 4);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(171, 197, 192, .4)';
+      ctx.font = '500 5.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('EMBLEM', cx, rect.y + rect.h + 11);
+      ctx.restore();
+    }
+
+    drawF1Character(ctx, w, h, layout) {
+      const subclass = this.activeSubclass();
+      const cx = w * 0.5;
+      const cy = h * 0.6;
+      const scale = clamp(h / 650, 0.8, 1.12);
+      ctx.save();
+      const beam = ctx.createLinearGradient(cx, 96, cx, h);
+      beam.addColorStop(0, `${subclass.color}10`);
+      beam.addColorStop(0.72, 'rgba(190, 224, 214, .035)');
+      beam.addColorStop(1, 'rgba(5, 9, 12, 0)');
+      ctx.fillStyle = beam;
+      ctx.fillRect(cx - 150, 96, 300, h - 96);
+      this.drawF1Guardian(ctx, cx, cy, scale, subclass);
+      const tile = layout.subclassTile;
+      ctx.save();
+      ctx.translate(tile.x + tile.w / 2, tile.y + tile.h / 2);
+      this.drawDiamond(ctx, 0, 0, tile.w * 0.42, `${subclass.color}22`, `${subclass.color}aa`, 1.4);
+      ctx.fillStyle = subclass.color;
+      ctx.font = '600 14px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(subclass.name.slice(0, 1), 0, 5);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(183, 205, 199, .48)';
+      ctx.font = '500 6.8px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('SUBCLASS / 副职业', tile.x, tile.y - 9);
+      layout.weaponSlots.forEach((rect) => {
+        ctx.save();
+        ctx.strokeStyle = `${subclass.color}18`;
+        ctx.beginPath();
+        ctx.moveTo(layout.leftX + layout.tile + 8, rect.y + rect.h / 2);
+        ctx.lineTo(cx - 70, cy - 20);
+        ctx.stroke();
+        ctx.restore();
+        this.drawF1GearTile(ctx, rect, subclass);
+      });
+      layout.armorSlots.forEach((rect) => {
+        ctx.save();
+        ctx.strokeStyle = `${subclass.color}18`;
+        ctx.beginPath();
+        ctx.moveTo(layout.rightX - 8, rect.y + rect.h / 2);
+        ctx.lineTo(cx + 64, cy - 35);
+        ctx.stroke();
+        ctx.restore();
+        this.drawF1GearTile(ctx, rect, subclass);
+      });
+      this.drawF1GhostSlot(ctx, layout.ghostSlot, subclass);
+      if (layout.emblemSlot.y + layout.emblemSlot.h < h - 24) this.drawF1EmblemSlot(ctx, layout.emblemSlot, subclass);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(183, 205, 199, .48)';
+      ctx.font = '500 6.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('WEAPONS / 武器', layout.leftX, 202);
+      ctx.textAlign = 'right';
+      ctx.fillText('ARMOR / 护甲', layout.rightX + layout.tile, 126);
+      ctx.restore();
+    }
+
+    drawF1Inventory(ctx, w, h, layout) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(6, 12, 16, .35)';
+      ctx.fillRect(layout.pad, 106, w - layout.pad * 2, h - 220);
+      ctx.strokeStyle = 'rgba(165, 195, 191, .09)';
+      ctx.strokeRect(layout.pad, 106, w - layout.pad * 2, h - 220);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(223, 232, 224, .78)';
+      ctx.font = '600 9px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('背包 / INVENTORY', layout.pad + 12, 123);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(150, 173, 171, .55)';
+      const exoticCount = this.inventory.filter((item) => item.exoticId).length + ['primary', 'energy', 'power', 'helmet', 'gauntlets', 'chest', 'legs', 'classItem'].filter((slot) => this.equipment[slot]?.exoticId).length;
+      ctx.fillText(`${this.inventory.length} 件 · 异域 ${exoticCount} · 第 ${layout.page + 1} / ${layout.pageCount} 页`, w - layout.pad - 12, 123);
+      ctx.textAlign = 'center';
+      [[layout.pagePrev, '‹'], [layout.pageNext, '›']].forEach(([button, glyph]) => {
+        fillRoundRect(ctx, button.x, button.y, button.w, button.h, 2, button.enabled ? 'rgba(214, 227, 219, .12)' : 'rgba(255,255,255,.025)');
+        ctx.fillStyle = button.enabled ? 'rgba(235, 241, 232, .85)' : 'rgba(170, 186, 180, .26)';
+        ctx.font = '600 9px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(glyph, button.x + button.w / 2, button.y + 10);
+      });
+      ctx.textAlign = 'left';
+      if (!this.inventory.length) {
+        ctx.fillStyle = 'rgba(137, 161, 159, .58)';
+        ctx.font = '500 10px "PingFang SC", sans-serif';
+        ctx.fillText('背包为空。击败敌人后按 E 拾取装备。', layout.pad + 12, 158);
+      }
+      layout.inventoryRects.forEach((rect) => {
+        const item = rect.item;
+        const selected = this.selectedGear()?.id === item.id;
+        const hovered = this.inventoryHover === rect.key;
+        fillRoundRect(ctx, rect.x, rect.y, rect.w, rect.h, 5, selected ? 'rgba(255,255,255,.085)' : hovered ? 'rgba(255,255,255,.06)' : 'rgba(7,13,17,.5)');
+        ctx.strokeStyle = selected ? item.color : hovered ? `${item.color}aa` : `${item.color}55`;
+        ctx.lineWidth = selected ? 1.4 : 0.9;
+        ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+        this.drawGearIcon(ctx, rect.x + 8, rect.y + 8, Math.min(rect.h - 28, 42), item, selected || hovered);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = item.color;
+        ctx.font = '600 9.5px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(String(item.light), rect.x + rect.w - 5, rect.y + 14);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = 'rgba(220, 230, 223, .86)';
+        ctx.font = '500 8.2px "PingFang SC", sans-serif';
+        ctx.fillText(item.name, rect.x + 6, rect.y + rect.h - 10, rect.w - 12);
+        if (item.exoticId && item.kind === 'armor' && item.classLabel) {
+          ctx.fillStyle = this.armorClassMismatch(item) ? 'rgba(231, 132, 108, .82)' : 'rgba(227, 176, 75, .72)';
+          ctx.font = '500 5.2px "PingFang SC", sans-serif';
+          ctx.fillText(item.classLabel, rect.x + 6, rect.y + 15);
+        }
+      });
+      ctx.restore();
+    }
+
+    drawF1Skills(ctx, w, h, layout) {
+      const subclass = this.activeSubclass();
+      ctx.save();
+      const artScale = clamp(h / 620, 0.9, 1.5);
+      this.drawF1Guardian(ctx, w * 0.8, h * 0.62, artScale, subclass);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(236, 243, 237, .96)';
+      ctx.font = `600 ${Math.max(26, Math.min(38, w * 0.032))}px "SFMono-Regular", Consolas, monospace`;
+      ctx.fillText(subclass.en, layout.pad, 104);
+      ctx.fillStyle = 'rgba(186, 206, 201, .62)';
+      ctx.font = '500 7.4px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${subclass.name} SUBCLASS`, layout.pad, 118);
+      this.drawDiamond(ctx, layout.pad + 30, 150, 30, `${subclass.color}22`, `${subclass.color}aa`, 1.4);
+      this.drawSubclassGlyph(ctx, subclass.id, layout.pad + 30, 150, 15, subclass.color, 0.95);
+
+      const cx = w * 0.28;
+      const cy = h * 0.53;
+      const spreadX = clamp(w * 0.105, 74, 118);
+      const spreadY = clamp(h * 0.13, 64, 88);
+      const nodeSize = clamp(w * 0.048, 44, 60);
+      const prismatic = this.subclassId === 'prismatic';
+      const originName = (slot) => {
+        const origin = subclass[`${slot}Origin`];
+        return origin ? this.subclassInfo(origin).name : '';
+      };
+      const subLabel = (slot, label) => prismatic && originName(slot) ? `${label} · ${originName(slot)}` : label;
+      const nodes = [
+        { x: cx, y: cy, size: nodeSize, key: 'F', slot: 'super', title: subclass.super, sub: subLabel('super', '超能 / SUPER') },
+        { x: cx - spreadX, y: cy - spreadY, size: nodeSize * 0.67, key: 'Q', slot: 'grenade', title: subclass.grenade, sub: subLabel('grenade', '手雷 / GRENADE') },
+        { x: cx + spreadX, y: cy - spreadY, size: nodeSize * 0.67, key: 'C', slot: 'melee', title: subclass.melee, sub: subLabel('melee', '近战 / MELEE') },
+        { x: cx - spreadX, y: cy + spreadY, size: nodeSize * 0.67, key: 'V', slot: 'classAbility', title: subclass.classAbility, sub: subLabel('classAbility', '职业 / CLASS') },
+        { x: cx + spreadX, y: cy + spreadY, size: nodeSize * 0.67, key: '', slot: '', title: subclass.aspect, sub: 'Aspect' }
+      ];
+      ctx.strokeStyle = `${subclass.color}44`;
+      ctx.lineWidth = 1;
+      nodes.slice(1).forEach((node) => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(node.x, node.y);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = `${subclass.color}22`;
+      ctx.beginPath();
+      ctx.moveTo(cx - spreadX, cy - spreadY);
+      ctx.lineTo(cx + spreadX, cy - spreadY);
+      ctx.moveTo(cx - spreadX, cy + spreadY);
+      ctx.lineTo(cx + spreadX, cy + spreadY);
+      ctx.stroke();
+      nodes.forEach((node) => {
+        const selectedSlot = prismatic && node.slot === this.prismaticSlot;
+        const active = node.key === 'F' || selectedSlot;
+        const hovered = Boolean(node.slot && this.inventoryHover === `prism:${node.slot}`);
+        const nodeFill = active ? `${subclass.color}26` : hovered ? 'rgba(255,255,255,.08)' : 'rgba(12, 21, 25, .82)';
+        const nodeStroke = active || hovered ? `${subclass.color}aa` : 'rgba(171, 201, 198, .25)';
+        this.drawDiamond(ctx, node.x, node.y, node.size * (active ? 1.12 : 1), nodeFill, nodeStroke, active || hovered ? 1.8 : 1);
+        if (prismatic && node.slot) {
+          const origin = subclass[`${node.slot}Origin`];
+          if (origin) {
+            const originInfo = this.subclassInfo(origin);
+            ctx.fillStyle = originInfo.color;
+            ctx.beginPath();
+            ctx.arc(node.x + node.size * 0.62, node.y - node.size * 0.62, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.textAlign = 'center';
+        if (node.slot) {
+          const abilityType = node.slot === 'classAbility' ? 'class' : node.slot;
+          this.drawAbilityGlyph(ctx, node.x, node.y, node.size * 0.31, abilityType, subclass.color);
+        } else {
+          this.drawSubclassGlyph(ctx, subclass.id, node.x, node.y, node.size * 0.34, subclass.color, 0.92);
+        }
+        ctx.fillStyle = active ? `${subclass.color}dd` : 'rgba(184, 207, 202, .5)';
+        ctx.font = '600 5.6px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(node.key || '◇', node.x, node.y + node.size * 0.54);
+        ctx.fillStyle = active ? subclass.color : 'rgba(184, 207, 202, .58)';
+        ctx.font = '500 7.6px "PingFang SC", sans-serif';
+        ctx.fillText(node.title, node.x, node.y + node.size + 18, 120);
+        ctx.fillStyle = 'rgba(139, 164, 164, .48)';
+        ctx.font = '500 5.8px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(node.sub, node.x, node.y + node.size + 28);
+      });
+
+      const infoW = Math.min(330, w * 0.36);
+      const infoX = w * 0.43;
+      const infoY = 124;
+      fillRoundRect(ctx, infoX, infoY, infoW, 140, 2, 'rgba(2, 5, 7, .93)');
+      ctx.strokeStyle = `${subclass.color}55`;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(infoX, infoY, infoW, 140);
+      ctx.fillStyle = subclass.color;
+      ctx.fillRect(infoX, infoY, 3, 140);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#f4f1e7';
+      ctx.font = '600 18px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(String(subclass.super).toUpperCase(), infoX + 16, infoY + 28, infoW - 32);
+      ctx.fillStyle = 'rgba(207, 220, 213, .7)';
+      ctx.font = '500 7.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('Super Ability / 超能', infoX + 16, infoY + 43);
+      this.drawSubclassGlyph(ctx, subclass.id, infoX + infoW - 38, infoY + 43, 27, subclass.color, 0.13);
+      ctx.fillStyle = 'rgba(201, 214, 207, .7)';
+      ctx.font = '500 8.2px "PingFang SC", sans-serif';
+      const superLore = DESTINY_SUPER_LORE[subclass.super] || `释放${subclass.name}属性的超能，对范围内敌人造成元素伤害。`;
+      this.drawWrappedText(ctx, superLore, infoX + 16, infoY + 66, infoW - 34, 11);
+      ctx.fillStyle = 'rgba(235, 228, 204, .82)';
+      ctx.font = '500 8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('Binds to  F', infoX + 16, infoY + 111);
+      ctx.fillStyle = 'rgba(153, 176, 173, .48)';
+      ctx.font = '500 6.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('Q 手雷  ·  C 近战  ·  V 职业技能', infoX + 16, infoY + 127, infoW - 32);
+      if (prismatic) {
+        ctx.fillStyle = `${subclass.color}bb`;
+        ctx.font = '500 6.4px "PingFang SC", sans-serif';
+        ctx.fillText('棱镜融合：点击技能节点选择槽位，再点来源芯片', layout.pad, 132);
+        const picker = layout.prismaticOriginRects || [];
+        if (picker.length) {
+          const panelX = picker[0].x - 12;
+          const panelY = picker[0].y - 25;
+          const panelW = picker[picker.length - 1].x + picker[picker.length - 1].w + 12 - panelX;
+          fillRoundRect(ctx, panelX, panelY, panelW, 64, 3, 'rgba(3, 7, 9, .88)');
+          ctx.strokeStyle = `${subclass.color}44`;
+          ctx.lineWidth = 0.8;
+          ctx.strokeRect(panelX, panelY, panelW, 64);
+          ctx.textAlign = 'left';
+          ctx.fillStyle = 'rgba(216, 228, 220, .65)';
+          ctx.font = '500 5.6px "Segoe UI", "PingFang SC", sans-serif';
+          ctx.fillText('棱镜融合来源 / PRISMATIC FUSION', panelX + 12, panelY + 14);
+          const slotLabel = DESTINY_PRISMATIC_SLOTS.find(([key]) => key === this.prismaticSlot)?.[1] || '超能';
+          const currentOrigin = this.prismaticChoices?.[this.prismaticSlot]?.subclassId;
+          picker.forEach((rect) => {
+            const origin = this.subclassInfo(rect.origin);
+            const chosen = currentOrigin === rect.origin;
+            const hovered = this.inventoryHover === rect.key;
+            fillRoundRect(ctx, rect.x, rect.y, rect.w, rect.h, 3, chosen ? `${origin.color}33` : hovered ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.035)');
+            ctx.strokeStyle = chosen ? `${origin.color}dd` : 'rgba(174, 203, 197, .18)';
+            ctx.lineWidth = chosen ? 1.2 : 0.7;
+            ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = chosen ? origin.color : 'rgba(207, 222, 215, .66)';
+            ctx.font = '500 6.2px "PingFang SC", sans-serif';
+            ctx.fillText(origin.name, rect.x + rect.w / 2, rect.y + 15);
+            ctx.fillStyle = chosen ? origin.color : 'rgba(148, 174, 172, .5)';
+            ctx.font = '500 4.6px "SFMono-Regular", Consolas, monospace';
+            ctx.fillText(origin.en, rect.x + rect.w / 2, rect.y + 22);
+          });
+          ctx.textAlign = 'right';
+          ctx.fillStyle = `${subclass.color}cc`;
+          ctx.font = '500 5.8px "PingFang SC", sans-serif';
+          ctx.fillText(`当前：${slotLabel}`, panelX + panelW - 12, panelY + 14);
+        }
+      }
+
+      const upgradeX = layout.pad + 18;
+      const upgradeY = h - 34;
+      this.drawDiamond(ctx, upgradeX, upgradeY, 15, `${subclass.color}22`, `${subclass.color}88`, 1);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#e9e4d2';
+      ctx.font = '600 12px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('1', upgradeX, upgradeY + 4);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(183, 202, 197, .55)';
+      ctx.font = '500 6.4px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('UPGRADE POINT', upgradeX + 24, upgradeY - 3);
+      ctx.fillStyle = 'rgba(153, 176, 173, .4)';
+      ctx.font = '500 5.4px "PingFang SC", sans-serif';
+      ctx.fillText('升级点', upgradeX + 24, upgradeY + 8);
+
+      layout.subclassRects.forEach((rect) => {
+        const active = this.subclassId === rect.subclass.id;
+        const hovered = this.inventoryHover === rect.key;
+        const x = rect.x + rect.w / 2;
+        const y = rect.y + 17;
+        this.drawDiamond(ctx, x, y, 19, active ? `${rect.subclass.color}28` : hovered ? 'rgba(255,255,255,.08)' : 'rgba(8,15,19,.7)', active ? `${rect.subclass.color}cc` : 'rgba(157, 188, 185, .2)', active ? 1.5 : 0.8);
+        this.drawSubclassGlyph(ctx, rect.subclass.id, x, y, 9, rect.subclass.color, active ? 1 : 0.4);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = active ? rect.subclass.color : 'rgba(177, 199, 195, .55)';
+        ctx.font = '600 6.8px "PingFang SC", sans-serif';
+        ctx.fillText(rect.subclass.name, x, rect.y + 42, 58);
+      });
+      ctx.restore();
+    }
+
+    drawF1Detail(ctx, w, h, layout) {
+      const selected = layout.selected;
+      if (!selected) return;
+      const current = this.equipment[selected.slot];
+      ctx.save();
+      fillRoundRect(ctx, layout.detail.x, layout.detail.y, layout.detail.w, layout.detail.h, 5, 'rgba(3, 7, 9, .88)');
+      ctx.strokeStyle = `${selected.color}55`;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(layout.detail.x, layout.detail.y, layout.detail.w, layout.detail.h);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = selected.color;
+      ctx.font = '500 7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${selected.slotLabel} · ${selected.rarityLabel.toUpperCase()}`, layout.detail.x + 14, layout.detail.y + 17);
+      ctx.fillStyle = '#f2f2e8';
+      ctx.font = '600 15px "PingFang SC", sans-serif';
+      ctx.fillText(selected.name, layout.detail.x + 14, layout.detail.y + 38, layout.detail.w - 147);
+      ctx.fillStyle = selected.color;
+      ctx.font = '600 11px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`光等 ${selected.light}${selected.exoticId ? ` · ${selected.sourceLabel || '异域'}` : ''}`, layout.detail.x + 14, layout.detail.y + 55, layout.detail.w - 147);
+      const isExotic = Boolean(selected.exoticId);
+      const typeLine = selected.kind === 'weapon'
+        ? `${selected.typeLabel || '武器'} · ${selected.elementLabel || '动能'} · AA ${this.aimAssistValue(this.weaponSpecFor(selected.slot))}`
+        : (isExotic ? `异域护甲 · ${selected.classLabel || '全职业'} · ${selected.sourceLabel || '特殊来源'}` : '护甲属性');
+      ctx.fillStyle = selected.kind === 'weapon' ? (selected.elementColor || selected.color) : 'rgba(171, 194, 191, .64)';
+      ctx.font = '500 6.5px "PingFang SC", sans-serif';
+      ctx.fillText(typeLine, layout.detail.x + 14, layout.detail.y + 68, layout.detail.w - 147);
+      if (selected.kind === 'weapon') {
+        ctx.fillStyle = isExotic ? '#f1ce7c' : selected.color;
+        ctx.font = '600 6.8px "PingFang SC", sans-serif';
+        ctx.fillText(isExotic ? `异域能力 · ${selected.abilityName}` : `词条  ${selected.perks.join('  ·  ')}`, layout.detail.x + 14, layout.detail.y + 80, layout.detail.w - 147);
+      } else {
+        ctx.fillStyle = isExotic ? '#f1ce7c' : 'rgba(171, 194, 191, .6)';
+        ctx.font = '600 6.8px "PingFang SC", sans-serif';
+        ctx.fillText(isExotic ? `异域能力 · ${selected.abilityName}` : `当前装备 ${current?.light ?? 0}`, layout.detail.x + 14, layout.detail.y + 80, layout.detail.w - 147);
+      }
+      if (isExotic && selected.ability) {
+        ctx.fillStyle = 'rgba(219, 205, 160, .72)';
+        ctx.font = '500 5.8px "PingFang SC", sans-serif';
+        ctx.fillText(selected.ability, layout.detail.x + 14, layout.detail.y + 92, layout.detail.w - 147);
+      }
+      selected.stats.forEach((stat, index) => {
+        const sx = layout.detail.x + 14 + (index % 2) * 142;
+        const sy = layout.detail.y + (isExotic ? 106 : 96) + Math.floor(index / 2) * 15;
+        ctx.fillStyle = 'rgba(146, 168, 167, .58)';
+        ctx.font = '500 6.4px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(stat.label, sx, sy);
+        fillRoundRect(ctx, sx + 55, sy - 5, 82, 4, 2, 'rgba(255,255,255,.08)');
+        fillRoundRect(ctx, sx + 55, sy - 5, 82 * clamp(stat.value / 100, 0, 1), 4, 2, selected.color);
+      });
+      const button = layout.equipButton;
+      const equipped = current?.id === selected.id;
+      fillRoundRect(ctx, button.x, button.y, button.w, button.h, 4, button.enabled ? selected.color : 'rgba(255,255,255,.06)');
+      ctx.textAlign = 'center';
+      ctx.fillStyle = button.enabled ? '#0d1716' : 'rgba(176, 190, 187, .45)';
+      ctx.font = '600 8.8px "PingFang SC", sans-serif';
+      const conflict = this.exoticEquipConflict(selected);
+      const classMismatch = this.armorClassMismatch(selected);
+      ctx.fillText(equipped ? '已装备' : classMismatch ? '职业不符' : conflict ? '异域冲突' : button.enabled ? '装备' : '背包装备', button.x + button.w / 2, button.y + 18);
+      ctx.restore();
+    }
+
+
+    drawMissionHud(ctx, w, h) {
+      this.manager.canvas?.classList.remove('is-inventory-open');
+      if (this.intro || this.transition) return;
+      const player = this.player;
+      if (!player) return;
+      ctx.save();
+      this.drawDestinyRadar(ctx, w, h);
+      this.drawDestinyObjective(ctx, w, h);
+      this.drawDestinyLight(ctx, w, h);
+      this.drawDestinyHealth(ctx, w, h);
+      this.drawDestinyAbilities(ctx, w, h);
+      this.drawDestinyWeapon(ctx, w, h);
+      const near = this.nearestLoot();
+      if (near) {
+        const item = near.drop.item;
+        const text = `E  拾取  ${item.rarityLabel} ${item.name} · 光等 ${item.light}`;
+        const perkText = item.kind === 'weapon'
+          ? `词条 ${item.perks.slice(0, 2).join('  ·  ')}`
+          : `护甲属性 ${item.stats.slice(0, 2).map((stat) => `${stat.label} ${stat.value}`).join('  ·  ')}`;
+        ctx.font = '500 9px "Segoe UI", "PingFang SC", sans-serif';
+        const width = Math.min(460, Math.max(ctx.measureText(text).width, ctx.measureText(perkText).width * 1.15) + 42);
+        const x = w * 0.5 - width / 2;
+        const y = h - 270;
+        fillRoundRect(ctx, x, y, width, 38, 5, 'rgba(5, 11, 16, .86)');
+        ctx.strokeStyle = `${item.color}77`;
+        ctx.strokeRect(x, y, width, 38);
+        ctx.fillStyle = item.color;
+        ctx.font = '600 9px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('E', x + 15, y + 19);
+        ctx.fillStyle = 'rgba(230, 239, 233, .88)';
+        ctx.font = '500 8.2px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(`${item.rarityLabel} ${item.name} · 光等 ${item.light}`, x + 34, y + 17);
+        ctx.fillStyle = item.color;
+        ctx.font = '500 6.4px "PingFang SC", sans-serif';
+        ctx.fillText(perkText, x + 34, y + 30, width - 48);
+      }
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(176, 193, 191, .48)';
+      ctx.font = '500 6.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('F1 角色 / 技能 / 背包 · M 音效', w - 18, h - 16);
+      ctx.restore();
+    }
+
+    drawDestinyRadar(ctx, w, h) {
+      const cx = 66;
+      const cy = 66;
+      const radius = 42;
+      const player = this.player;
+      ctx.save();
+      glowCircle(ctx, cx, cy, radius + 13, 'rgba(111, 157, 173, .13)', 0.7);
+      ctx.fillStyle = 'rgba(4, 10, 15, .65)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(177, 206, 207, .2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(173, 204, 203, .1)';
+      [0.3, 0.62].forEach((scale) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * scale, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = 'rgba(173, 204, 203, .2)';
+      for (let i = 0; i < 16; i += 1) {
+        const angle = (i * Math.PI) / 8;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(angle) * (radius + 2), cy + Math.sin(angle) * (radius + 2));
+        ctx.lineTo(cx + Math.cos(angle) * (radius + (i % 4 ? 5 : 8)), cy + Math.sin(angle) * (radius + (i % 4 ? 5 : 8)));
+        ctx.stroke();
+      }
+      const sweep = this.time * 0.7;
+      ctx.strokeStyle = 'rgba(126, 224, 183, .3)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(sweep) * radius, cy + Math.sin(sweep) * radius);
+      ctx.stroke();
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive) return;
+        const dx = clamp((enemy.x - player.x) * w * 0.09, -radius + 5, radius - 5);
+        const dy = clamp((enemy.y - player.y) * h * 0.11, -radius + 5, radius - 5);
+        ctx.fillStyle = enemy.elite ? '#f3bf65' : 'rgba(230, 104, 91, .9)';
+        ctx.beginPath();
+        ctx.arc(cx + dx, cy + dy, enemy.elite ? 3.2 : 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      if (this.boss && !this.boss.dead) {
+        const dx = clamp((this.boss.x - player.x) * w * 0.09, -radius + 5, radius - 5);
+        const dy = clamp((this.boss.y - player.y) * h * 0.11, -radius + 5, radius - 5);
+        ctx.fillStyle = '#ffcf79';
+        ctx.beginPath();
+        ctx.arc(cx + dx, cy + dy, 3.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#d9f2e7';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 6);
+      ctx.lineTo(cx + 4.6, cy + 5);
+      ctx.lineTo(cx - 4.6, cy + 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(177, 202, 198, .5)';
+      ctx.font = '500 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('RADAR // SOL', cx, cy + radius + 12);
+      ctx.restore();
+    }
+
+    drawDestinyObjective(ctx, w, h) {
+      const title = this.hud.objective || this.mission.objective;
+      const sub = this.hud.sub || '';
+      const width = Math.min(382, w * 0.37);
+      const x = 20;
+      const y = 136;
+      ctx.save();
+      const banner = ctx.createLinearGradient(x, y, x + width, y);
+      banner.addColorStop(0, 'rgba(120, 37, 43, .9)');
+      banner.addColorStop(0.62, 'rgba(80, 28, 35, .7)');
+      banner.addColorStop(1, 'rgba(28, 18, 24, .18)');
+      ctx.fillStyle = banner;
+      ctx.fillRect(x, y, width, 60);
+      ctx.fillStyle = 'rgba(239, 228, 211, .86)';
+      ctx.fillRect(x, y, 2.5, 60);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(245, 231, 214, .86)';
+      ctx.font = '600 7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('NEW OBJECTIVE', x + 13, y + 16);
+      ctx.fillStyle = 'rgba(255, 245, 226, .98)';
+      ctx.font = '600 12.5px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText(title, x + 13, y + 35, width - 26);
+      ctx.fillStyle = 'rgba(224, 215, 199, .72)';
+      ctx.font = '500 7.2px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(sub, x + 13, y + 47, width - 26);
+      fillRoundRect(ctx, x + 13, y + 53, width - 26, 2.5, 1, 'rgba(255,255,255,.14)');
+      fillRoundRect(ctx, x + 13, y + 53, (width - 26) * clamp(this.missionProgress(), 0, 1), 2.5, 1, 'rgba(234, 221, 184, .86)');
+      const placeY = Math.max(206, h - 292);
+      ctx.fillStyle = 'rgba(242, 238, 225, .86)';
+      ctx.font = '600 10.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(String(this.mission.location || 'DESTINY 2').toUpperCase().split('').join(' '), 24, placeY, w * 0.58);
+      ctx.fillStyle = 'rgba(223, 215, 195, .48)';
+      ctx.font = '500 6.8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${this.mission.chapter || ''}  ·  ${this.mission.factionCn || ''}`, 24, placeY + 15);
+      ctx.restore();
+    }
+
+    drawDestinyLight(ctx, w, h) {
+      ctx.save();
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(200, 211, 200, .5)';
+      ctx.font = '500 7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('光等 / LIGHT', w - 22, 31);
+      ctx.fillStyle = '#f3e7c2';
+      ctx.font = '600 34px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText(String(this.currentLight()), w - 22, 58);
+      ctx.fillStyle = 'rgba(183, 202, 198, .6)';
+      ctx.font = '500 6.7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`击杀 ${this.kills}  ·  F1 装备`, w - 22, 72);
+      ctx.fillStyle = this.activeSubclass().color;
+      ctx.font = '500 6.7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${this.classProfile().name} · ${this.activeSubclass().name}`, w - 22, 85);
+      ctx.restore();
+    }
+
+    drawDestinyHealth(ctx, w, h) {
+      const player = this.player;
+      const width = Math.min(380, w * 0.35);
+      const x = w * 0.5 - width / 2;
+      const y = 18;
+      ctx.save();
+      fillRoundRect(ctx, x, y, width, 7, 3, 'rgba(3, 8, 10, .8)');
+      const ratio = clamp((player.hp + player.shield) / (player.maxHp + player.maxShield), 0, 1);
+      const color = ratio < 0.25 ? '#e78472' : ratio < 0.5 ? '#e5c676' : '#77dba0';
+      fillRoundRect(ctx, x, y, width * ratio, 7, 3, color);
+      ctx.strokeStyle = 'rgba(210, 230, 220, .3)';
+      ctx.lineWidth = 0.7;
+      for (let i = 1; i < 10; i += 1) {
+        const sx = x + (width * i) / 10;
+        ctx.beginPath();
+        ctx.moveTo(sx, y);
+        ctx.lineTo(sx, y + 7);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    drawDestinyAbilities(ctx, w, h) {
+      const player = this.player;
+      const superSize = clamp(h * 0.08, 46, 56);
+      const size = superSize * 0.72;
+      const top = h - 106;
+      const x = 18;
+      const gap = 10;
+      const smallTop = top + (superSize - size);
+      const subclassColor = this.activeSubclass().color;
+      const abilityColor = (slot) => this.subclassId === 'prismatic'
+        ? this.subclassInfo(this.activeAbilityElement(slot)).color
+        : subclassColor;
+      const superColor = abilityColor('super');
+      const grenadeColor = abilityColor('grenade');
+      const meleeColor = abilityColor('melee');
+      const classColor = abilityColor('classAbility');
+      const totalWidth = superSize + gap * 3 + size * 3;
+      if (this.subclassId === 'prismatic') this.drawTranscendenceBar(ctx, x, top, totalWidth);
+      const superCharge = clamp(player.superCharge / 100, 0, 1);
+      const superBarY = top - 10;
+      fillRoundRect(ctx, x, superBarY, totalWidth, 3, 1.5, 'rgba(220, 232, 225, .18)');
+      if (superCharge >= 1) {
+        fillRoundRect(ctx, x, superBarY, totalWidth, 3, 1.5, 'rgba(3, 7, 9, .96)');
+        ctx.strokeStyle = `${superColor}cc`;
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(x, superBarY, totalWidth, 3);
+        ctx.fillStyle = superColor;
+        ctx.fillRect(x, superBarY, totalWidth, 0.8);
+      } else {
+        fillRoundRect(ctx, x, superBarY, totalWidth * superCharge, 3, 1.5, `${superColor}cc`);
+      }
+      this.drawAbilitySquare(ctx, x, top, superSize, 'super', player.superCharge / 100, player.superCharge >= 100, 'F', superColor);
+      this.drawAbilitySquare(ctx, x + superSize + gap, smallTop, size, 'grenade', player.grenadeCd > 0 ? 1 - player.grenadeCd / 7 : 1, player.grenadeCd <= 0, 'Q', grenadeColor);
+      this.drawAbilitySquare(ctx, x + superSize + gap * 2 + size, smallTop, size, 'melee', player.meleeCd > 0 ? 1 - player.meleeCd / (player.meleeCdMax || 3.2) : 1, player.meleeCd <= 0, 'C', meleeColor);
+      const classCd = player.classCd || 0;
+      const classCdMax = player.classCdMax || 5;
+      this.drawAbilitySquare(ctx, x + superSize + gap * 3 + size * 2, smallTop, size, 'class', classCd > 0 ? 1 - classCd / classCdMax : 1, classCd <= 0, 'V', classColor);
+    }
+
+    drawTranscendenceBar(ctx, x, top, width) {
+      const barY = top - 24;
+      const barH = 4;
+      const half = width / 2;
+      const light = clamp(this.transcendenceLight / 50, 0, 1);
+      const dark = clamp(this.transcendenceDark / 50, 0, 1);
+      const active = this.transcendenceTime > 0;
+      const ready = this.transcendenceReady();
+      const lightColor = '#ffe5a6';
+      const darkColor = '#b58cff';
+      ctx.save();
+      fillRoundRect(ctx, x, barY, width, barH, 2, 'rgba(3, 7, 9, .9)');
+      if (active) {
+        const pulse = 0.72 + Math.sin(this.time * 4) * 0.18;
+        const aura = ctx.createLinearGradient(x, barY, x + width, barY);
+        aura.addColorStop(0, `rgba(255, 229, 166, ${pulse})`);
+        aura.addColorStop(0.48, '#fff6d8');
+        aura.addColorStop(0.52, '#d9c2ff');
+        aura.addColorStop(1, `rgba(181, 140, 255, ${pulse})`);
+        fillRoundRect(ctx, x, barY, width, barH, 2, aura);
+      } else {
+        fillRoundRect(ctx, x, barY, half * light, barH, 2, `${lightColor}dd`);
+        const darkW = half * dark;
+        fillRoundRect(ctx, x + width - darkW, barY, darkW, barH, 2, `${darkColor}dd`);
+      }
+      ctx.strokeStyle = active || ready ? 'rgba(255, 245, 214, .72)' : 'rgba(211, 228, 219, .25)';
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(x, barY, width, barH);
+      ctx.fillStyle = 'rgba(255,255,255,.22)';
+      ctx.fillRect(x + half - 0.5, barY, 1, barH);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = `${lightColor}99`;
+      ctx.font = '500 5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('光能', x, barY - 4);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = `${darkColor}99`;
+      ctx.fillText('暗影', x + width, barY - 4);
+      ctx.textAlign = 'center';
+      if (active) {
+        ctx.fillStyle = '#fff1c9';
+        ctx.font = '600 5.8px "PingFang SC", sans-serif';
+        ctx.fillText(`超凡状态 ${Math.ceil(this.transcendenceTime)}s · 技能急速恢复`, x + half, barY + 12);
+      } else if (ready) {
+        ctx.fillStyle = '#ffe8ab';
+        ctx.font = '600 5.8px "PingFang SC", sans-serif';
+        ctx.fillText('超凡已充满 · 长按 V 触发', x + half, barY + 12);
+      }
+      ctx.restore();
+    }
+
+    drawAbilitySquare(ctx, x, y, size, type, charge, ready, key, accent) {
+      const color = accent || '#e6ece4';
+      const cut = Math.max(2, size * 0.1);
+      const cx = x + size / 2;
+      const cy = y + size / 2;
+      const tilePath = () => {
+        ctx.beginPath();
+        if (type === 'super') {
+          ctx.moveTo(cx, y);
+          ctx.lineTo(x + size, cy);
+          ctx.lineTo(cx, y + size);
+          ctx.lineTo(x, cy);
+        } else {
+          ctx.moveTo(x + cut, y);
+          ctx.lineTo(x + size - cut, y);
+          ctx.lineTo(x + size, y + cut);
+          ctx.lineTo(x + size, y + size - cut);
+          ctx.lineTo(x + size - cut, y + size);
+          ctx.lineTo(x + cut, y + size);
+          ctx.lineTo(x, y + size - cut);
+          ctx.lineTo(x, y + cut);
+        }
+        ctx.closePath();
+      };
+      ctx.save();
+      if (ready) glowCircle(ctx, cx, cy, size * 0.78, `${color}35`, 0.55);
+      tilePath();
+      ctx.fillStyle = ready ? 'rgba(4, 8, 11, .95)' : 'rgba(22, 30, 34, .76)';
+      ctx.fill();
+      ctx.strokeStyle = ready ? `${color}dd` : 'rgba(198, 218, 211, .38)';
+      ctx.lineWidth = ready ? 1.4 : 1;
+      ctx.stroke();
+      const fillRatio = clamp(charge, 0, 1);
+      if (fillRatio > 0) {
+        ctx.save();
+        tilePath();
+        ctx.clip();
+        const fillHeight = size * fillRatio;
+        ctx.fillStyle = ready ? `${color}99` : `${color}55`;
+        ctx.fillRect(x, y + size - fillHeight, size, fillHeight);
+        ctx.fillStyle = `${color}dd`;
+        ctx.fillRect(x, y + size - fillHeight, size, Math.max(0.8, size * 0.035));
+        ctx.restore();
+        tilePath();
+        ctx.strokeStyle = ready ? `${color}dd` : 'rgba(198, 218, 211, .38)';
+        ctx.lineWidth = ready ? 1.4 : 1;
+        ctx.stroke();
+      }
+      if (type !== 'super') {
+        ctx.strokeStyle = 'rgba(255, 255, 255, .08)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(x + cut + 2, y + 2);
+        ctx.lineTo(x + size - cut - 2, y + 2);
+        ctx.stroke();
+      }
+
+      this.drawAbilityGlyph(ctx, cx, cy, size * 0.32, type, color);
+
+      ctx.textAlign = 'center';
+      if (type === 'super') {
+        ctx.fillStyle = ready ? '#f3f6ef' : 'rgba(218, 230, 223, .68)';
+        ctx.font = '600 6px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(key, cx, y + size * 0.8);
+      } else {
+        const badge = Math.max(10, size * 0.25);
+        const bx = x + size - badge - 2;
+        const by = y + size - badge - 2;
+        fillRoundRect(ctx, bx, by, badge, badge, 2, 'rgba(2, 6, 8, .84)');
+        ctx.strokeStyle = ready ? `${color}99` : 'rgba(190, 210, 203, .25)';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(bx, by, badge, badge);
+        ctx.fillStyle = ready ? '#f3f6ef' : 'rgba(218, 230, 223, .68)';
+        ctx.font = `600 ${Math.max(5.5, badge * 0.52)}px "SFMono-Regular", Consolas, monospace`;
+        ctx.fillText(key, bx + badge / 2, by + badge * 0.7);
+      }
+
+      if (!ready && type !== 'super') {
+        const seconds = Math.ceil(type === 'grenade' ? this.player.grenadeCd : type === 'melee' ? this.player.meleeCd : this.player.classCd);
+        if (seconds > 0) {
+          ctx.fillStyle = 'rgba(240, 245, 238, .86)';
+          ctx.font = `600 ${Math.max(7, size * 0.27)}px "SFMono-Regular", Consolas, monospace`;
+          ctx.fillText(String(seconds), cx, cy + size * 0.09);
+        }
+      }
+
+      if (type !== 'super') {
+        const barY = y - 5;
+        const barH = 3;
+        fillRoundRect(ctx, x, barY, size, barH, 1.5, 'rgba(222, 234, 226, .22)');
+        if (ready) {
+          fillRoundRect(ctx, x, barY, size, barH, 1.5, 'rgba(3, 7, 9, .96)');
+          ctx.strokeStyle = `${color}cc`;
+          ctx.lineWidth = 0.8;
+          ctx.strokeRect(x, barY, size, barH);
+          ctx.fillStyle = color;
+          ctx.fillRect(x, barY, size, 0.8);
+        } else {
+          fillRoundRect(ctx, x, barY, size * clamp(charge, 0, 1), barH, 1.5, `${color}cc`);
+        }
+      }
+      ctx.restore();
+    }
+
+    drawSubclassGlyph(ctx, id, cx, cy, r, color, alpha = 1) {
+      const previousAlpha = ctx.globalAlpha;
+      ctx.save();
+      ctx.globalAlpha = previousAlpha * alpha;
+      ctx.translate(cx, cy);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = `${color}30`;
+      ctx.lineWidth = Math.max(1, r * 0.14);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (id === 'solar') {
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.82);
+        ctx.bezierCurveTo(r * 0.48, -r * 0.3, r * 0.42, r * 0.2, 0, r * 0.75);
+        ctx.bezierCurveTo(-r * 0.46, r * 0.18, -r * 0.36, -r * 0.22, 0, -r * 0.82);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.28);
+        ctx.bezierCurveTo(r * 0.18, 0, r * 0.1, r * 0.3, 0, r * 0.46);
+        ctx.bezierCurveTo(-r * 0.18, r * 0.24, -r * 0.12, 0, 0, -r * 0.28);
+        ctx.fillStyle = '#fff1cf';
+        ctx.fill();
+      } else if (id === 'arc') {
+        ctx.beginPath();
+        ctx.moveTo(r * 0.08, -r * 0.82);
+        ctx.lineTo(-r * 0.4, -r * 0.04);
+        ctx.lineTo(-r * 0.02, -r * 0.04);
+        ctx.lineTo(-r * 0.2, r * 0.82);
+        ctx.lineTo(r * 0.45, -r * 0.16);
+        ctx.lineTo(r * 0.06, -r * 0.16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (id === 'void') {
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 0.78, r * 0.32, -0.42, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(r * 0.66, -r * 0.22, r * 0.09, 0, Math.PI * 2);
+        ctx.fillStyle = '#f0e4ff';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.56, Math.PI * 0.12, Math.PI * 0.88);
+        ctx.stroke();
+      } else if (id === 'stasis') {
+        for (let i = 0; i < 3; i += 1) {
+          const angle = (i * Math.PI) / 3;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * -r * 0.72, Math.sin(angle) * -r * 0.72);
+          ctx.lineTo(Math.cos(angle) * r * 0.72, Math.sin(angle) * r * 0.72);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#e9fbff';
+        ctx.fill();
+        ctx.strokeStyle = `${color}cc`;
+        ctx.stroke();
+        for (let i = 0; i < 6; i += 1) {
+          const angle = (i * Math.PI) / 3;
+          this.drawDiamond(ctx, Math.cos(angle) * r * 0.52, Math.sin(angle) * r * 0.52, r * 0.12, `${color}55`, `${color}cc`, 0.8);
+        }
+      } else if (id === 'strand') {
+        ctx.fillStyle = 'none';
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.7, r * 0.58);
+        ctx.bezierCurveTo(-r * 0.1, r * 0.4, r * 0.1, -r * 0.4, r * 0.7, -r * 0.58);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.7, -r * 0.58);
+        ctx.bezierCurveTo(-r * 0.1, -r * 0.4, r * 0.1, r * 0.4, r * 0.7, r * 0.58);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.65, 0);
+        ctx.bezierCurveTo(-r * 0.2, -r * 0.25, r * 0.2, r * 0.25, r * 0.65, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#d9ffd5';
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        this.drawDiamond(ctx, 0, 0, r * 0.7, 'rgba(255,255,255,.06)', color, Math.max(1, r * 0.1));
+        ctx.strokeStyle = '#fff0ff';
+        ctx.lineWidth = Math.max(0.8, r * 0.07);
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.62);
+        ctx.lineTo(r * 0.28, 0);
+        ctx.lineTo(0, r * 0.62);
+        ctx.lineTo(-r * 0.28, 0);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.28);
+        ctx.lineTo(r * 0.12, 0);
+        ctx.lineTo(0, r * 0.28);
+        ctx.lineTo(-r * 0.12, 0);
+        ctx.closePath();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    drawSuperGlyph(ctx, name, cx, cy, r, color) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = `${color}33`;
+      ctx.lineWidth = Math.max(1, r * 0.14);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (name === '黄金枪') {
+        ctx.save();
+        ctx.rotate(-0.35);
+        ctx.fillStyle = `${color}55`;
+        ctx.strokeStyle = '#ffe1a8';
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.28, -r * 0.18);
+        ctx.lineTo(r * 0.62, -r * 0.18);
+        ctx.lineTo(r * 0.72, -r * 0.06);
+        ctx.lineTo(r * 0.18, -r * 0.02);
+        ctx.lineTo(-r * 0.18, r * 0.18);
+        ctx.lineTo(-r * 0.36, r * 0.18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(r * 0.22, r * 0.2);
+        ctx.lineTo(r * 0.05, r * 0.06);
+        ctx.moveTo(-r * 0.06, r * 0.02);
+        ctx.lineTo(-r * 0.06, r * 0.42);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = `${color}66`;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.42, r * 0.5);
+        ctx.bezierCurveTo(-r * 0.74, r * 0.08, -r * 0.38, -r * 0.08, -r * 0.2, -r * 0.48);
+        ctx.bezierCurveTo(-r * 0.12, -r * 0.05, -r * 0.18, r * 0.28, -r * 0.42, r * 0.5);
+        ctx.fill();
+      } else if (name === '电弧法杖') {
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.55, r * 0.62);
+        ctx.lineTo(r * 0.42, -r * 0.62);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(r * 0.3, -r * 0.72);
+        ctx.lineTo(r * 0.1, -r * 0.38);
+        ctx.lineTo(r * 0.44, -r * 0.26);
+        ctx.lineTo(r * 0.18, r * 0.08);
+        ctx.stroke();
+        ctx.strokeStyle = '#d8f5ff';
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.58, -2.5, -0.6);
+        ctx.stroke();
+      } else if (name === '幽灵之刃') {
+        [-1, 1].forEach((side) => {
+          ctx.save();
+          ctx.scale(side, 1);
+          ctx.fillStyle = `${color}44`;
+          ctx.beginPath();
+          ctx.moveTo(-r * 0.08, r * 0.62);
+          ctx.quadraticCurveTo(r * 0.45, r * 0.12, r * 0.16, -r * 0.68);
+          ctx.quadraticCurveTo(r * 0.02, r * 0.1, -r * 0.28, r * 0.42);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        });
+        ctx.strokeStyle = '#e7d8ff';
+        ctx.beginPath();
+        ctx.arc(0, r * 0.12, r * 0.46, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+      } else if (name === '沉默狂啸') {
+        for (let i = 0; i < 3; i += 1) {
+          const angle = (i * Math.PI) / 3;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * -r * 0.65, Math.sin(angle) * -r * 0.65);
+          ctx.lineTo(Math.cos(angle) * r * 0.65, Math.sin(angle) * r * 0.65);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#e4fbff';
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.52, -1.1, 2.2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.28, 0.4, 3.4);
+        ctx.stroke();
+      } else if (name === '丝线之舞') {
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.62, r * 0.5);
+        ctx.bezierCurveTo(-r * 0.15, r * 0.2, r * 0.2, -r * 0.45, r * 0.64, -r * 0.56);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.58, -r * 0.54);
+        ctx.bezierCurveTo(-r * 0.1, -r * 0.3, r * 0.18, r * 0.25, r * 0.62, r * 0.5);
+        ctx.stroke();
+        ctx.fillStyle = '#e1ffd6';
+        ctx.beginPath();
+        ctx.moveTo(r * 0.64, -r * 0.56);
+        ctx.lineTo(r * 0.3, -r * 0.38);
+        ctx.lineTo(r * 0.46, -r * 0.12);
+        ctx.closePath();
+        ctx.fill();
+      } else if (name === '黎明之刃') {
+        ctx.fillStyle = `${color}55`;
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.78);
+        ctx.lineTo(r * 0.2, -r * 0.08);
+        ctx.lineTo(0, r * 0.68);
+        ctx.lineTo(-r * 0.2, -r * 0.08);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.42, r * 0.18);
+        ctx.lineTo(r * 0.42, r * 0.18);
+        ctx.stroke();
+        ctx.fillStyle = `${color}66`;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.46, -r * 0.62);
+        ctx.quadraticCurveTo(-r * 0.8, -r * 0.2, -r * 0.38, r * 0.02);
+        ctx.quadraticCurveTo(-r * 0.45, -r * 0.3, -r * 0.46, -r * 0.62);
+        ctx.fill();
+      } else if (name === '风暴使者') {
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.45, r * 0.56);
+        ctx.lineTo(-r * 0.2, -r * 0.32);
+        ctx.lineTo(-r * 0.44, -r * 0.32);
+        ctx.lineTo(r * 0.12, -r * 0.7);
+        ctx.lineTo(-r * 0.03, -r * 0.1);
+        ctx.lineTo(r * 0.34, -r * 0.1);
+        ctx.lineTo(-r * 0.2, r * 0.68);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (name === '新星炸弹') {
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.43, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#eadcff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 0.73, r * 0.3, -0.4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#f3eaff';
+        ctx.beginPath();
+        ctx.arc(r * 0.16, -r * 0.12, r * 0.11, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (name === '寒冬之怒') {
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.58, r * 0.62);
+        ctx.lineTo(r * 0.5, -r * 0.58);
+        ctx.stroke();
+        this.drawDiamond(ctx, r * 0.52, -r * 0.6, r * 0.25, `${color}66`, '#e8fbff', 1);
+        for (let i = 0; i < 3; i += 1) {
+          ctx.strokeStyle = '#dff9ff';
+          ctx.beginPath();
+          ctx.arc(0, 0, r * (0.3 + i * 0.12), -1, 2.3);
+          ctx.stroke();
+        }
+      } else if (name === '织线者') {
+        for (let i = -2; i <= 2; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(i * r * 0.16, r * 0.55);
+          ctx.lineTo(i * r * 0.28, -r * 0.62);
+          ctx.stroke();
+          ctx.fillStyle = `${color}88`;
+          ctx.beginPath();
+          ctx.moveTo(i * r * 0.28, -r * 0.7);
+          ctx.lineTo(i * r * 0.2, -r * 0.5);
+          ctx.lineTo(i * r * 0.36, -r * 0.5);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (name === '燃烧之锤') {
+        ctx.save();
+        ctx.rotate(0.4);
+        ctx.fillStyle = `${color}55`;
+        ctx.fillRect(-r * 0.4, -r * 0.5, r * 0.8, r * 0.3);
+        ctx.strokeRect(-r * 0.4, -r * 0.5, r * 0.8, r * 0.3);
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.16);
+        ctx.lineTo(0, r * 0.68);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = `${color}66`;
+        ctx.beginPath();
+        ctx.moveTo(r * 0.28, r * 0.5);
+        ctx.quadraticCurveTo(r * 0.65, r * 0.1, r * 0.3, -r * 0.25);
+        ctx.quadraticCurveTo(r * 0.4, r * 0.15, r * 0.28, r * 0.5);
+        ctx.fill();
+      } else if (name === '雷霆冲击') {
+        ctx.fillStyle = `${color}55`;
+        ctx.beginPath();
+        ctx.arc(0, -r * 0.4, r * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#dff4ff';
+        ctx.beginPath();
+        ctx.moveTo(0, r * 0.42);
+        ctx.lineTo(0, -r * 0.1);
+        ctx.moveTo(-r * 0.28, r * 0.12);
+        ctx.lineTo(0, r * 0.08);
+        ctx.lineTo(r * 0.28, r * 0.12);
+        ctx.stroke();
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(-r * 0.5 + i * r * 0.33, r * 0.55);
+          ctx.lineTo(-r * 0.2 + i * r * 0.22, -r * 0.72);
+          ctx.strokeStyle = `${color}88`;
+          ctx.stroke();
+        }
+      } else if (name === '哨兵护盾') {
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.68);
+        ctx.lineTo(r * 0.48, -r * 0.42);
+        ctx.lineTo(r * 0.42, r * 0.18);
+        ctx.quadraticCurveTo(r * 0.3, r * 0.56, 0, r * 0.68);
+        ctx.quadraticCurveTo(-r * 0.3, r * 0.56, -r * 0.42, r * 0.18);
+        ctx.lineTo(-r * 0.48, -r * 0.42);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#eadcff';
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.38);
+        ctx.lineTo(0, r * 0.4);
+        ctx.moveTo(-r * 0.24, -r * 0.08);
+        ctx.lineTo(r * 0.24, -r * 0.08);
+        ctx.stroke();
+      } else if (name === '冰川震荡') {
+        ctx.fillStyle = `${color}55`;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.62, r * 0.55);
+        ctx.lineTo(-r * 0.38, -r * 0.2);
+        ctx.lineTo(-r * 0.5, -r * 0.62);
+        ctx.lineTo(-r * 0.12, -r * 0.2);
+        ctx.lineTo(0, r * 0.2);
+        ctx.lineTo(r * 0.16, -r * 0.58);
+        ctx.lineTo(r * 0.46, -r * 0.16);
+        ctx.lineTo(r * 0.62, r * 0.55);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (name === '巨兽') {
+        for (let i = -2; i <= 2; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(i * r * 0.18, r * 0.6);
+          ctx.quadraticCurveTo(i * r * 0.5, 0, i * r * 0.28, -r * 0.7);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(0, r * 0.1, r * 0.28, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+      } else {
+        this.drawSubclassGlyph(ctx, 'prismatic', 0, 0, r * 0.8, color, 0.9);
+      }
+      ctx.restore();
+    }
+
+    drawAbilityGlyph(ctx, cx, cy, r, type, color) {
+      const glyph = 'rgba(240, 246, 240, .94)';
+      ctx.save();
+      ctx.strokeStyle = glyph;
+      ctx.fillStyle = 'rgba(240, 246, 240, .12)';
+      ctx.lineWidth = Math.max(1, r * 0.14);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (type === 'super') {
+        this.drawSuperGlyph(ctx, this.superProfile().name, cx, cy, r, color);
+      } else if (type === 'grenade') {
+        const element = this.activeAbilityElement('grenade');
+        if (element === 'arc') {
+          ctx.beginPath();
+          ctx.arc(cx, cy + r * 0.08, r * 0.42, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = '#ddf7ff';
+          ctx.beginPath();
+          ctx.moveTo(cx + r * 0.1, cy - r * 0.56);
+          ctx.lineTo(cx - r * 0.16, cy - r * 0.12);
+          ctx.lineTo(cx + r * 0.04, cy - r * 0.12);
+          ctx.lineTo(cx - r * 0.12, cy + r * 0.52);
+          ctx.lineTo(cx + r * 0.2, cy - r * 0.02);
+          ctx.lineTo(cx - r * 0.02, cy - r * 0.02);
+          ctx.closePath();
+          ctx.stroke();
+        } else if (element === 'void') {
+          ctx.beginPath();
+          ctx.arc(cx, cy + r * 0.06, r * 0.42, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = '#e5d6ff';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy + r * 0.06, r * 0.68, r * 0.24, -0.35, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = '#f4eaff';
+          ctx.beginPath();
+          ctx.arc(cx + r * 0.1, cy - r * 0.12, r * 0.09, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (element === 'stasis') {
+          this.drawDiamond(ctx, cx, cy + r * 0.04, r * 0.52, `${color}55`, '#e8fbff', 1.1);
+          ctx.strokeStyle = '#dff9ff';
+          for (let i = 0; i < 3; i += 1) {
+            const angle = (i * Math.PI) / 3;
+            ctx.beginPath();
+            ctx.moveTo(cx - Math.cos(angle) * r * 0.3, cy + r * 0.04 - Math.sin(angle) * r * 0.3);
+            ctx.lineTo(cx + Math.cos(angle) * r * 0.3, cy + r * 0.04 + Math.sin(angle) * r * 0.3);
+            ctx.stroke();
+          }
+        } else if (element === 'strand') {
+          ctx.beginPath();
+          ctx.arc(cx, cy + r * 0.06, r * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = '#dcffd3';
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.5, cy + r * 0.3);
+          ctx.bezierCurveTo(cx - r * 0.2, cy - r * 0.2, cx + r * 0.2, cy + r * 0.32, cx + r * 0.5, cy - r * 0.18);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.5, cy - r * 0.18);
+          ctx.bezierCurveTo(cx - r * 0.2, cy + r * 0.32, cx + r * 0.2, cy - r * 0.2, cx + r * 0.5, cy + r * 0.3);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.arc(cx, cy + r * 0.08, r * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = `${color}66`;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - r * 0.62);
+          ctx.quadraticCurveTo(cx + r * 0.34, cy - r * 0.16, cx, cy + r * 0.3);
+          ctx.quadraticCurveTo(cx - r * 0.34, cy - r * 0.16, cx, cy - r * 0.62);
+          ctx.fill();
+          ctx.strokeStyle = '#ffecc4';
+          for (let i = 0; i < 6; i += 1) {
+            const angle = (i * Math.PI) / 3;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(angle) * r * 0.48, cy + r * 0.08 + Math.sin(angle) * r * 0.48);
+            ctx.lineTo(cx + Math.cos(angle) * r * 0.7, cy + r * 0.08 + Math.sin(angle) * r * 0.7);
+            ctx.stroke();
+          }
+        }
+      } else if (type === 'melee') {
+        const classId = this.classId || 'hunter';
+        if (classId === 'warlock') {
+          ctx.beginPath();
+          ctx.arc(cx, cy + r * 0.16, r * 0.36, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          for (let i = 0; i < 4; i += 1) {
+            const fx = cx - r * 0.3 + i * r * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(fx, cy + r * 0.1);
+            ctx.lineTo(fx - r * 0.06, cy - r * 0.5);
+            ctx.stroke();
+          }
+          ctx.fillStyle = `${color}66`;
+          ctx.beginPath();
+          ctx.arc(cx, cy + r * 0.16, r * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (classId === 'titan') {
+          ctx.beginPath();
+          roundRect(ctx, cx - r * 0.38, cy - r * 0.18, r * 0.76, r * 0.5, r * 0.18);
+          ctx.fill();
+          ctx.stroke();
+          for (let i = 0; i < 3; i += 1) {
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.24 + i * r * 0.24, cy + r * 0.3, r * 0.09, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.3, cy - r * 0.2);
+          ctx.lineTo(cx - r * 0.18, cy - r * 0.48);
+          ctx.lineTo(cx + r * 0.06, cy - r * 0.34);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.3, cy + r * 0.38);
+          ctx.lineTo(cx + r * 0.16, cy - r * 0.38);
+          ctx.lineTo(cx + r * 0.34, cy - r * 0.18);
+          ctx.lineTo(cx - r * 0.1, cy + r * 0.44);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.06, cy + r * 0.2);
+          ctx.lineTo(cx + r * 0.17, cy + r * 0.37);
+          ctx.moveTo(cx - r * 0.32, cy + r * 0.42);
+          ctx.lineTo(cx - r * 0.1, cy + r * 0.18);
+          ctx.stroke();
+        }
+      } else if ((this.classId || 'hunter') === 'warlock') {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx - r * 0.25, cy);
+        ctx.lineTo(cx + r * 0.25, cy);
+        ctx.moveTo(cx, cy - r * 0.25);
+        ctx.lineTo(cx, cy + r * 0.25);
+        ctx.stroke();
+      } else if ((this.classId || 'hunter') === 'titan') {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r * 0.55);
+        ctx.lineTo(cx + r * 0.42, cy - r * 0.38);
+        ctx.lineTo(cx + r * 0.42, cy + r * 0.22);
+        ctx.quadraticCurveTo(cx + r * 0.38, cy + r * 0.48, cx, cy + r * 0.58);
+        ctx.quadraticCurveTo(cx - r * 0.38, cy + r * 0.48, cx - r * 0.42, cy + r * 0.22);
+        ctx.lineTo(cx - r * 0.42, cy - r * 0.38);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r * 0.36);
+        ctx.lineTo(cx, cy + r * 0.38);
+        ctx.stroke();
+      } else {
+        for (let i = 0; i < 2; i += 1) {
+          const oy = -r * 0.15 + i * r * 0.28;
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.46, cy + oy + r * 0.15);
+          ctx.lineTo(cx, cy + oy - r * 0.15);
+          ctx.lineTo(cx + r * 0.46, cy + oy + r * 0.15);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    drawDestinyWeapon(ctx, w, h) {
+      const x = w - 208;
+      const top = h - 140;
+      const rowW = 190;
+      const rowH = 46;
+      const activeSpec = this.activeWeaponSpec();
+      const activeState = this.weaponState(activeSpec.slot);
+      const activeItem = this.equipment[activeSpec.slot];
+      const cut = 3;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x + cut, top);
+      ctx.lineTo(x + rowW - cut, top);
+      ctx.lineTo(x + rowW, top + cut);
+      ctx.lineTo(x + rowW, top + rowH - cut);
+      ctx.lineTo(x + rowW - cut, top + rowH);
+      ctx.lineTo(x + cut, top + rowH);
+      ctx.lineTo(x, top + rowH - cut);
+      ctx.lineTo(x, top + cut);
+      ctx.closePath();
+      const rowBg = ctx.createLinearGradient(x, top, x + rowW, top);
+      rowBg.addColorStop(0, 'rgba(4, 9, 12, .68)');
+      rowBg.addColorStop(0.8, 'rgba(7, 14, 18, .4)');
+      rowBg.addColorStop(1, 'rgba(9, 16, 20, .1)');
+      ctx.fillStyle = rowBg;
+      ctx.fill();
+      const activeExotic = Boolean(activeItem?.exoticId);
+      ctx.strokeStyle = activeExotic ? 'rgba(227, 176, 75, .82)' : 'rgba(232, 240, 232, .18)';
+      ctx.lineWidth = activeExotic ? 1.2 : 0.8;
+      ctx.stroke();
+
+      this.drawGearIcon(ctx, x + 5, top + 5, 36, activeItem, false, true);
+      const badge = 11;
+      fillRoundRect(ctx, x + 2, top + 2, badge, badge, 2, 'rgba(2, 6, 8, .86)');
+      ctx.strokeStyle = `${activeSpec.color}99`;
+      ctx.lineWidth = 0.7;
+      ctx.strokeRect(x + 2, top + 2, badge, badge);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#f4f6ef';
+      ctx.font = '600 6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(String(activeSpec.number), x + 2 + badge / 2, top + 2 + badge * 0.7);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#f2f4eb';
+      ctx.font = '600 22px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(String(activeState.ammo), x + 62, top + 29);
+      ctx.fillStyle = 'rgba(232, 240, 232, .28)';
+      ctx.fillRect(x + 120, top + 7, 1, 32);
+      ctx.fillStyle = activeSpec.color;
+      ctx.font = '500 9px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(String(activeState.reserve), x + 128, top + 29);
+      ctx.fillStyle = 'rgba(198, 214, 207, .58)';
+      ctx.font = '500 5.6px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${activeSpec.number}号位 · ${activeSpec.elementLabel}${activeSpec.typeLabel}${activeExotic ? ' · 异域' : ''} · AA ${this.aimAssistValue(activeSpec)}`, x + 62, top + 42, rowW - 70);
+      ctx.restore();
+
+      const backups = ['primary', 'energy', 'power'].map((id) => this.weaponSpecFor(id)).filter((spec) => spec.slot !== activeSpec.slot);
+      let rowY = top + rowH + 7;
+      backups.forEach((spec) => {
+        const state = this.weaponState(spec.slot);
+        const item = this.equipment[spec.slot];
+        ctx.save();
+        this.drawGearIcon(ctx, x + 4, rowY + 1, 21, item, false, true);
+        ctx.strokeStyle = spec.color;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i += 1) {
+          const angle = (i * Math.PI) / 4;
+          ctx.beginPath();
+          ctx.moveTo(x + 37 - Math.cos(angle) * 4, rowY + 11 - Math.sin(angle) * 4);
+          ctx.lineTo(x + 37 + Math.cos(angle) * 4, rowY + 11 + Math.sin(angle) * 4);
+          ctx.stroke();
+        }
+        ctx.textAlign = 'left';
+        ctx.fillStyle = 'rgba(224, 234, 227, .72)';
+        ctx.font = '500 5.6px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(`${spec.number}号位 · ${spec.elementLabel}${spec.typeLabel}`, x + 45, rowY + 13, rowW - 56);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(240, 244, 236, .9)';
+        ctx.font = '600 8.5px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(String(state.ammo), x + rowW - 4, rowY + 14);
+        ctx.strokeStyle = 'rgba(216, 230, 222, .12)';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(x + 4, rowY + 24);
+        ctx.lineTo(x + rowW, rowY + 24);
+        ctx.stroke();
+        ctx.restore();
+        rowY += 28;
+      });
+    }
+
+
+    drawBossHealth(ctx, w, h) {
+      const boss = this.boss;
+      const width = Math.min(w * 0.54, 500);
+      const x = w * 0.5 - width / 2;
+      const y = Math.max(66, h * 0.12);
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(249, 223, 166, .84)';
+      ctx.font = '500 10.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('DOMINUS GHAUL · 猩红军团指挥官', w * 0.5, y - 11);
+      fillRoundRect(ctx, x, y, width, 9, 4, 'rgba(8, 7, 6, .82)');
+      const gradient = ctx.createLinearGradient(x, 0, x + width, 0);
+      gradient.addColorStop(0, boss.phase === 3 ? '#f05c42' : '#d59a50');
+      gradient.addColorStop(1, boss.phase === 3 ? '#ffad6c' : '#ffe19a');
+      ctx.fillStyle = gradient;
+      fillRoundRect(ctx, x, y, width * clamp(boss.hp / boss.maxHp, 0, 1), 9, 4, gradient);
+      ctx.strokeStyle = 'rgba(243, 214, 149, .28)';
+      ctx.strokeRect(x, y, width, 9);
+      ctx.fillStyle = 'rgba(225, 199, 146, .58)';
+      ctx.font = '500 7.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`PHASE ${boss.phase} / 3`, w * 0.5, y + 21);
+      ctx.restore();
+    }
+
+    drawDlcBossHealth(ctx, w, h) {
+      const boss = this.dlcBoss;
+      if (!boss) return;
+      const width = Math.min(w * 0.54, 500);
+      const x = w * 0.5 - width / 2;
+      const y = Math.max(66, h * 0.12);
+      const accent = this.mission.accent || '#e5b96d';
+      ctx.save();
+      ctx.textAlign = 'center';
+      const raidState = this.currentMode === 'raid' ? this.raidState : null;
+      const stageTag = raidState?.encounters
+        ? `STAGE ${(raidState.encounterIndex || 0) + 1}/${raidState.encounters.length} · `
+        : '';
+      ctx.fillStyle = 'rgba(244, 231, 203, .86)';
+      ctx.font = '500 10.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${stageTag}${String(boss.name || 'BOSS').toUpperCase()} · ${(this.mission.factionCn || this.factionName(this.mission.faction)).toUpperCase()}`, w * 0.5, y - 11);
+      fillRoundRect(ctx, x, y, width, 9, 4, 'rgba(8, 7, 6, .84)');
+      const gradient = ctx.createLinearGradient(x, 0, x + width, 0);
+      gradient.addColorStop(0, accent);
+      gradient.addColorStop(1, '#f4e4ba');
+      fillRoundRect(ctx, x, y, width * clamp(boss.hp / boss.maxHp, 0, 1), 9, 4, gradient);
+      ctx.strokeStyle = `${accent}55`;
+      ctx.strokeRect(x, y, width, 9);
+      ctx.fillStyle = 'rgba(225, 211, 188, .55)';
+      ctx.font = '500 7px "SFMono-Regular", Consolas, monospace';
+      const phaseTag = raidState?.phase === 'mechanic' ? 'SHIELDED' : 'DAMAGE PHASE';
+      const fieldShield = this.fieldObjective && !this.fieldObjective.done;
+      ctx.fillText(this.currentMode === 'raid'
+        ? `RAID BOSS // ${phaseTag}`
+        : fieldShield ? 'BOSS // FIELD OBJECTIVE SHIELD'
+          : this.currentMode === 'strike' ? 'STRIKE BOSS // VANGUARD' : 'STORY BOSS // DESTINATION LOCKED', w * 0.5, y + 21);
+      ctx.restore();
+    }
+
+    drawIntro(ctx, w, h) {
+      const intro = this.intro;
+      const alpha = clamp(intro.time / 0.7, 0, 1);
+      ctx.save();
+      ctx.fillStyle = `rgba(4, 5, 7, ${0.86 * alpha})`;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(10, 12, 14, .72)';
+      ctx.fillRect(0, h * 0.16, w, h * 0.52);
+      ctx.strokeStyle = 'rgba(236, 199, 126, .23)';
+      ctx.beginPath();
+      ctx.moveTo(w * 0.11, h * 0.19);
+      ctx.lineTo(w * 0.89, h * 0.19);
+      ctx.moveTo(w * 0.11, h * 0.69);
+      ctx.lineTo(w * 0.89, h * 0.69);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(233, 196, 120, .78)';
+      ctx.font = '500 9.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(this.mission.eyebrow || `THE RED WAR · ${intro.chapter}`, w * 0.5, h * 0.27);
+      ctx.fillStyle = '#f4edd9';
+      ctx.font = `600 ${Math.max(27, Math.min(52, w * 0.045))}px "Segoe UI", "PingFang SC", sans-serif`;
+      ctx.fillText(intro.title, w * 0.5, h * 0.4);
+      ctx.fillStyle = 'rgba(238, 217, 175, .78)';
+      ctx.font = '500 9.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(intro.location, w * 0.5, h * 0.445);
+      ctx.fillStyle = 'rgba(206, 218, 213, .78)';
+      ctx.font = '500 11.2px "Segoe UI", "PingFang SC", sans-serif';
+      this.drawWrappedText(ctx, intro.brief, w * 0.5, h * 0.515, Math.min(w * 0.64, 560), 18);
+      ctx.fillStyle = 'rgba(235, 194, 112, .88)';
+      ctx.font = '500 9.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`目标 // ${intro.objective}`, w * 0.5, h * 0.63);
+      ctx.fillStyle = 'rgba(203, 211, 204, .36)';
+      ctx.font = '500 7.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('点击或按空格跳过', w * 0.5, h * 0.72);
+      ctx.restore();
+    }
+
+    drawTransition(ctx, w, h) {
+      const transition = this.transition;
+      const alpha = clamp((transition.max - transition.time) / 0.5, 0, 1);
+      ctx.save();
+      ctx.fillStyle = `rgba(3, 5, 7, ${0.9 * alpha})`;
+      ctx.fillRect(0, 0, w, h);
+      if (transition.activity) {
+        const accent = transition.win ? '#7fe3b2' : '#e89078';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = accent;
+        ctx.font = '600 9.5px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(transition.win ? 'ACTIVITY COMPLETE' : 'ACTIVITY ENDED', w * 0.5, h * 0.32);
+        ctx.fillStyle = '#f4efdf';
+        ctx.font = `600 ${Math.max(28, Math.min(52, w * 0.047))}px "Segoe UI", "PingFang SC", sans-serif`;
+        ctx.fillText(transition.title, w * 0.5, h * 0.45);
+        ctx.save();
+        ctx.fillStyle = 'rgba(213, 221, 209, .7)';
+        ctx.font = '500 11.2px "Segoe UI", "PingFang SC", sans-serif';
+        this.drawWrappedText(ctx, transition.desc, w * 0.5, h * 0.53, Math.min(540, w * 0.65), 18);
+        ctx.restore();
+        ctx.fillStyle = 'rgba(206, 218, 207, .44)';
+        ctx.font = '500 7.5px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('点击或按空格返回 Director', w * 0.5, h * 0.72);
+        ctx.restore();
+        return;
+      }
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(239, 203, 130, .74)';
+      ctx.font = '600 9px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(transition.final
+        ? (this.currentMode === 'dlc' ? `${(this.dlcConfig?.title || 'DLC').toUpperCase()} · CAMPAIGN COMPLETE` : 'THE RED WAR · CAMPAIGN COMPLETE')
+        : `CHAPTER ${String(this.missionIndex + 1).padStart(2, '0')} CLEARED`, w * 0.5, h * 0.29);
+      ctx.fillStyle = '#f4efdf';
+      ctx.font = `600 ${Math.max(30, Math.min(58, w * 0.05))}px "Segoe UI", "PingFang SC", sans-serif`;
+      ctx.fillText(transition.title, w * 0.5, h * 0.43);
+      ctx.fillStyle = 'rgba(221, 204, 168, .64)';
+      ctx.font = '500 9px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${transition.chapter} · ${transition.mission}`, w * 0.5, h * 0.48);
+      if (!transition.final) {
+        ctx.fillStyle = 'rgba(239, 213, 162, .9)';
+        ctx.font = '500 9.5px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText(`${this.currentMode === 'dlc' ? '下一节点' : '下一章'} · ${transition.next.chapter} · ${transition.next.title}`, w * 0.5, h * 0.58);
+      } else {
+        ctx.fillStyle = 'rgba(239, 213, 162, .9)';
+        ctx.font = '500 9.5px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText('最后的城市重新看见了光。', w * 0.5, h * 0.58);
+      }
+      const dotY = h * 0.66;
+      for (let i = 0; i < 5; i += 1) {
+        const dotX = w * 0.5 + (i - 2) * 22;
+        ctx.fillStyle = i <= this.missionIndex ? 'rgba(235, 194, 112, .88)' : 'rgba(235, 224, 197, .15)';
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, i === this.missionIndex ? 3.4 : 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(208, 217, 207, .38)';
+      ctx.font = '500 7.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('点击或按空格继续', w * 0.5, h * 0.74);
+      ctx.restore();
+    }
+
+    drawDeath(ctx, w, h) {
+      const death = this.deathState;
+      if (!death) return;
+      const elapsed = death.max - death.time;
+      const alpha = clamp(elapsed / 0.42, 0, 1);
+      const lightFade = clamp(1 - elapsed / (death.max * 0.62), 0, 1);
+      const camera = this.currentMode === 'raid' ? this.raidCameraFor(w, h) : { x: 0, y: 0 };
+      const worldW = this.w || w;
+      const worldH = this.h || h;
+      const px = clamp((death.x ?? 0.5) * worldW - camera.x, 36, w - 36);
+      const py = clamp((death.y ?? 0.5) * worldH - camera.y, 36, h - 36);
+      const timeLeft = Math.max(0, death.time);
+      const canRevive = timeLeft <= death.max - (death.readyAt || 2.2);
+      ctx.save();
+      const doom = ctx.createRadialGradient(w * 0.5, h * 0.5, 20, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
+      doom.addColorStop(0, `rgba(7, 8, 11, ${0.68 * alpha})`);
+      doom.addColorStop(0.46, `rgba(3, 4, 7, ${0.84 * alpha})`);
+      doom.addColorStop(1, `rgba(0, 1, 3, ${0.97 * alpha})`);
+      ctx.fillStyle = doom;
+      ctx.fillRect(0, 0, w, h);
+      const red = ctx.createRadialGradient(px, py, 4, px, py, Math.max(w, h) * 0.5);
+      red.addColorStop(0, `rgba(212, 92, 54, ${0.12 * alpha})`);
+      red.addColorStop(0.36, `rgba(121, 40, 35, ${0.1 * alpha})`);
+      red.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = red;
+      ctx.fillRect(0, 0, w, h);
+      // The remaining Light visibly dissipates into motes.
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const light = ctx.createRadialGradient(px, py, 1, px, py, 105);
+      light.addColorStop(0, `rgba(255, 248, 213, ${0.8 * lightFade})`);
+      light.addColorStop(0.16, `rgba(255, 213, 135, ${0.42 * lightFade})`);
+      light.addColorStop(0.46, `rgba(198, 140, 72, ${0.16 * lightFade})`);
+      light.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = light;
+      ctx.beginPath();
+      ctx.arc(px, py, 108, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255, 225, 165, ${0.55 * lightFade})`;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.arc(px, py, 18 + (1 - lightFade) * 26, 0, Math.PI * 2);
+      ctx.stroke();
+      for (let i = 0; i < 36; i += 1) {
+        const angle = i * 2.39996 + elapsed * 0.52;
+        const distance = 13 + elapsed * (24 + (i % 7) * 5) + (i % 5) * 9;
+        const moteAlpha = clamp(lightFade * (0.32 + (i % 4) * 0.08), 0, 0.8);
+        ctx.globalAlpha = moteAlpha;
+        ctx.fillStyle = i % 5 === 0 ? '#fff4ce' : i % 3 === 0 ? '#e8b76d' : '#b88b55';
+        ctx.beginPath();
+        ctx.arc(px + Math.cos(angle) * distance, py + Math.sin(angle) * distance * 0.7 - elapsed * 9, i % 6 === 0 ? 2.1 : 1.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = `rgba(238, 206, 148, ${0.32 * lightFade})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(px, py, 30 + (1 - lightFade) * 44, elapsed * 0.4, elapsed * 0.4 + Math.PI * 1.2);
+      ctx.stroke();
+      ctx.restore();
+      // Cinematic framing.
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.66 * alpha})`;
+      ctx.fillRect(0, 0, w, h * 0.072);
+      ctx.fillRect(0, h * 0.928, w, h * 0.072);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(233, 184, 104, ${0.72 * alpha})`;
+      ctx.font = '600 7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(this.currentMode === 'raid' ? 'RAID WIPE // 光能消散' : 'GUARDIAN DOWN // 光能消散', w * 0.5, h * 0.2);
+      ctx.fillStyle = `rgba(246, 241, 228, ${alpha})`;
+      ctx.font = `600 ${Math.max(28, Math.min(48, w * 0.046))}px "Segoe UI", "PingFang SC", sans-serif`;
+      ctx.fillText('你的光能已经消散', w * 0.5, h * 0.46);
+      ctx.fillStyle = `rgba(209, 194, 165, ${0.68 * alpha})`;
+      ctx.font = '500 7.5px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('YOUR LIGHT HAS FADED', w * 0.5, h * 0.49);
+      const progress = clamp(elapsed / death.max, 0, 1);
+      const barW = Math.min(w * 0.34, 330);
+      fillRoundRect(ctx, w * 0.5 - barW / 2, h * 0.555, barW, 2, 1, 'rgba(255,255,255,.12)');
+      fillRoundRect(ctx, w * 0.5 - barW / 2, h * 0.555, barW * progress, 2, 1, 'rgba(233, 188, 112,.72)');
+      ctx.fillStyle = `rgba(221, 209, 185, ${0.68 * alpha})`;
+      ctx.font = '500 8px "PingFang SC", "Segoe UI", sans-serif';
+      ctx.fillText(canRevive ? '光能已经重新凝聚 · 按 空格 / 回车 返回战场' : `光能正在重新凝聚 · ${timeLeft.toFixed(1)}s`, w * 0.5, h * 0.595);
+      ctx.fillStyle = `rgba(159, 169, 160, ${0.42 * alpha})`;
+      ctx.font = '500 6.4px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText(`${this.mission?.title || 'DESTINY 2'} · 光能会在 ${Math.max(0, Math.ceil(timeLeft))} 秒后自动凝聚`, w * 0.5, h * 0.625);
+      ctx.restore();
+    }
+
+    drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = String(text).split('');
+      let line = '';
+      let lineY = y;
+      words.forEach((character) => {
+        const test = line + character;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          ctx.fillText(line, x, lineY);
+          line = character;
+          lineY += lineHeight;
+        } else {
+          line = test;
+        }
+      });
+      if (line) ctx.fillText(line, x, lineY);
+    }
+  }
+
+  /* ==========================================================================
+     Tom Clancy's The Division — Manhattan containment
+     ========================================================================== */
+
+  class DivisionAgent extends MiniGameBase {
+    constructor(manager) {
+      super(manager);
+      this.covers = [
+        { x: 0.17, y: 0.38, w: 0.15, h: 0.05 },
+        { x: 0.44, y: 0.27, w: 0.13, h: 0.05 },
+        { x: 0.7, y: 0.41, w: 0.16, h: 0.05 },
+        { x: 0.28, y: 0.6, w: 0.09, h: 0.1 },
+        { x: 0.58, y: 0.64, w: 0.16, h: 0.05 },
+        { x: 0.78, y: 0.72, w: 0.12, h: 0.05 },
+        { x: 0.43, y: 0.84, w: 0.13, h: 0.035 }
+      ];
+      this.snow = Array.from({ length: 46 }, () => ({ x: rand(0.02, 0.98), y: rand(0.04, 0.95), speed: rand(0.8, 2.1), size: rand(0.7, 2.2), phase: rand(0, 6.2) }));
+      this.flakes = Array.from({ length: 33 }, () => ({ x: rand(0, 1), y: rand(0, 1), size: rand(1, 2.4), drift: rand(-0.01, 0.01), speed: rand(0.015, 0.045) }));
+    }
+
+    start() {
+      this.player = {
+        x: 0.22, y: 0.8, hp: 100, maxHp: 100, armor: 100, maxArmor: 100,
+        ammo: 30, mag: 30, fireCd: 0, reload: 0, medkits: 2, medkitCd: 0,
+        turretCd: 0, pulseCd: 0, invuln: 0, flash: 0, muzzle: 0, marked: 0
+      };
+      this.enemies = [];
+      this.bullets = [];
+      this.enemyBullets = [];
+      this.turrets = [];
+      this.wave = 0;
+      this.spawnTimer = 1.2;
+      this.phase = 'waves';
+      this.boss = null;
+      this.kills = 0;
+      this.score = 0;
+      this.shake = 0;
+      this.intro = { time: 2.2, max: 2.2 };
+      if (this.manager.hud) this.manager.hud.hidden = true;
+      this.updateHUD();
+    }
+
+    get metric() {
+      return Math.min(this.w, this.h);
+    }
+
+    playerPoint() {
+      return { x: this.player.x * this.w, y: this.player.y * this.h };
+    }
+
+    pointInCover(x, y, padding = 0) {
+      return this.covers.some((cover) => x > cover.x * this.w - padding && x < (cover.x + cover.w) * this.w + padding && y > cover.y * this.h - padding && y < (cover.y + cover.h) * this.h + padding);
+    }
+
+    nearCover() {
+      const point = this.playerPoint();
+      return this.covers.some((cover) => {
+        const rx = cover.x * this.w;
+        const ry = cover.y * this.h;
+        const rw = cover.w * this.w;
+        const rh = cover.h * this.h;
+        const dx = Math.max(rx - point.x, 0, point.x - (rx + rw));
+        const dy = Math.max(ry - point.y, 0, point.y - (ry + rh));
+        return Math.hypot(dx, dy) < 46;
+      });
+    }
+
+    spawnEnemy(type = 'riker', position = null) {
+      let x = position?.x ?? 0.5;
+      let y = position?.y ?? 0.5;
+      if (!position) {
+        const edge = Math.floor(Math.random() * 4);
+        if (edge === 0) { x = rand(0.1, 0.9); y = rand(0.1, 0.16); }
+        else if (edge === 1) { x = rand(0.9, 0.95); y = rand(0.18, 0.86); }
+        else if (edge === 2) { x = rand(0.1, 0.9); y = rand(0.86, 0.92); }
+        else { x = rand(0.05, 0.1); y = rand(0.2, 0.86); }
+      }
+      const elite = type === 'rogue';
+      const enemy = {
+        type, x, y,
+        hp: elite ? 620 : type === 'cleaner' ? 92 : 62,
+        maxHp: elite ? 620 : type === 'cleaner' ? 92 : 62,
+        speed: elite ? 58 : type === 'cleaner' ? 58 : rand(62, 84),
+        radius: elite ? 28 : type === 'cleaner' ? 17 : 13,
+        damage: elite ? 19 : type === 'cleaner' ? 13 : 9,
+        fireCd: rand(0.5, 1.5), meleeCd: rand(0.4, 1.2),
+        flash: 0, alive: true, marked: 0, phase: rand(0, Math.PI * 2)
+      };
+      this.enemies.push(enemy);
+      return enemy;
+    }
+
+    spawnWave() {
+      this.wave += 1;
+      const count = 2 + this.wave;
+      for (let i = 0; i < count; i += 1) this.spawnEnemy(i === count - 1 && this.wave > 1 ? 'cleaner' : 'riker');
+      this.toast(`暴徒进入街区 · 第 ${this.wave} / 3 波`);
+    }
+
+    startReload() {
+      if (!this.player || this.player.reload > 0 || this.player.ammo === this.player.mag) return;
+      this.player.reload = 1.45;
+    }
+
+    fireWeapon(markBonus = 0) {
+      const player = this.player;
+      if (!player || player.reload > 0 || player.fireCd > 0) return;
+      if (player.ammo <= 0) { this.startReload(); return; }
+      player.ammo -= 1;
+      player.fireCd = 0.1;
+      player.muzzle = 0.08;
+      const point = this.playerPoint();
+      const angle = Math.atan2(this.manager.mouse.y - point.y, this.manager.mouse.x - point.x) + rand(-0.022, 0.022);
+      this.bullets.push({
+        x: point.x + Math.cos(angle) * 24,
+        y: point.y + Math.sin(angle) * 24,
+        vx: Math.cos(angle) * 980,
+        vy: Math.sin(angle) * 980,
+        life: 1.2,
+        damage: 18 + markBonus
+      });
+      if (player.ammo <= 0) this.startReload();
+    }
+
+    useMedkit() {
+      const player = this.player;
+      if (!player) return;
+      if (player.medkits <= 0) { this.toast('医疗包已经用完'); return; }
+      if (player.medkitCd > 0) return;
+      player.medkits -= 1;
+      player.medkitCd = 1.2;
+      player.hp = Math.min(player.maxHp, player.hp + 38);
+      player.armor = Math.min(player.maxArmor, player.armor + 38);
+      this.fx.ring(this.playerPoint().x, this.playerPoint().y, '#e7b56e', 50, 0.55, 2);
+      this.toast('医疗包已使用 · 生命与护甲恢复');
+      this.updateHUD();
+    }
+
+    deployTurret() {
+      const player = this.player;
+      if (!player || player.turretCd > 0) return;
+      player.turretCd = 14;
+      const point = this.playerPoint();
+      this.turrets.push({ x: point.x, y: point.y, life: 12, fireCd: 0.2, angle: 0 });
+      this.fx.ring(point.x, point.y, '#8fdbe3', 36, 0.45, 1.5);
+      this.toast('自动炮塔已部署 · 持续 12 秒');
+    }
+
+    pulse() {
+      const player = this.player;
+      if (!player || player.pulseCd > 0) return;
+      player.pulseCd = 12;
+      player.marked = 6;
+      player.armor = Math.min(player.maxArmor, player.armor + 16);
+      this.enemies.forEach((enemy) => { enemy.marked = 6; });
+      if (this.boss) this.boss.marked = 6;
+      this.fx.ring(this.playerPoint().x, this.playerPoint().y, '#79d9ea', this.metric * 0.46, 0.65, 2);
+      this.toast('战术脉冲已启动 · 敌方目标已标记');
+    }
+
+    keyDown(code) {
+      if (this.intro && this.intro.time > 0) {
+        if (code === 'Space' || code === 'Enter') this.intro.time = 0;
+        return;
+      }
+      if (code === 'KeyR') this.startReload();
+      else if (code === 'KeyF') this.useMedkit();
+      else if (code === 'KeyE') this.deployTurret();
+      else if (code === 'KeyQ') this.pulse();
+    }
+
+    pointerDown() {
+      if (this.intro && this.intro.time > 0) this.intro.time = 0;
+    }
+
+    damagePlayer(amount) {
+      if (!this.player || this.player.invuln > 0 || this.player.hp <= 0) return;
+      let remaining = amount;
+      if (this.nearCover()) remaining *= 0.55;
+      if (this.player.armor > 0) {
+        const absorbed = Math.min(this.player.armor, remaining);
+        this.player.armor -= absorbed;
+        remaining -= absorbed;
+      }
+      this.player.hp -= remaining;
+      this.player.flash = 1;
+      this.shake = 5;
+      this.fx.burst(this.playerPoint().x, this.playerPoint().y, '#e9a46b', 7, 100, 1.8);
+      if (this.player.hp <= 0) {
+        this.player.hp = 0;
+        this.finish({
+          win: false,
+          title: '特工失去联络。',
+          desc: `你倒在了第 ${Math.max(1, this.wave)} 波封锁区中。纽约仍需要你。`,
+          stats: [
+            { label: '击杀', value: String(this.kills) },
+            { label: '波次', value: `${Math.max(1, this.wave)} / 3` },
+            { label: '装备分', value: String(200 + this.kills * 7) }
+          ]
+        });
+      }
+    }
+
+    damageEnemy(enemy, amount) {
+      if (!enemy || !enemy.alive) return;
+      enemy.hp -= amount;
+      enemy.flash = 0.12;
+      this.fx.burst(enemy.x * this.w, enemy.y * this.h, '#e7b071', 4, 70, 1.5);
+      if (enemy.hp > 0) return;
+      enemy.alive = false;
+      this.kills += 1;
+      this.score += 100;
+      this.player.armor = Math.min(this.player.maxArmor, this.player.armor + 5);
+      this.fx.ring(enemy.x * this.w, enemy.y * this.h, '#f0c178', 26, 0.35, 1.4);
+      this.fx.float(enemy.x * this.w, enemy.y * this.h - 9, '+1 装备', '#f0d29a', 10);
+      if (enemy.type === 'rogue') {
+        this.boss = null;
+        enemy.dead = true;
+        this.finish({
+          win: true,
+          title: '封锁区已恢复秩序。',
+          desc: '叛变特工倒下，雪仍然在下。你在本机记录里留下了新的行动报告。',
+          stats: [
+            { label: '击杀', value: String(this.kills) },
+            { label: '波次', value: '3 / 3' },
+            { label: '装备分', value: String(200 + this.kills * 7) },
+            { label: '用时', value: formatTime(this.time) }
+          ]
+        });
+      }
+    }
+
+    update(dt, w, h) {
+      super.update(dt, w, h);
+      if (this.ended || !this.player) return;
+      if (this.intro) {
+        this.intro.time -= dt;
+        if (this.intro.time <= 0) {
+          this.intro = null;
+          if (this.manager.hud) this.manager.hud.hidden = false;
+        }
+        this.updateHUD();
+        return;
+      }
+      const player = this.player;
+      player.fireCd = Math.max(0, player.fireCd - dt);
+      player.reload = Math.max(0, player.reload - dt);
+      player.medkitCd = Math.max(0, player.medkitCd - dt);
+      player.turretCd = Math.max(0, player.turretCd - dt);
+      player.pulseCd = Math.max(0, player.pulseCd - dt);
+      player.invuln = Math.max(0, player.invuln - dt);
+      player.flash = Math.max(0, player.flash - dt * 3.4);
+      player.muzzle = Math.max(0, player.muzzle - dt * 8);
+      player.marked = Math.max(0, player.marked - dt);
+      if (player.reload <= 0 && player.ammo <= 0) player.ammo = player.mag;
+      this.enemies.forEach((enemy) => { enemy.marked = Math.max(0, enemy.marked - dt); });
+      if (this.boss) this.boss.marked = Math.max(0, this.boss.marked - dt);
+
+      let dx = 0;
+      let dy = 0;
+      if (this.manager.keys.has('KeyW')) dy -= 1;
+      if (this.manager.keys.has('KeyS')) dy += 1;
+      if (this.manager.keys.has('KeyA')) dx -= 1;
+      if (this.manager.keys.has('KeyD')) dx += 1;
+      if (dx || dy) {
+        const length = Math.hypot(dx, dy) || 1;
+        player.x = clamp(player.x + (dx / length) * 225 * dt / w, 0.06, 0.94);
+        player.y = clamp(player.y + (dy / length) * 225 * dt / h, 0.2, 0.91);
+      }
+      if (this.manager.mouse.down) this.fireWeapon(player.marked > 0 ? 4 : 0);
+      this.updateBullets(dt, w, h);
+      this.updateEnemies(dt, w, h);
+      this.updateTurrets(dt, w, h);
+      this.updateMission(dt, w, h);
+      this.updateHUD();
+    }
+
+    updateEnemies(dt, w, h) {
+      const point = this.playerPoint();
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive) return;
+        if (enemy === this.boss) return;
+        enemy.flash = Math.max(0, enemy.flash - dt);
+        enemy.fireCd -= dt;
+        enemy.meleeCd -= dt;
+        const ex = enemy.x * w;
+        const ey = enemy.y * h;
+        const distance = dist(ex, ey, point.x, point.y);
+        const angle = Math.atan2(point.y - ey, point.x - ex);
+        const desired = enemy.type === 'cleaner' ? 140 : 220;
+        if (distance > desired) {
+          enemy.x = clamp(enemy.x + Math.cos(angle) * enemy.speed * dt / w, 0.035, 0.965);
+          enemy.y = clamp(enemy.y + Math.sin(angle) * enemy.speed * dt / h, 0.1, 0.94);
+        }
+        if (distance < 36 && enemy.meleeCd <= 0) {
+          enemy.meleeCd = 1.05;
+          this.damagePlayer(enemy.damage);
+        } else if (distance < 420 && enemy.fireCd <= 0 && !this.pointInCover(ex, ey)) {
+          enemy.fireCd = enemy.type === 'cleaner' ? rand(1.4, 2.0) : rand(1.0, 1.8);
+          this.enemyBullets.push({
+            x: ex + Math.cos(angle) * 18,
+            y: ey + Math.sin(angle) * 18,
+            vx: Math.cos(angle) * 235,
+            vy: Math.sin(angle) * 235,
+            life: 2.5,
+            damage: enemy.damage
+          });
+        }
+      });
+      this.enemies = this.enemies.filter((enemy) => enemy.alive);
+    }
+
+    updateTurrets(dt, w, h) {
+      this.turrets.forEach((turret) => {
+        turret.life -= dt;
+        turret.fireCd -= dt;
+        const targets = this.enemies.filter((enemy) => enemy.alive).map((enemy) => ({ enemy, distance: dist(turret.x, turret.y, enemy.x * w, enemy.y * h) })).sort((a, b) => a.distance - b.distance);
+        if (targets.length && targets[0].distance < 310 && turret.fireCd <= 0) {
+          const target = targets[0].enemy;
+          const angle = Math.atan2(target.y * h - turret.y, target.x * w - turret.x);
+          turret.angle = angle;
+          turret.fireCd = 0.24;
+          this.bullets.push({ x: turret.x, y: turret.y, vx: Math.cos(angle) * 720, vy: Math.sin(angle) * 720, life: 0.8, damage: 11 });
+        }
+      });
+      this.turrets = this.turrets.filter((turret) => turret.life > 0);
+    }
+
+    updateBullets(dt, w, h) {
+      const point = this.playerPoint();
+      this.bullets.forEach((bullet) => {
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
+        bullet.life -= dt;
+        const enemy = this.enemies.find((entry) => entry.alive && dist(bullet.x, bullet.y, entry.x * w, entry.y * h) < entry.radius + 2);
+        if (enemy) {
+          bullet.life = 0;
+          this.damageEnemy(enemy, bullet.damage);
+          return;
+        }
+        if (this.boss && !this.boss.dead && dist(bullet.x, bullet.y, this.boss.x * w, this.boss.y * h) < 30) {
+          bullet.life = 0;
+          this.boss.hp -= bullet.damage;
+          this.boss.flash = 0.12;
+          this.fx.burst(bullet.x, bullet.y, '#e7b071', 4, 80, 1.5);
+          if (this.boss.hp <= 0) this.damageEnemy(this.boss, 1);
+        }
+        if (this.pointInCover(bullet.x, bullet.y)) bullet.life = 0;
+      });
+      this.bullets = this.bullets.filter((bullet) => bullet.life > 0);
+      this.enemyBullets.forEach((bullet) => {
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
+        bullet.life -= dt;
+        if (this.pointInCover(bullet.x, bullet.y)) {
+          bullet.life = 0;
+          return;
+        }
+        if (dist(bullet.x, bullet.y, point.x, point.y) < 17) {
+          bullet.life = 0;
+          this.damagePlayer(bullet.damage);
+        }
+      });
+      this.enemyBullets = this.enemyBullets.filter((bullet) => bullet.life > 0);
+    }
+
+    updateMission(dt, w, h) {
+      if (this.phase === 'waves' && !this.enemies.length) {
+        if (this.wave < 3) {
+          this.spawnTimer -= dt;
+          if (this.spawnTimer <= 0) {
+            this.spawnWave();
+            this.spawnTimer = 2;
+          }
+        } else {
+          this.phase = 'boss';
+          this.boss = this.spawnEnemy('rogue', { x: 0.78, y: 0.2 });
+          this.boss.dead = false;
+          this.toast('叛变特工已进入封锁区');
+        }
+      }
+      if (this.phase === 'boss' && this.boss) {
+        const point = this.playerPoint();
+        const angle = Math.atan2(point.y - this.boss.y * h, point.x - this.boss.x * w);
+        if (dist(point.x, point.y, this.boss.x * w, this.boss.y * h) > 210) {
+          this.boss.x = clamp(this.boss.x + Math.cos(angle) * this.boss.speed * dt / w, 0.12, 0.88);
+          this.boss.y = clamp(this.boss.y + Math.sin(angle) * this.boss.speed * dt / h, 0.14, 0.57);
+        }
+        this.boss.fireCd -= dt;
+        if (this.boss.fireCd <= 0) {
+          this.boss.fireCd = 0.72;
+          for (let i = -1; i <= 1; i += 1) {
+            const shotAngle = angle + i * 0.09;
+            this.enemyBullets.push({ x: this.boss.x * w, y: this.boss.y * h, vx: Math.cos(shotAngle) * 285, vy: Math.sin(shotAngle) * 285, life: 3, damage: this.boss.damage });
+          }
+        }
+        this.boss.alive = true;
+      }
+    }
+
+    updateHUD() {
+      if (!this.player) return;
+      const player = this.player;
+      const total = player.hp + player.armor;
+      const turret = player.turretCd > 0 ? `${player.turretCd.toFixed(1)}s` : '就绪';
+      this.setHud({
+        objective: this.phase === 'boss' ? '击败叛变特工，恢复封锁区' : '清理街区 · 撑过三波暴徒',
+        sub: this.phase === 'boss' ? `叛变特工 ${Math.ceil(this.boss?.hp || 0)} / ${this.boss?.maxHp || 620}` : `第 ${Math.max(1, this.wave)} / 3 波 · 剩余 ${this.enemies.length}`,
+        score: String(this.kills),
+        scoreLabel: '击杀',
+        status: `弹药 ${player.ammo}/${player.mag} · 医疗包 ×${player.medkits} · 炮塔 ${turret} · 脉冲 ${player.pulseCd > 0 ? `${player.pulseCd.toFixed(1)}s` : '就绪'}`,
+        health: total / 200,
+        healthLabel: `生命 ${Math.ceil(player.hp)} · 护甲 ${Math.ceil(player.armor)}${this.nearCover() ? ' · 掩体中' : ''}`,
+        progress: this.phase === 'boss' ? clamp(1 - (this.boss?.hp || 0) / (this.boss?.maxHp || 620), 0, 1) : clamp(this.wave / 3, 0, 0.85)
+      });
+    }
+
+    draw(ctx, w, h) {
+      ctx.save();
+      if (this.shake > 0) ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, '#182632');
+      sky.addColorStop(0.45, '#111c24');
+      sky.addColorStop(1, '#070d12');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      for (let i = 0; i < 9; i += 1) {
+        const x = (i / 8) * w;
+        const bh = h * (0.1 + ((i * 43) % 38) / 260);
+        ctx.fillStyle = 'rgba(7, 12, 17, .82)';
+        ctx.fillRect(x, h * 0.27 - bh, w * 0.095, bh);
+        for (let wy = h * 0.27 - bh + 8; wy < h * 0.27; wy += 10) {
+          if ((i + Math.floor(wy)) % 4 === 0) {
+            ctx.fillStyle = 'rgba(233, 169, 88, .19)';
+            ctx.fillRect(x + 7, wy, 2, 1);
+          }
+        }
+      }
+      const floor = ctx.createLinearGradient(0, h * 0.27, 0, h);
+      floor.addColorStop(0, '#2c3b45');
+      floor.addColorStop(0.6, '#1c282e');
+      floor.addColorStop(1, '#101a1e');
+      ctx.fillStyle = floor;
+      ctx.fillRect(0, h * 0.27, w, h * 0.73);
+      ctx.strokeStyle = 'rgba(193, 219, 224, .08)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 7; i += 1) {
+        const y = h * 0.3 + i * h * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      for (let i = -4; i <= 4; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5 + i * w * 0.04, h * 0.27);
+        ctx.lineTo(w * 0.5 + i * w * 0.22, h);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(217, 231, 232, .07)';
+      for (let i = 0; i < 28; i += 1) {
+        ctx.beginPath();
+        ctx.arc(rand(0, w), rand(h * 0.28, h), rand(1, 3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      this.flakes.forEach((flake) => {
+        const x = ((flake.x + this.time * flake.drift) % 1) * w;
+        const y = ((flake.y + this.time * flake.speed) % 1) * h;
+        ctx.fillStyle = 'rgba(225, 241, 243, .33)';
+        ctx.beginPath();
+        ctx.arc(x, y, flake.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+
+      this.covers.forEach((cover) => this.drawCover(ctx, cover, w, h));
+      this.drawTurrets(ctx, w, h);
+      this.drawEnemies(ctx, w, h);
+      if (this.boss) this.drawBoss(ctx, w, h);
+      this.drawBullets(ctx);
+      this.drawPlayer(ctx, w, h);
+      this.fx.draw(ctx);
+      if (this.intro) this.drawIntro(ctx, w, h);
+      ctx.restore();
+    }
+
+    drawCover(ctx, cover, w, h) {
+      const x = cover.x * w;
+      const y = cover.y * h;
+      const cw = cover.w * w;
+      const ch = cover.h * h;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.36)';
+      fillRoundRect(ctx, x + 5, y + 7, cw, ch, 4, 'rgba(0,0,0,.36)');
+      const body = ctx.createLinearGradient(x, y, x, y + ch);
+      body.addColorStop(0, '#6e5b41');
+      body.addColorStop(0.25, '#303d43');
+      body.addColorStop(1, '#111d21');
+      fillRoundRect(ctx, x, y, cw, ch, 3, body);
+      ctx.strokeStyle = 'rgba(236, 191, 120, .28)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(218, 237, 240, .16)';
+      ctx.fillRect(x + 3, y + 2, cw - 6, 2);
+      ctx.fillStyle = 'rgba(231, 166, 94, .3)';
+      ctx.fillRect(x + 4, y + ch - 3, Math.min(20, cw * 0.28), 1);
+      ctx.restore();
+    }
+
+    drawEnemies(ctx, w, h) {
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive) return;
+        if (enemy === this.boss) return;
+        const x = enemy.x * w;
+        const y = enemy.y * h;
+        const angle = Math.atan2(this.playerPoint().y - y, this.playerPoint().x - x);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle + Math.PI / 2);
+        if (enemy.flash > 0) ctx.globalAlpha = 0.65;
+        if (enemy.marked > 0) glowCircle(ctx, 0, 0, 34, 'rgba(102, 217, 234, .17)', 0.8);
+        ctx.fillStyle = enemy.type === 'cleaner' ? '#723a2b' : '#563b34';
+        ctx.beginPath();
+        ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = enemy.type === 'cleaner' ? '#f2814e' : '#d0795f';
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+        ctx.fillStyle = '#ecb176';
+        ctx.beginPath();
+        ctx.arc(0, -enemy.radius * 0.35, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#bd7258';
+        ctx.fillRect(enemy.radius * 0.25, -2, enemy.radius, 3);
+        ctx.restore();
+        ctx.fillStyle = 'rgba(0,0,0,.55)';
+        ctx.fillRect(x - enemy.radius, y - enemy.radius - 10, enemy.radius * 2, 3);
+        ctx.fillStyle = '#d4815f';
+        ctx.fillRect(x - enemy.radius, y - enemy.radius - 10, enemy.radius * 2 * clamp(enemy.hp / enemy.maxHp, 0, 1), 3);
+        if (enemy.marked > 0) {
+          ctx.fillStyle = 'rgba(111, 224, 237, .7)';
+          ctx.fillRect(x - 3, y - enemy.radius - 17, 6, 1);
+        }
+      });
+    }
+
+    drawTurrets(ctx, w, h) {
+      this.turrets.forEach((turret) => {
+        ctx.save();
+        glowCircle(ctx, turret.x, turret.y, 27, 'rgba(102, 219, 229, .2)', 0.8);
+        ctx.fillStyle = '#173943';
+        ctx.beginPath();
+        ctx.arc(turret.x, turret.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#83e0e7';
+        ctx.stroke();
+        ctx.strokeStyle = '#b9fbf5';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(turret.x, turret.y);
+        ctx.lineTo(turret.x + Math.cos(turret.angle) * 19, turret.y + Math.sin(turret.angle) * 19);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    drawBoss(ctx, w, h) {
+      if (!this.boss || this.boss.dead) return;
+      const x = this.boss.x * w;
+      const y = this.boss.y * h;
+      ctx.save();
+      glowCircle(ctx, x, y, 70, 'rgba(226, 124, 78, .22)', 0.9);
+      ctx.fillStyle = this.boss.flash > 0 ? '#ffe1b3' : '#3a2d2b';
+      ctx.beginPath();
+      ctx.arc(x, y, 27, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#e2a260';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.strokeStyle = '#f1c77c';
+      ctx.beginPath();
+      ctx.moveTo(x - 15, y - 17);
+      ctx.lineTo(x - 6, y - 34);
+      ctx.moveTo(x + 15, y - 17);
+      ctx.lineTo(x + 6, y - 34);
+      ctx.stroke();
+      ctx.fillStyle = '#eb8f5f';
+      ctx.beginPath();
+      ctx.arc(x, y - 3, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = 'rgba(238, 211, 172, .72)';
+      ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('ROGUE AGENT', x, y - 47);
+    }
+
+    drawBullets(ctx) {
+      this.bullets.forEach((bullet) => {
+        ctx.save();
+        ctx.strokeStyle = '#f1dfb3';
+        ctx.lineWidth = 1.3;
+        ctx.shadowColor = '#f0ba63';
+        ctx.shadowBlur = 7;
+        ctx.beginPath();
+        ctx.moveTo(bullet.x, bullet.y);
+        ctx.lineTo(bullet.x - bullet.vx * 0.014, bullet.y - bullet.vy * 0.014);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.enemyBullets.forEach((bullet) => {
+        ctx.save();
+        ctx.strokeStyle = '#f08f62';
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = '#e05a3f';
+        ctx.shadowBlur = 7;
+        ctx.beginPath();
+        ctx.moveTo(bullet.x, bullet.y);
+        ctx.lineTo(bullet.x - bullet.vx * 0.017, bullet.y - bullet.vy * 0.017);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    drawPlayer(ctx, w, h) {
+      const player = this.player;
+      const x = player.x * w;
+      const y = player.y * h;
+      const angle = Math.atan2(this.manager.mouse.y - y, this.manager.mouse.x - x);
+      ctx.save();
+      glowCircle(ctx, x, y, 42, 'rgba(238, 169, 83, .16)', 0.8);
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.fillStyle = 'rgba(0,0,0,.38)';
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 17, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = player.flash > 0 ? '#ffd8a3' : '#3b3630';
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#e5a259';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.fillStyle = '#d8eef1';
+      ctx.beginPath();
+      ctx.arc(0, -11, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1c2225';
+      ctx.fillRect(-3, -13, 6, 2);
+      ctx.fillStyle = '#d6a25c';
+      ctx.fillRect(7, -3, 21, 5);
+      ctx.fillStyle = '#ffefb3';
+      ctx.fillRect(-2, 7, 4, 4);
+      if (player.muzzle > 0) glowCircle(ctx, 30, 0, 18, 'rgba(255, 222, 143, .65)', 0.9);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(x - 25, y - 31, 50, 4);
+      ctx.fillStyle = '#e0bc78';
+      ctx.fillRect(x - 25, y - 31, 50 * clamp(player.hp / player.maxHp, 0, 1), 4);
+      ctx.fillStyle = 'rgba(95, 208, 230, .72)';
+      ctx.fillRect(x - 25, y - 36, 50 * clamp(player.armor / player.maxArmor, 0, 1), 2);
+      if (this.nearCover()) {
+        ctx.strokeStyle = 'rgba(228, 188, 118, .5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x, y, 25 + Math.sin(this.time * 4) * 2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      drawCrosshair(ctx, this.manager.mouse.x, this.manager.mouse.y, 'rgba(247, 224, 168, .86)', 12);
+    }
+
+    drawIntro(ctx, w, h) {
+      const alpha = clamp(this.intro.time / 0.5, 0, 1);
+      ctx.save();
+      ctx.fillStyle = `rgba(4, 7, 10, ${alpha * .8})`;
+      ctx.fillRect(0, 0, w, h);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(235, 190, 119, .74)';
+      ctx.font = '600 7px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('SHD // AGENT ORIGINS', w * 0.5, h * 0.37);
+      ctx.fillStyle = '#f0eee6';
+      ctx.font = '600 32px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText('曼哈顿封锁区', w * 0.5, h * 0.49);
+      ctx.fillStyle = 'rgba(168, 192, 194, .62)';
+      ctx.font = '500 7px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText('清除街区暴徒，击败叛变特工。点击或按空格开始。', w * 0.5, h * 0.56);
+      ctx.restore();
+    }
+  }
+
+  window.AISniperSteamMini = { SteamMiniGame, Destiny2RedWar };
+})();
+
+
+
+
