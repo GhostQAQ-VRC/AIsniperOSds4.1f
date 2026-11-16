@@ -125,7 +125,7 @@
       tags: ['Director 星图', '13 个目的地', '10 DLC · 技能分支'],
       objective: '在 Director 星图点击星球，进入对应剧情线',
       description: '红色军团撕开了最后的城市的天际线。光能被夺走之后，一名守护者仍然可以向旗舰走去。',
-      controls: [['点击', '锁定鼠标'], ['WASD', '移动'], ['鼠标', '转向'], ['左键', '射击'], ['1/2/3', '切换武器'], ['R', '换弹'], ['Q', '手雷'], ['C', '近战'], ['V', '职业技能'], ['F', '超能'], ['E', '拾取'], ['F1', '装备栏'], ['F2', '视角设置']],
+      controls: [['点击', '锁定鼠标'], ['WASD', '移动'], ['Space', '跳跃'], ['Shift', '闪身'], ['鼠标', '转向'], ['左键', '射击'], ['1/2/3', '切换武器'], ['R', '换弹'], ['Q', '手雷'], ['C', '近战'], ['V', '职业技能'], ['F', '超能'], ['E', '拾取'], ['F1', '装备栏'], ['F2', '视角设置']],
       scoreLabel: '击杀',
       startLabel: '进入 Director',
       chapters: ['归乡', '火花', '1AU', '选择', '猩红终局'],
@@ -7538,6 +7538,11 @@
       this.fpShotPulse = 0;
       this.fpHitMarker = 0;
       this.fpHitKill = 0;
+      this.fpJumpZ = 0;
+      this.fpJumpV = 0;
+      this.fpGrounded = true;
+      this.fpLandDip = 0;
+      this.fpCast = null;
       this.fpHintShown = false;
       this.fpProps = [];
       this.fpParticles = [];
@@ -7976,6 +7981,11 @@
       this.intro = null;
       this.transition = null;
       this.deathState = null;
+      this.fpCast = null;
+      this.fpJumpZ = 0;
+      this.fpJumpV = 0;
+      this.fpGrounded = true;
+      this.fpLandDip = 0;
       this.crucible = null;
       this.gambit = null;
       this.dlcBoss = null;
@@ -8653,6 +8663,11 @@
       this.fpShotPulse = 0;
       this.fpHitMarker = 0;
       this.fpHitKill = 0;
+      this.fpJumpZ = 0;
+      this.fpJumpV = 0;
+      this.fpGrounded = true;
+      this.fpLandDip = 0;
+      this.fpCast = null;
       this.setupFirstPersonEnvironment();
       this.ammoDrops = [];
       this.ammoDropTimer = rand(6, 10);
@@ -8762,7 +8777,7 @@
       this.updateHUD();
       if (!this.fpHintShown) {
         this.fpHintShown = true;
-        this.toast('第一人称已启用 · 点击锁定鼠标，WASD 移动，F2 调节灵敏度 / FOV');
+        this.toast('第一人称已启用 · 点击锁定鼠标，WASD 移动 · Space 跳跃 · Shift 闪身 · F2 调节灵敏度 / FOV');
       }
     }
 
@@ -9955,6 +9970,8 @@
       if (!player || player.meleeCd > 0 || this.transition) return;
       const profile = this.meleeProfile();
       this.audio?.play('melee');
+      this.startFpCast('melee', profile.color, profile.name, 0.4);
+      this.fpShotPulse = Math.max(this.fpShotPulse, 0.6);
       this.addTranscendence(this.activeAbilityElement('melee'), 15);
       const point = this.playerPoint();
       const damage = (profile.damage + this.currentLight() * 0.7) * this.exoticArmorMultiplier('meleeDamage');
@@ -9997,6 +10014,7 @@
         damage,
         color: profile.color,
         width: profile.type === 'hammer' || profile.type === 'ice' ? 2.6 : 1.8,
+        z: this.firstPersonActive() ? 30 + (this.fpJumpZ || 0) * 0.7 : 0,
         melee: true,
         meleeType: profile.type,
         meleeName: profile.name,
@@ -10184,6 +10202,7 @@
           damage,
           color: spec.bulletColor,
           width: spec.bulletWidth,
+          z: this.firstPersonActive() ? 30 + (this.fpJumpZ || 0) * 0.7 : 0,
           explosive: Boolean(spec.explosive),
           explosionRadius: spec.explosionRadius || 0,
           explosionDamage: spec.explosive ? damage * 1.15 : 0,
@@ -10203,14 +10222,29 @@
         if (player) this.toast(`闪身冷却中 · ${player.dashCd.toFixed(1)} 秒`);
         return;
       }
-      let x = (this.manager.keys.has('KeyD') ? 1 : 0) - (this.manager.keys.has('KeyA') ? 1 : 0);
-      let y = (this.manager.keys.has('KeyS') ? 1 : 0) - (this.manager.keys.has('KeyW') ? 1 : 0);
-      if (!x && !y) {
-        const point = this.playerPoint();
-        const mouse = this.worldMouse();
-        const angle = Math.atan2(point.y - mouse.y, point.x - mouse.x);
-        x = Math.cos(angle);
-        y = Math.sin(angle);
+      let x = 0;
+      let y = 0;
+      if (this.firstPersonActive()) {
+        const forward = (this.manager.keys.has('KeyW') ? 1 : 0) - (this.manager.keys.has('KeyS') ? 1 : 0);
+        const strafe = (this.manager.keys.has('KeyD') ? 1 : 0) - (this.manager.keys.has('KeyA') ? 1 : 0);
+        const cos = Math.cos(this.fpYaw);
+        const sin = Math.sin(this.fpYaw);
+        x = cos * forward - sin * strafe;
+        y = sin * forward + cos * strafe;
+        if (!x && !y) {
+          x = cos * 0.78 - sin * 0.62;
+          y = sin * 0.78 + cos * 0.62;
+        }
+      } else {
+        x = (this.manager.keys.has('KeyD') ? 1 : 0) - (this.manager.keys.has('KeyA') ? 1 : 0);
+        y = (this.manager.keys.has('KeyS') ? 1 : 0) - (this.manager.keys.has('KeyW') ? 1 : 0);
+        if (!x && !y) {
+          const point = this.playerPoint();
+          const mouse = this.worldMouse();
+          const angle = Math.atan2(point.y - mouse.y, point.x - mouse.x);
+          x = Math.cos(angle);
+          y = Math.sin(angle);
+        }
       }
       const length = Math.hypot(x, y) || 1;
       player.dashX = x / length;
@@ -10220,6 +10254,8 @@
       player.invuln = Math.max(player.invuln, 0.34);
       const point = this.playerPoint();
       this.fx.ring(point.x, point.y, '#ffd88b', 42, 0.3, 1.5);
+      this.startFpCast('dodge', this.activeSubclass().color, this.classId === 'hunter' ? this.activeSubclass().classAbility : '闪身', 0.48, { dash: true });
+      this.fpShotPulse = Math.max(this.fpShotPulse, 0.42);
     }
 
     useClassAbility() {
@@ -10258,6 +10294,7 @@
           color: this.activeSubclass().color
         });
         this.fx.ring(point.x, point.y, this.activeSubclass().color, this.metric * 0.16, 0.55, 2.4);
+        this.startFpCast('class', this.activeSubclass().color, this.activeSubclass().classAbility, 0.7);
         this.toast(`职业技能 · ${this.activeSubclass().classAbility}`);
         return;
       }
@@ -10275,6 +10312,7 @@
           radius: this.metric * 0.085, color: this.activeSubclass().color
         });
         this.fx.ring(bx, by, '#f0c47a', 56, 0.45, 2);
+        this.startFpCast('class', '#f0c47a', this.activeSubclass().classAbility, 0.7);
         this.toast(`职业技能 · ${this.activeSubclass().classAbility}`);
       }
     }
@@ -10288,16 +10326,24 @@
       const point = this.playerPoint();
       const mouse = this.worldMouse();
       const angle = Math.atan2(mouse.y - point.y, mouse.x - point.x);
-      const range = Math.min(340, Math.max(60, dist(point.x, point.y, mouse.x, mouse.y)));
+      const fp = this.firstPersonActive();
+      const pitch = fp ? (this.fpPitch || 0) : 0;
+      const baseRange = Math.min(340, Math.max(60, dist(point.x, point.y, mouse.x, mouse.y)));
+      const range = baseRange * (1 - Math.max(0, pitch) * 0.34);
       const tx = point.x + Math.cos(angle) * range;
       const ty = point.y + Math.sin(angle) * range;
+      const upward = Math.max(0, Math.sin(pitch));
+      const arc = fp ? upward * (128 + Math.max(0, pitch) * 320) : 72;
+      const drop = fp ? Math.max(0, pitch) * range * 0.5 : 0;
+      const z0 = fp ? 30 : 16;
       this.addTranscendence(this.activeAbilityElement('grenade'), 18);
       this.audio?.play('grenade');
+      this.startFpCast('grenade', this.activeSubclass().color, this.activeSubclass().grenade, 0.52, { pitch });
       player.grenadeCd = 7;
       this.grenadeUses += 1;
       this.grenades.push({
-        x: point.x, y: point.y, tx, ty, time: 0.72, max: 0.72,
-        subclass: this.subclassId, element: this.activeAbilityElement('grenade'),
+        x: point.x, y: point.y, sx: point.x, sy: point.y, z0, arc, drop, pitch, time: 0.72, max: 0.72,
+        tx, ty, subclass: this.subclassId, element: this.activeAbilityElement('grenade'),
         transcendent: this.transcendenceTime > 0, phase: rand(0, Math.PI * 2)
       });
     }
@@ -10313,7 +10359,8 @@
       this.superUses += 1;
       this.addTranscendence(this.activeAbilityElement('super'), 28);
       const profile = this.superProfile();
-      this.audio?.play(profile.name === '黄金枪' ? 'golden' : 'super');
+      const goldenWindup = profile.kind === 'golden-gun' && this.firstPersonActive();
+      this.audio?.play(goldenWindup || profile.name !== '黄金枪' ? 'super' : 'golden');
       const point = this.playerPoint();
       const mouse = this.worldMouse();
       const assisted = profile.kind === 'golden-gun' || profile.kind === 'beam'
@@ -10323,7 +10370,15 @@
       const range = Math.min(profile.range || 700, Math.max(120, dist(point.x, point.y, assisted.x, assisted.y)));
       const tx = point.x + Math.cos(angle) * range;
       const ty = point.y + Math.sin(angle) * range;
+      if (goldenWindup) {
+        this.startFpCast('golden-gun', profile.color, profile.name, 1.72, {
+          profile, point, angle, range, windup: 0.46, fired: false
+        });
+        this.toast('黄金枪 · 烈日正在凝聚');
+        return;
+      }
       this.toast(`${profile.name}已释放${assisted.locked ? ' · AA 锁定' : ''}`);
+      this.startFpCast('super', profile.color, profile.name, 0.95);
       if (profile.kind === 'golden-gun') {
         this.castGoldenGun(profile, point, angle, range);
         return;
@@ -10333,7 +10388,7 @@
         return;
       }
       if (profile.kind === 'meteor') {
-        this.superBeams.push({ x1: tx, y1: -40, x2: tx, y2: ty, color: profile.color, width: 22, life: 0.55, max: 0.55, kind: 'meteor' });
+        this.superBeams.push({ x1: tx, y1: -40, x2: tx, y2: ty, color: profile.color, width: 22, time: 0.55, life: 0.55, max: 0.55, kind: 'meteor' });
         this.explodeAt(tx, ty, profile.radius, profile.damage, profile.color);
         this.fx.ring(tx, ty, '#e9fbff', profile.radius * 1.15, 0.7, 3);
         this.shake = 16;
@@ -10409,7 +10464,7 @@
       const color = profile.color || '#ffb35c';
       this.superBeams.push({
         x1: muzzle.x, y1: muzzle.y, x2, y2, color,
-        width: 24, life: 0.72, max: 0.72, kind: 'golden-gun'
+        width: 28, time: 0.78, life: 0.78, max: 0.78, kind: 'golden-gun'
       });
       const lineDistance = (px, py) => {
         const vx = x2 - muzzle.x;
@@ -10449,7 +10504,7 @@
       const beamAngle = Math.atan2(aimY - muzzle.y, aimX - muzzle.x);
       const x2 = muzzle.x + Math.cos(beamAngle) * range;
       const y2 = muzzle.y + Math.sin(beamAngle) * range;
-      this.superBeams.push({ x1: muzzle.x, y1: muzzle.y, x2, y2, color: profile.color, width: 11, life: 0.34, max: 0.34, kind: 'beam' });
+      this.superBeams.push({ x1: muzzle.x, y1: muzzle.y, x2, y2, color: profile.color, width: 11, time: 0.34, life: 0.34, max: 0.34, kind: 'beam' });
       const lineDistance = (px, py) => {
         const vx = x2 - muzzle.x;
         const vy = y2 - muzzle.y;
@@ -10785,6 +10840,11 @@
         this.bullets = [];
         this.hammers = [];
         this.grenades = [];
+        this.fpCast = null;
+        this.fpJumpZ = 0;
+        this.fpJumpV = 0;
+        this.fpGrounded = true;
+        this.fpLandDip = 0;
         this.audio?.play('death');
         this.manager.releasePointerLock?.();
         if (this.manager.hud) this.manager.hud.hidden = true;
@@ -10908,7 +10968,7 @@
 
     fpsPlanetStyle() {
       const biome = this.biomeConfig(this.mission);
-      const hay = `${this.mission?.id || ''} ${this.mission?.biome || ''} ${this.mission?.title || ''} ${this.mission?.location || ''} ${this.activityId || ''} ${this.directorSelected || ''}`.toLowerCase();
+      const hay = `${this.mission?.id || ''} ${this.mission?.biome || ''} ${this.mission?.title || ''} ${this.mission?.location || ''} ${this.activityId || ''} ${this.directorSelected || ''} ${this.raidConfig?.id || ''} ${this.raidConfig?.name || ''} ${this.raidConfig?.location || ''}`.toLowerCase();
       const fallback = {
         key: 'unknown', type: 'rock', base: biome.accent || '#7d8794', dark: biome.sky2 || '#11151c',
         accent: biome.accent2 || '#9ddbd0', clouds: false, rings: false, name: '未知天体'
@@ -10952,8 +11012,86 @@
       return texture;
     }
 
+    isCitySurface() {
+      const biome = this.biomeConfig(this.mission);
+      return biome?.horizon === 'city';
+    }
+
+    fpsEarthSkyTexture(style) {
+      if (typeof document === 'undefined') return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      let seed = 447102;
+      const random = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+      const sky = ctx.createLinearGradient(0, 0, 0, 1024);
+      sky.addColorStop(0, '#061426');
+      sky.addColorStop(0.26, '#0c2a44');
+      sky.addColorStop(0.48, '#28546d');
+      sky.addColorStop(0.68, '#7d8b86');
+      sky.addColorStop(0.82, '#c99672');
+      sky.addColorStop(1, '#e7b486');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, 2048, 1024);
+      ctx.globalCompositeOperation = 'lighter';
+      const sunX = 1540;
+      const sunY = 690;
+      const sun = ctx.createRadialGradient(sunX, sunY, 2, sunX, sunY, 580);
+      sun.addColorStop(0, 'rgba(255, 247, 218, .92)');
+      sun.addColorStop(0.08, 'rgba(255, 222, 158, .66)');
+      sun.addColorStop(0.34, 'rgba(255, 177, 108, .23)');
+      sun.addColorStop(1, 'rgba(255, 144, 80, 0)');
+      ctx.fillStyle = sun;
+      ctx.fillRect(0, 0, 2048, 1024);
+      const clouds = [
+        [300, 250, 760, 120, 'rgba(208, 222, 226, .22)'],
+        [980, 360, 980, 150, 'rgba(226, 230, 225, .18)'],
+        [1600, 250, 680, 110, 'rgba(195, 212, 220, .14)'],
+        [520, 590, 900, 100, 'rgba(243, 211, 181, .18)'],
+        [1320, 570, 1050, 130, 'rgba(255, 218, 180, .2)'],
+        [200, 760, 880, 130, 'rgba(238, 201, 170, .16)']
+      ];
+      clouds.forEach(([x, y, rx, ry, color]) => {
+        const cloud = ctx.createRadialGradient(x, y, 1, x, y, Math.max(rx, ry));
+        cloud.addColorStop(0, color);
+        cloud.addColorStop(0.52, color.replace(/[\d.]+\)$/, '0.07)'));
+        cloud.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = cloud;
+        ctx.fillRect(x - rx, y - ry, rx * 2, ry * 2);
+      });
+      ctx.globalCompositeOperation = 'source-over';
+      for (let i = 0; i < 26; i += 1) {
+        const x = random() * 2048;
+        const y = 180 + random() * 520;
+        const w = 90 + random() * 300;
+        ctx.globalAlpha = 0.04 + random() * 0.07;
+        ctx.fillStyle = random() < 0.5 ? '#d8e8ea' : '#f0d1b2';
+        ctx.beginPath();
+        ctx.ellipse(x, y, w, 8 + random() * 22, (random() - 0.5) * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const haze = ctx.createLinearGradient(0, 650, 0, 1024);
+      haze.addColorStop(0, 'rgba(240, 188, 145, 0)');
+      haze.addColorStop(0.55, 'rgba(240, 185, 140, .14)');
+      haze.addColorStop(1, 'rgba(152, 133, 120, .18)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 650, 2048, 374);
+      ctx.globalAlpha = 1;
+      const texture = new window.THREE.CanvasTexture(canvas);
+      texture.wrapS = window.THREE.RepeatWrapping;
+      texture.wrapT = window.THREE.ClampToEdgeWrapping;
+      if ('encoding' in texture && window.THREE.sRGBEncoding !== undefined) texture.encoding = window.THREE.sRGBEncoding;
+      return texture;
+    }
+
     fpsSkyTexture(style) {
       if (typeof document === 'undefined') return null;
+      if (style?.key === 'earth') return this.fpsEarthSkyTexture(style);
       const canvas = document.createElement('canvas');
       canvas.width = 2048;
       canvas.height = 1024;
@@ -11144,19 +11282,37 @@
       const centerZ = this.h * 0.5;
       const sunPosition = new THREE.Vector3(centerX + Math.cos(sunAngle - 1.7) * 7200, 2600, centerZ + Math.sin(sunAngle - 1.7) * 7200);
       const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: this.fpsGlowTexture(style.accent), color: 0xffffff, transparent: true, opacity: 0.92,
+        map: this.fpsGlowTexture(style.key === 'earth' ? '#ffd39b' : style.accent), color: style.key === 'earth' ? 0xffd6a2 : 0xffffff, transparent: true, opacity: 0.92,
         blending: THREE.AdditiveBlending, depthWrite: false, fog: false
       }));
       sunGlow.position.copy(sunPosition);
       sunGlow.scale.set(1500, 1500, 1);
       this.fpsWorld.add(sunGlow);
-      const sun = new THREE.DirectionalLight(new THREE.Color(style.accent), 1.15);
+      const sun = new THREE.DirectionalLight(new THREE.Color(style.key === 'earth' ? '#ffd2a1' : style.accent), style.key === 'earth' ? 1.32 : 1.15);
       sun.position.copy(sunPosition);
       this.fpsWorld.add(sun);
       const planetAngle = -Math.PI / 2 + 0.42;
       const planetPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 5000, 1420, centerZ + Math.sin(planetAngle) * 5000);
       const planetRadius = style.type === 'blackhole' ? 620 : 1120;
-      if (style.type === 'blackhole') {
+      if (style.key === 'earth') {
+        const moonStyle = { ...style, type: 'rock', base: '#a4a8a4', dark: '#2a2c2c', accent: '#e1e4dc', clouds: false, rings: false };
+        const moonTexture = this.fpsPlanetTexture(moonStyle);
+        const moonRadius = 188;
+        const moonAngle = -Math.PI / 2 + 0.26;
+        const moonPosition = new THREE.Vector3(centerX + Math.cos(moonAngle) * 6400, 2500, centerZ + Math.sin(moonAngle) * 6400);
+        const moon = new THREE.Mesh(new THREE.SphereGeometry(moonRadius, 32, 22), new THREE.MeshStandardMaterial({
+          map: moonTexture || null, color: moonTexture ? 0xffffff : 0x9fa39f, roughness: 1, metalness: 0.01, fog: false
+        }));
+        moon.position.copy(moonPosition);
+        this.fpsWorld.add(moon);
+        const moonGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: this.fpsGlowTexture('#dce6e4'), color: 0xdce6e4, transparent: true, opacity: 0.2,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+        }));
+        moonGlow.position.copy(moonPosition);
+        moonGlow.scale.set(640, 640, 1);
+        this.fpsWorld.add(moonGlow);
+      } else if (style.type === 'blackhole') {
         this.fpsBuildBlackHole(style, planetPosition, planetRadius);
       } else {
         const planetTexture = this.fpsPlanetTexture(style);
@@ -11209,16 +11365,218 @@
         secondAtmosphere.scale.set(1700, 1700, 1);
         this.fpsWorld.add(secondAtmosphere);
       }
-      const nebula = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: this.fpsGlowTexture(style.base), color: new THREE.Color(style.base), transparent: true, opacity: 0.12,
-        blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+      if (style.key !== 'earth') {
+        const nebula = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: this.fpsGlowTexture(style.base), color: new THREE.Color(style.base), transparent: true, opacity: 0.12,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+        }));
+        nebula.position.set(centerX - 3600, 2100, centerZ - 5200);
+        nebula.scale.set(5200, 2600, 1);
+        this.fpsWorld.add(nebula);
+      }
+    }
+
+    fpsCityFacadeTexture(style, variant = 0) {
+      if (typeof document === 'undefined') return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      let seed = 71423 + variant * 9917;
+      const random = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+      const base = ctx.createLinearGradient(0, 0, 256, 512);
+      base.addColorStop(0, variant === 1 ? '#30373a' : variant === 2 ? '#2a3032' : '#242b2e');
+      base.addColorStop(0.5, '#161c1f');
+      base.addColorStop(1, '#0a0e10');
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, 256, 512);
+      ctx.globalAlpha = 0.18;
+      for (let i = 0; i < 1400; i += 1) {
+        ctx.fillStyle = random() < 0.5 ? '#7a7a70' : '#050707';
+        ctx.fillRect(random() * 256, random() * 512, random() < 0.92 ? 1 : 2, 1);
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#0a0d0f';
+      for (let row = 0; row < 18; row += 1) {
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(0, row * 28 + 22, 256, 4);
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#090c0e';
+      ctx.fillRect(0, 0, 14, 512);
+      ctx.fillRect(242, 0, 14, 512);
+      ctx.fillStyle = '#20262a';
+      ctx.fillRect(122, 0, 10, 512);
+      const litColors = ['#ffcc82', '#f4b86f', '#9fc9d4', '#e6d7ae', '#799ba6'];
+      for (let row = 0; row < 16; row += 1) {
+        for (let col = 0; col < 5; col += 1) {
+          const x = 25 + col * 42;
+          const y = 12 + row * 30;
+          const dark = random() < 0.52;
+          ctx.globalAlpha = dark ? 0.56 : 0.4 + random() * 0.5;
+          ctx.fillStyle = dark ? '#090d0f' : litColors[Math.floor(random() * litColors.length)];
+          ctx.fillRect(x, y, 28, 14);
+          if (!dark) {
+            ctx.globalAlpha = 0.15 + random() * 0.18;
+            ctx.fillStyle = '#ffe2a7';
+            ctx.fillRect(x - 2, y - 2, 32, 18);
+          }
+          if (random() < 0.08) {
+            ctx.globalAlpha = 0.75;
+            ctx.fillStyle = '#050708';
+            ctx.fillRect(x, y - 4, 28, 8);
+          }
+        }
+      }
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = '#0b0e0f';
+      for (let i = 0; i < 12; i += 1) {
+        ctx.fillRect(random() * 230, 0, 2 + random() * 8, 512);
+      }
+      ctx.globalAlpha = 0.24;
+      ctx.fillStyle = '#c49b67';
+      ctx.fillRect(0, 498, 256, 14);
+      ctx.globalAlpha = 1;
+      const texture = new window.THREE.CanvasTexture(canvas);
+      if ('encoding' in texture && window.THREE.sRGBEncoding !== undefined) texture.encoding = window.THREE.sRGBEncoding;
+      return texture;
+    }
+
+    fpsBuildCity(style) {
+      const THREE = window.THREE;
+      const unitBox = new THREE.BoxGeometry(1, 1, 1);
+      const dodeca = new THREE.DodecahedronGeometry(1, 0);
+      const facades = [0, 1, 2].map((variant) => this.fpsCityFacadeTexture(style, variant));
+      const facadeMaterials = facades.map((texture, index) => new THREE.MeshStandardMaterial({
+        map: texture || null,
+        color: texture ? 0xffffff : new THREE.Color(index === 1 ? '#343b3d' : '#252c2e'),
+        roughness: 0.94,
+        metalness: 0.04,
+        emissive: new THREE.Color('#d5a366'),
+        emissiveMap: texture || null,
+        emissiveIntensity: texture ? 0.22 : 0
       }));
-      nebula.position.set(centerX - 3600, 2100, centerZ - 5200);
-      nebula.scale.set(5200, 2600, 1);
-      this.fpsWorld.add(nebula);
+      const concrete = new THREE.MeshStandardMaterial({ color: 0x242a2c, roughness: 0.98, metalness: 0.02 });
+      const rusty = new THREE.MeshStandardMaterial({ color: 0x3b2a22, roughness: 0.9, metalness: 0.18 });
+      const darkMetal = new THREE.MeshStandardMaterial({ color: 0x101416, roughness: 0.48, metalness: 0.62 });
+      const glowTexture = this.fpsGlowTexture('#ffcb82');
+      const addBox = (parent, material, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0) => {
+        const mesh = new THREE.Mesh(unitBox, material);
+        mesh.position.set(x, y, z);
+        mesh.scale.set(sx, sy, sz);
+        mesh.rotation.set(rx, ry, rz);
+        parent.add(mesh);
+        return mesh;
+      };
+      (this.fpProps || []).forEach((prop, index) => {
+        const group = new THREE.Group();
+        group.position.set(prop.x * this.w, 0, prop.y * this.h);
+        group.rotation.y = prop.phase || 0;
+        const width = Math.max(5, prop.width);
+        const height = Math.max(8, prop.height);
+        if (prop.kind === 'building' || prop.kind === 'wreck') {
+          const material = facadeMaterials[(prop.variant ?? index) % facadeMaterials.length];
+          const wrecked = prop.kind === 'wreck';
+          const buildingHeight = wrecked ? height * 0.52 : height;
+          const body = addBox(group, material, 0, buildingHeight * 0.5, 0, width, buildingHeight, width * 0.64, 0, 0, wrecked ? (index % 2 ? 0.045 : -0.05) : 0);
+          addBox(group, concrete, 0, buildingHeight + 2, 0, width * 1.03, 5, width * 0.67);
+          addBox(group, darkMetal, 0, 3.4, width * 0.33, width * 0.42, 6.8, 2.2);
+          if (!wrecked && index % 3 === 0) {
+            addBox(group, darkMetal, width * 0.22, buildingHeight + 30, 0, 2.2, 54, 2.2);
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(2.6, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff8a58 }));
+            beacon.position.set(width * 0.22, buildingHeight + 58, 0);
+            group.add(beacon);
+          }
+          if (wrecked) {
+            addBox(group, concrete, width * 0.38, buildingHeight * 0.33, width * 0.12, width * 0.52, buildingHeight * 0.66, width * 0.48, 0.18, 0.3, -0.22);
+            addBox(group, rusty, -width * 0.36, 8, width * 0.2, width * 0.55, 13, width * 0.4, 0.16, -0.24, 0.18);
+          }
+          if (prop.color && index % 7 === 0) {
+            const strip = new THREE.Mesh(unitBox, new THREE.MeshBasicMaterial({ color: new THREE.Color(prop.color), transparent: true, opacity: 0.5 }));
+            strip.position.set(width * 0.51, buildingHeight * 0.56, width * 0.32);
+            strip.scale.set(1.1, buildingHeight * 0.32, 2.4);
+            group.add(strip);
+          }
+          body.userData.building = true;
+        } else if (prop.kind === 'lamp') {
+          addBox(group, darkMetal, 0, height * 0.48, 0, 2.4, height, 2.4);
+          addBox(group, darkMetal, 6, height * 0.94, 0, 13, 2.2, 2.2);
+          const lamp = new THREE.Mesh(new THREE.SphereGeometry(3.2, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd49a }));
+          lamp.position.set(12, height * 0.9, 0);
+          group.add(lamp);
+          const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: glowTexture, color: 0xffca87, transparent: true, opacity: 0.62,
+            blending: THREE.AdditiveBlending, depthWrite: false
+          }));
+          glow.position.set(12, height * 0.9, 0);
+          glow.scale.set(64, 64, 1);
+          group.add(glow);
+        } else {
+          for (let piece = 0; piece < 4; piece += 1) {
+            const rubble = new THREE.Mesh(dodeca, piece % 2 ? concrete : rusty);
+            const scale = 5 + ((index * 7 + piece * 11) % 14);
+            rubble.position.set(Math.cos(piece * 1.9) * width * 0.25, scale * 0.35, Math.sin(piece * 1.9) * width * 0.2);
+            rubble.scale.set(scale, scale * 0.48, scale * 0.78);
+            rubble.rotation.set(piece * 0.7, index * 0.4, piece * 0.5);
+            group.add(rubble);
+          }
+        }
+        this.fpsWorld.add(group);
+      });
+      for (let i = 0; i < 30; i += 1) {
+        const angle = (i / 30) * Math.PI * 2 + (i % 4) * 0.035;
+        const distance = 1650 + (i % 7) * 170;
+        const width = 150 + (i % 5) * 48;
+        const height = 260 + (i % 8) * 58;
+        const material = facadeMaterials[i % facadeMaterials.length];
+        const building = new THREE.Mesh(unitBox, material);
+        building.position.set(this.w * 0.5 + Math.cos(angle) * distance, height * 0.5 - 5, this.h * 0.5 + Math.sin(angle) * distance);
+        building.scale.set(width, height, width * 0.7);
+        building.rotation.y = -angle + Math.PI * 0.5;
+        this.fpsWorld.add(building);
+      }
+      for (let i = 0; i < 34; i += 1) {
+        const angle = (i / 34) * Math.PI * 2 + 0.18;
+        const distance = Math.min(this.w, this.h) * (0.46 + (i % 6) * 0.032);
+        const rubble = new THREE.Mesh(dodeca, i % 3 ? concrete : rusty);
+        rubble.position.set(this.w * 0.5 + Math.cos(angle) * distance, 2 + (i % 3) * 1.4, this.h * 0.5 + Math.sin(angle) * distance);
+        rubble.scale.set(6 + (i % 5) * 3.2, 2.5 + (i % 4) * 1.5, 5 + (i % 3) * 3.4);
+        rubble.rotation.set(i * 0.31, i * 0.67, i * 0.2);
+        this.fpsWorld.add(rubble);
+      }
+      for (let i = 0; i < 7; i += 1) {
+        const angle = (i / 7) * Math.PI * 2 + 0.4;
+        const distance = Math.min(this.w, this.h) * (0.22 + (i % 3) * 0.045);
+        const wreck = new THREE.Group();
+        wreck.position.set(this.w * 0.5 + Math.cos(angle) * distance, 6, this.h * 0.5 + Math.sin(angle) * distance);
+        wreck.rotation.y = angle + 0.7;
+        addBox(wreck, rusty, 0, 0, 0, 26, 10, 12, 0, 0, (i % 2 ? 0.04 : -0.03));
+        addBox(wreck, darkMetal, 9, 1, 0, 9, 6, 11, 0, 0, 0);
+        this.fpsWorld.add(wreck);
+      }
+      const smokeTexture = this.fpsGlowTexture('#6e6a62');
+      for (let i = 0; i < 5; i += 1) {
+        const smoke = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: smokeTexture, color: '#77726a', transparent: true, opacity: 0.1 + (i % 3) * 0.025,
+          blending: THREE.NormalBlending, depthWrite: false
+        }));
+        const angle = (i / 5) * Math.PI * 2 + 0.7;
+        const distance = 780 + (i % 3) * 220;
+        smoke.position.set(this.w * 0.5 + Math.cos(angle) * distance, 220 + i * 26, this.h * 0.5 + Math.sin(angle) * distance);
+        smoke.scale.set(520, 820, 1);
+        this.fpsWorld.add(smoke);
+      }
     }
 
     fpsBuildProps(style) {
+      if (this.isCitySurface()) {
+        this.fpsBuildCity(style);
+        return;
+      }
       const THREE = window.THREE;
       const accent = new THREE.Color(style.accent);
       const dark = new THREE.Color(style.dark);
@@ -11294,8 +11652,81 @@
       }
     }
 
+    fpsCityGroundTexture(style) {
+      if (typeof document === 'undefined') return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      let seed = 94831;
+      const random = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+      const base = ctx.createLinearGradient(0, 0, 512, 512);
+      base.addColorStop(0, '#25292b');
+      base.addColorStop(0.48, '#1b1f21');
+      base.addColorStop(1, '#292b2a');
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 5200; i += 1) {
+        ctx.globalAlpha = 0.04 + random() * 0.12;
+        ctx.fillStyle = random() < 0.5 ? '#4a4a44' : '#0d1011';
+        const size = random() < 0.9 ? 1 : 2;
+        ctx.fillRect(random() * 512, random() * 512, size, size);
+      }
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = '#080a0b';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 34; i += 1) {
+        let x = random() * 512;
+        let y = random() * 512;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        for (let segment = 0; segment < 4; segment += 1) {
+          x += (random() - 0.5) * 36;
+          y += 12 + random() * 22;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = 'rgba(202, 180, 128, .45)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([34, 26]);
+      ctx.beginPath();
+      ctx.moveTo(256, 0);
+      ctx.lineTo(256, 512);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(218, 188, 129, .3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(52, 0);
+      ctx.lineTo(52, 512);
+      ctx.stroke();
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = '#c2b18c';
+      for (let i = 0; i < 18; i += 1) {
+        const x = random() * 512;
+        const y = random() * 512;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 4 + random() * 13, 1.5 + random() * 3, random() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      const texture = new window.THREE.CanvasTexture(canvas);
+      texture.wrapS = window.THREE.RepeatWrapping;
+      texture.wrapT = window.THREE.RepeatWrapping;
+      texture.repeat.set(7, 7);
+      if ('encoding' in texture && window.THREE.sRGBEncoding !== undefined) texture.encoding = window.THREE.sRGBEncoding;
+      return texture;
+    }
+
     fpsGroundTexture(style) {
       if (typeof document === 'undefined') return null;
+      if (this.isCitySurface()) return this.fpsCityGroundTexture(style);
       const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 512;
@@ -11355,24 +11786,31 @@
       arena.rotation.x = -Math.PI / 2;
       arena.position.set(this.w * 0.5, 0.6, this.h * 0.5);
       this.fpsWorld.add(arena);
+      const citySurface = this.isCitySurface();
       const grid = new THREE.GridHelper(5200, 80, style.accent, style.dark);
       grid.position.set(this.w * 0.5, 0.8, this.h * 0.5);
       grid.material.transparent = true;
       grid.material.opacity = 0.18;
+      grid.visible = !citySurface;
       this.fpsWorld.add(grid);
       const ring = new THREE.Mesh(new THREE.TorusGeometry(Math.min(this.w, this.h) * 0.47, 1.4, 6, 84), new THREE.MeshBasicMaterial({
         color: new THREE.Color(style.accent), transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false
       }));
       ring.rotation.x = Math.PI / 2;
       ring.position.set(this.w * 0.5, 1.3, this.h * 0.5);
+      ring.visible = !citySurface;
       this.fpsWorld.add(ring);
       this.fpsBuildProps(style);
-      this.fpsWorld.add(new THREE.HemisphereLight(new THREE.Color(style.accent), new THREE.Color(biome.ground || style.dark), 0.72));
-      this.fpsWorld.add(new THREE.AmbientLight(new THREE.Color(style.accent), 0.28));
-      const accentLight = new THREE.PointLight(new THREE.Color(style.accent), 1.2, 1800, 2);
+      this.fpsWorld.add(new THREE.HemisphereLight(
+        new THREE.Color(citySurface ? '#b7cbd4' : style.accent),
+        new THREE.Color(citySurface ? '#5a4637' : (biome.ground || style.dark)),
+        citySurface ? 0.9 : 0.72
+      ));
+      this.fpsWorld.add(new THREE.AmbientLight(new THREE.Color(citySurface ? '#ffd4a8' : style.accent), citySurface ? 0.34 : 0.28));
+      const accentLight = new THREE.PointLight(new THREE.Color(citySurface ? '#ffc98f' : style.accent), 1.2, 1800, 2);
       accentLight.position.set(this.w * 0.5, 180, this.h * 0.5);
       this.fpsWorld.add(accentLight);
-      this.fpsScene.fog = new THREE.Fog(new THREE.Color(style.dark), (this.fpSettings?.viewDistance || 2600) * 0.35, this.fpSettings?.viewDistance || 2600);
+      this.fpsScene.fog = new THREE.Fog(new THREE.Color(citySurface ? '#4c4038' : style.dark), (this.fpSettings?.viewDistance || 2600) * 0.35, this.fpSettings?.viewDistance || 2600);
       const dustCount = 220;
       const dustPositions = new Float32Array(dustCount * 3);
       for (let i = 0; i < dustCount; i += 1) {
@@ -11383,7 +11821,7 @@
       const dustGeometry = new THREE.BufferGeometry();
       dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
       const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({
-        color: new THREE.Color(style.accent), size: 2.2, transparent: true, opacity: 0.38,
+        color: new THREE.Color(citySurface ? '#e8b47a' : style.accent), size: 2.2, transparent: true, opacity: citySurface ? 0.46 : 0.38,
         blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
       }));
       this.fpsWorld.add(dust);
@@ -11816,9 +12254,12 @@
       const bobY = Math.abs(Math.cos(this.fpBob * 0.55)) * (moving ? 0.014 : 0.004) * (0.4 + settings.bob);
       const reloadProgress = this.player?.reload > 0 ? 1 - this.player.reload / Math.max(0.2, 1.45 / this.exoticReloadMultiplier()) : 0;
       const reloadDrop = this.player?.reload > 0 ? Math.sin(clamp(reloadProgress, 0, 1) * Math.PI) * 0.16 : 0;
-      group.position.set(0.3 + bobX, -0.25 - bobY - reloadDrop + this.fpShotPulse * 0.018, -0.58 + this.fpShotPulse * 0.04);
-      group.rotation.set(-0.03 + this.fpShotPulse * 0.08 + reloadDrop * 0.4, -0.06 + bobX * 0.8, -reloadDrop * 0.7);
-      group.visible = !this.inventoryOpen && !this.intro && !this.transition && !this.deathState;
+      const cast = this.fpCast;
+      const castProgress = cast ? clamp(cast.time / cast.max, 0, 1) : 0;
+      const castDrop = cast ? Math.sin(Math.min(1, castProgress * 1.16) * Math.PI) * (cast.kind === 'golden-gun' ? 0.26 : 0.15) : 0;
+      group.position.set(0.3 + bobX, -0.25 - bobY - reloadDrop - castDrop + this.fpShotPulse * 0.018, -0.58 + this.fpShotPulse * 0.04);
+      group.rotation.set(-0.03 + this.fpShotPulse * 0.08 + reloadDrop * 0.4 + castDrop * 0.9, -0.06 + bobX * 0.8, -reloadDrop * 0.7 + castDrop * 0.4);
+      group.visible = !this.inventoryOpen && !this.intro && !this.transition && !this.deathState && cast?.kind !== 'golden-gun';
       if (this.fpsMuzzleFlash) {
         const active = this.player?.muzzle > 0 && group.visible;
         this.fpsMuzzleFlash.visible = active;
@@ -12039,45 +12480,9 @@
     }
 
     fpsSyncProjectiles() {
-      if (!this.fpsProjectileLines || !this.fpsEnemyPoints || !this.fpsOrbPoints) return;
+      if (!this.fpsOrbPoints) return;
       const THREE = window.THREE;
       const color = new THREE.Color();
-      const linePositions = this.fpsProjectileLines.geometry.attributes.position.array;
-      const lineColors = this.fpsProjectileLines.geometry.attributes.color.array;
-      let lineCount = 0;
-      const addLine = (x1, y1, z1, x2, y2, z2, colorValue) => {
-        if (lineCount >= this.fpsProjectileLines.max) return;
-        const offset = lineCount * 6;
-        linePositions[offset] = x1; linePositions[offset + 1] = y1; linePositions[offset + 2] = z1;
-        linePositions[offset + 3] = x2; linePositions[offset + 4] = y2; linePositions[offset + 5] = z2;
-        color.set(colorValue || '#ffe5a6');
-        color.toArray(lineColors, offset);
-        color.toArray(lineColors, offset + 3);
-        lineCount += 1;
-      };
-      this.bullets.forEach((bullet) => {
-        addLine(bullet.x - bullet.vx * 0.018, 24, bullet.y - bullet.vy * 0.018, bullet.x, 24, bullet.y, bullet.color);
-      });
-      this.superBeams.forEach((beam) => addLine(beam.x1, 38, beam.y1, beam.x2, 30, beam.y2, beam.color));
-      this.chainBolts.forEach((beam) => addLine(beam.x1, 32, beam.y1, beam.x2, 30, beam.y2, beam.color));
-      this.fpsProjectileLines.geometry.attributes.position.needsUpdate = true;
-      this.fpsProjectileLines.geometry.attributes.color.needsUpdate = true;
-      this.fpsProjectileLines.geometry.setDrawRange(0, lineCount * 2);
-      const pointPositions = this.fpsEnemyPoints.geometry.attributes.position.array;
-      const pointColors = this.fpsEnemyPoints.geometry.attributes.color.array;
-      let pointCount = 0;
-      this.enemyBullets.forEach((bullet) => {
-        if (pointCount >= this.fpsEnemyPoints.max) return;
-        pointPositions[pointCount * 3] = bullet.x;
-        pointPositions[pointCount * 3 + 1] = 20;
-        pointPositions[pointCount * 3 + 2] = bullet.y;
-        color.set(bullet.color || '#f07158');
-        color.toArray(pointColors, pointCount * 3);
-        pointCount += 1;
-      });
-      this.fpsEnemyPoints.geometry.attributes.position.needsUpdate = true;
-      this.fpsEnemyPoints.geometry.attributes.color.needsUpdate = true;
-      this.fpsEnemyPoints.geometry.setDrawRange(0, pointCount);
       const orbPositions = this.fpsOrbPoints.geometry.attributes.position.array;
       const orbColors = this.fpsOrbPoints.geometry.attributes.color.array;
       let orbCount = 0;
@@ -12091,16 +12496,18 @@
         orbCount += 1;
       };
       this.grenades.forEach((grenade) => {
-        const progress = 1 - grenade.time / grenade.max;
-        addOrb(grenade.x + (grenade.tx - grenade.x) * progress, 16 + Math.sin(progress * Math.PI) * 74, grenade.y + (grenade.ty - grenade.y) * progress, this.activeSubclass().color);
+        const visual = this.grenadeVisualPoint(grenade);
+        addOrb(visual.x, visual.z, visual.y, grenade.transcendent ? '#ffe0a6' : this.activeSubclass().color);
       });
       this.hammers.forEach((hammer) => {
-        const progress = 1 - hammer.time / hammer.max;
-        addOrb(hammer.x + (hammer.tx - hammer.x) * progress, 32 + Math.sin(progress * Math.PI) * 54, hammer.y + (hammer.ty - hammer.y) * progress, hammer.profile?.color || this.activeSubclass().color);
+        const visual = this.hammerVisualPoint(hammer);
+        addOrb(visual.x, visual.z, visual.y, hammer.profile?.color || this.activeSubclass().color);
       });
       this.fpsOrbPoints.geometry.attributes.position.needsUpdate = true;
       this.fpsOrbPoints.geometry.attributes.color.needsUpdate = true;
       this.fpsOrbPoints.geometry.setDrawRange(0, orbCount);
+      if (this.fpsProjectileLines) this.fpsProjectileLines.geometry.setDrawRange(0, 0);
+      if (this.fpsEnemyPoints) this.fpsEnemyPoints.geometry.setDrawRange(0, 0);
     }
 
     fpsSyncPickups() {
@@ -12208,6 +12615,9 @@
         }
       });
       ctx.restore();
+      const overlayCamera = this.firstPersonCamera(w, h);
+      this.drawFpAbilityWorld(ctx, w, h, overlayCamera);
+      this.drawFpProjectiles(ctx, w, h, overlayCamera);
       if (this.fx?.parts?.length) {
         this.fx.parts.forEach((particle) => {
           const point = this.fpsCameraProject(particle.x, 28, particle.y);
@@ -12259,17 +12669,21 @@
       const player = this.playerPoint();
       const bob = Math.sin(this.fpBob) * 1.18 * clamp(settings.bob, 0, 1);
       const aspect = w / Math.max(1, h);
-      const verticalFov = 2 * Math.atan(Math.tan((clamp(settings.fov, 65, 110) * Math.PI) / 360) / Math.max(0.35, aspect)) * 180 / Math.PI;
+      const cast = this.fpCast;
+      const castProgress = cast ? clamp(cast.time / cast.max, 0, 1) : 0;
+      const fovKick = cast?.kind === 'dodge' ? Math.sin(castProgress * Math.PI) * 7 : 0;
+      const verticalFov = 2 * Math.atan(Math.tan((clamp(settings.fov + fovKick, 65, 110) * Math.PI) / 360) / Math.max(0.35, aspect)) * 180 / Math.PI;
       this.fpsCamera.fov = verticalFov;
       this.fpsCamera.aspect = aspect;
       this.fpsCamera.updateProjectionMatrix();
       const shakeX = this.shake > 0 ? rand(-this.shake, this.shake) * 0.22 : 0;
       const shakeZ = this.shake > 0 ? rand(-this.shake, this.shake) * 0.22 : 0;
-      this.fpsCamera.position.set(player.x + shakeX, 36 + bob, player.y + shakeZ);
+      this.fpsCamera.position.set(player.x + shakeX, 36 + bob + (this.fpJumpZ || 0) - (this.fpLandDip || 0), player.y + shakeZ);
       this.fpsCamera.rotation.order = 'YXZ';
       this.fpsCamera.rotation.y = -this.fpYaw - Math.PI / 2;
       this.fpsCamera.rotation.x = this.fpPitch + this.fpRecoil * 0.028;
-      this.fpsCamera.rotation.z = this.shake > 0 ? rand(-this.shake, this.shake) * 0.0007 : 0;
+      const dodgeRoll = cast?.kind === 'dodge' ? Math.sin(castProgress * Math.PI) * 0.045 : 0;
+      this.fpsCamera.rotation.z = (this.shake > 0 ? rand(-this.shake, this.shake) * 0.0007 : 0) + dodgeRoll;
       if (this.fpsScene?.fog) {
         const viewDistance = settings.viewDistance || 2600;
         this.fpsScene.fog.near = viewDistance * 0.35;
@@ -12343,6 +12757,53 @@
       this.fpLookDY += dy;
     }
 
+    jump() {
+      if (!this.firstPersonActive() || !this.player || this.intro || this.transition || this.deathState) return;
+      if (!this.fpGrounded || this.fpJumpV > 0) return;
+      this.fpGrounded = false;
+      this.fpJumpV = 212;
+      this.fpJumpZ = Math.max(0, this.fpJumpZ || 0);
+    }
+
+    updateFirstPersonMotion(dt) {
+      if (!this.fpView) return;
+      if (!this.fpGrounded || this.fpJumpV !== 0 || this.fpJumpZ > 0) {
+        this.fpJumpV -= 760 * dt;
+        this.fpJumpZ += this.fpJumpV * dt;
+        if (this.fpJumpZ <= 0) {
+          const impact = Math.min(9, Math.abs(this.fpJumpV) * 0.018);
+          this.fpJumpZ = 0;
+          this.fpJumpV = 0;
+          this.fpGrounded = true;
+          this.fpLandDip = Math.max(this.fpLandDip || 0, impact);
+        }
+      }
+      this.fpLandDip = (this.fpLandDip || 0) * Math.exp(-dt * 9);
+    }
+
+    startFpCast(kind, color, label, max = 0.55, extra = {}) {
+      if (!this.fpView || !this.firstPersonActive()) return;
+      if (this.fpCast?.kind === 'golden-gun' && !this.fpCast.fired && kind !== 'golden-gun') return;
+      this.fpCast = {
+        kind, color: color || '#e9d39a', label: label || '', time: 0,
+        max: Math.max(0.22, Number(max) || 0.55), ...extra
+      };
+    }
+
+    updateFpCast(dt) {
+      if (!this.fpCast) return;
+      const cast = this.fpCast;
+      cast.time += dt;
+      if (cast.kind === 'golden-gun' && !cast.fired && cast.time >= (cast.windup || 0.44) && cast.profile) {
+        cast.fired = true;
+        this.audio?.play('golden');
+        this.castGoldenGun(cast.profile, cast.point, cast.angle, cast.range);
+        this.fpRecoil = Math.max(this.fpRecoil, 0.7);
+        this.fpShotPulse = 1;
+      }
+      if (cast.time >= cast.max) this.fpCast = null;
+    }
+
     onPause() {
       this.fpLookDX = 0;
       this.fpLookDY = 0;
@@ -12366,9 +12827,29 @@
       const biome = this.biomeConfig(this.mission);
       this.fpSunAngle = -Math.PI / 2 + (next() - 0.5) * 1.7;
       this.fpProps = [];
-      const count = this.currentMode === 'raid' ? 42 : 32;
+      const city = this.isCitySurface();
+      const count = city ? 46 : this.currentMode === 'raid' ? 42 : 32;
       for (let index = 0; index < count; index += 1) {
         const angle = (index / count) * Math.PI * 2 + (next() - 0.5) * 0.16;
+        if (city) {
+          const radius = 0.35 + next() * 0.46;
+          const roll = next();
+          const kind = roll < 0.6 ? 'building' : roll < 0.74 ? 'wreck' : roll < 0.88 ? 'lamp' : 'rubble';
+          const building = kind === 'building';
+          const wreck = kind === 'wreck';
+          this.fpProps.push({
+            x: 0.5 + Math.cos(angle) * radius,
+            y: 0.5 + Math.sin(angle) * radius,
+            width: building ? 46 + next() * 92 : wreck ? 52 + next() * 44 : kind === 'lamp' ? 7 : 18 + next() * 22,
+            height: building ? 150 + next() * 450 : wreck ? 46 + next() * 90 : kind === 'lamp' ? 52 : 10 + next() * 16,
+            kind,
+            color: index % 6 === 0 ? '#d6a35f' : biome.accent2,
+            phase: next() * Math.PI * 2,
+            alpha: 0.32 + next() * 0.38,
+            variant: index % 3
+          });
+          continue;
+        }
         const radius = 0.3 + next() * 0.32;
         const kindRoll = next();
         this.fpProps.push({
@@ -12398,14 +12879,17 @@
       const settings = this.fpSettings || this.defaultFpSettings();
       const bobScale = clamp(settings.bob, 0, 1);
       const bob = Math.sin(this.fpBob) * 1.18 * bobScale;
-      const fov = clamp(settings.fov, 65, 110);
+      const cast = this.fpCast;
+      const castProgress = cast ? clamp(cast.time / cast.max, 0, 1) : 0;
+      const fovKick = cast?.kind === 'dodge' ? Math.sin(castProgress * Math.PI) * 7 : 0;
+      const fov = clamp(settings.fov + fovKick, 65, 110);
       const focal = (w * 0.5) / Math.tan((fov * Math.PI) / 360);
       return {
         x: point.x,
         y: point.y,
         yaw: this.fpYaw,
         pitch: this.fpPitch + this.fpRecoil * 0.028,
-        height: 36 + bob,
+        height: 36 + bob + (this.fpJumpZ || 0) - (this.fpLandDip || 0),
         focal,
         horizon: h * 0.47 + Math.tan(this.fpPitch) * focal + bob * 0.55,
         viewDistance: settings.viewDistance,
@@ -12476,7 +12960,11 @@
       this.rifts = this.rifts.filter((rift) => rift.time > 0);
       this.barricades.forEach((barricade) => { barricade.time -= dt; });
       this.barricades = this.barricades.filter((barricade) => barricade.time > 0);
-      if (this.fpView) this.updateFirstPersonLook(dt);
+      if (this.fpView) {
+        this.updateFirstPersonLook(dt);
+        this.updateFirstPersonMotion(dt);
+      }
+      this.updateFpCast(dt);
       player.flash = Math.max(0, player.flash - dt * 3.4);
       player.muzzle = Math.max(0, player.muzzle - dt);
       this.fpShotPulse = Math.max(0, this.fpShotPulse - dt * 4.8);
@@ -12912,7 +13400,11 @@
     }
 
     updateSuperEffects(dt, w, h) {
-      this.superBeams.forEach((beam) => { beam.time -= dt; });
+      this.superBeams.forEach((beam) => {
+        if (!Number.isFinite(beam.time)) beam.time = Number.isFinite(beam.life) ? beam.life : 0.5;
+        beam.time -= dt;
+        beam.life = beam.time;
+      });
       this.superBeams = this.superBeams.filter((beam) => beam.time > 0);
       const point = this.playerPoint();
       this.superEffects.forEach((effect) => {
@@ -14319,6 +14811,7 @@
           this.toast('长按 V 进入超凡');
         } else this.useClassAbility();
       }
+      else if (code === 'Space') this.jump();
       else if (code === 'ShiftLeft' || code === 'ShiftRight') this.dash();
     }
 
@@ -15735,6 +16228,7 @@
       this.drawFpMechanics(ctx, w, h, camera);
       this.drawFpPickups(ctx, w, h, camera);
       this.drawFpEnemies(ctx, w, h, camera);
+      this.drawFpAbilityWorld(ctx, w, h, camera);
       this.drawFpProjectiles(ctx, w, h, camera);
       this.drawFpFx(ctx, w, h, camera);
       this.drawFpWeapon(ctx, w, h);
@@ -15907,6 +16401,23 @@
           ctx.moveTo(top.x, top.y);
           ctx.lineTo(top.x + width * 0.5, ground.y);
           ctx.lineTo(top.x - width * 0.5, ground.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (prop.kind === 'lamp') {
+          ctx.fillStyle = 'rgba(48, 54, 56, .96)';
+          ctx.fillRect(top.x - Math.max(1, width * 0.08), top.y, Math.max(1.5, width * 0.16), height);
+          ctx.fillStyle = this.fpRgba('#ffd28f', 0.88);
+          ctx.beginPath();
+          ctx.arc(top.x, top.y, Math.max(1.6, width * 0.2), 0, Math.PI * 2);
+          ctx.fill();
+        } else if (prop.kind === 'rubble') {
+          ctx.beginPath();
+          ctx.moveTo(top.x - width * 0.5, ground.y);
+          ctx.lineTo(top.x - width * 0.3, top.y + height * 0.35);
+          ctx.lineTo(top.x, top.y);
+          ctx.lineTo(top.x + width * 0.34, top.y + height * 0.42);
+          ctx.lineTo(top.x + width * 0.52, ground.y);
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
@@ -16378,68 +16889,644 @@
       ctx.restore();
     }
 
-    drawFpProjectiles(ctx, w, h, camera) {
-      this.bullets.forEach((bullet) => {
-        const prev = this.fpProject(bullet.x - bullet.vx * 0.018, bullet.y - bullet.vy * 0.018, 24, camera);
-        const now = this.fpProject(bullet.x, bullet.y, 24, camera);
-        if (!now) return;
+    drawFpAbilityWorld(ctx, w, h, camera) {
+      const project = (x, y, z) => this.fpProject(x, y, z, camera);
+      const playerPoint = this.playerPoint();
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const drawSelfAura = (color, strength = 1) => {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        ctx.strokeStyle = bullet.color || '#ffe5a6';
-        ctx.lineWidth = clamp((bullet.width || 1.4) * 0.8, 1, 4);
-        ctx.shadowColor = bullet.color || '#ffe5a6';
-        ctx.shadowBlur = 9;
+        const glow = ctx.createRadialGradient(w * 0.5, h * 0.62, Math.min(w, h) * 0.12, w * 0.5, h * 0.55, Math.max(w, h) * 0.7);
+        glow.addColorStop(0, this.fpRgba(color, 0.04 * strength));
+        glow.addColorStop(0.58, this.fpRgba(color, 0.1 * strength));
+        glow.addColorStop(1, this.fpRgba(color, 0.24 * strength));
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = this.fpRgba(color, 0.5 * strength);
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        if (prev) ctx.moveTo(prev.x, prev.y);
-        else ctx.moveTo(now.x, now.y);
-        ctx.lineTo(now.x, now.y);
+        ctx.ellipse(w * 0.5, h * 0.95, w * 0.34, h * 0.12, 0, 0, Math.PI * 2);
         ctx.stroke();
-        if (bullet.explosive || bullet.melee) {
-          ctx.fillStyle = this.fpRgba(bullet.color || '#ffe5a6', 0.72);
+        for (let i = 0; i < 18; i += 1) {
+          const angle = this.time * 1.4 + i * 2.399;
+          const radius = Math.min(w, h) * (0.18 + (i % 6) * 0.045);
+          ctx.fillStyle = i % 3 === 0 ? 'rgba(255, 255, 246, .8)' : this.fpRgba(color, 0.65);
           ctx.beginPath();
-          ctx.arc(now.x, now.y, clamp(now.scale * 2.2, 2, 12), 0, Math.PI * 2);
+          ctx.arc(w * 0.5 + Math.cos(angle) * radius, h * 0.58 + Math.sin(angle) * radius * 0.55, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      };
+      this.superBeams.forEach((beam) => {
+        const golden = beam.kind === 'golden-gun';
+        const meteor = beam.kind === 'meteor';
+        const a = project(beam.x1, beam.y1, meteor ? 260 : 36);
+        const b = project(beam.x2, beam.y2, meteor ? 26 : 30);
+        if (!a || !b) return;
+        const alpha = clamp((beam.time ?? beam.life ?? 0.5) / Math.max(0.01, beam.max || 0.5), 0, 1);
+        const color = beam.color || '#ffcf78';
+        const width = Math.max(2, (beam.width || 10) * clamp((a.scale + b.scale) * 0.5, 0.8, 4.2));
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.lineCap = 'round';
+        const gradient = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+        gradient.addColorStop(0, this.fpRgba(color, golden ? 0.16 : 0.08));
+        gradient.addColorStop(0.3, this.fpRgba(color, 0.72));
+        gradient.addColorStop(0.82, this.fpRgba(golden ? '#fff6d4' : color, 0.96));
+        gradient.addColorStop(1, 'rgba(255, 255, 248, .98)');
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = width * (golden ? 3.4 : 2.2);
+        ctx.shadowColor = color;
+        ctx.shadowBlur = golden ? 38 : 22;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 255, 246, .9)';
+        ctx.lineWidth = Math.max(1, width * (golden ? 0.36 : 0.24));
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        if (golden || meteor) {
+          const head = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, width * 4.2);
+          head.addColorStop(0, 'rgba(255,255,250,.98)');
+          head.addColorStop(0.22, this.fpRgba(color, 0.92));
+          head.addColorStop(1, this.fpRgba(color, 0));
+          ctx.fillStyle = head;
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, width * 4.2, 0, Math.PI * 2);
+          ctx.fill();
+          for (let i = 0; i < 22; i += 1) {
+            const t = i / 21;
+            const px = a.x + (b.x - a.x) * t;
+            const py = a.y + (b.y - a.y) * t + Math.sin(this.time * 20 + i * 1.7) * width * 0.75;
+            ctx.fillStyle = i % 3 === 0 ? 'rgba(255, 250, 220, .9)' : this.fpRgba(color, 0.66);
+            ctx.beginPath();
+            ctx.arc(px, py, Math.max(0.8, width * 0.09 * (1 - t * 0.4)), 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      });
+      this.chainBolts.forEach((bolt) => {
+        const a = project(bolt.x1, bolt.y1, 34);
+        const b = project(bolt.x2, bolt.y2, 30);
+        if (!a || !b) return;
+        const alpha = clamp((bolt.time ?? 0.2) / Math.max(0.01, bolt.max || 0.35), 0, 1);
+        const midX = (a.x + b.x) * 0.5 + Math.sin(this.time * 26 + bolt.y1) * 22;
+        const midY = (a.y + b.y) * 0.5 + Math.cos(this.time * 22 + bolt.x1) * 16;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = bolt.color;
+        ctx.lineWidth = 8;
+        ctx.shadowColor = bolt.color;
+        ctx.shadowBlur = 24;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(midX, midY);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(250,255,255,.92)';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 4;
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.rifts.forEach((rift) => {
+        const ground = project(rift.x, rift.y, 0);
+        if (!ground) {
+          if (dist(rift.x, rift.y, playerPoint.x, playerPoint.y) < rift.radius * 1.8) drawSelfAura(rift.color, 0.8);
+          return;
+        }
+        const rx = clamp(rift.radius * ground.scale, 5, w * 0.48);
+        const ry = Math.max(1.5, rx * 0.3);
+        ctx.save();
+        const pulse = 0.4 + Math.sin(this.time * 3.2) * 0.12;
+        ctx.fillStyle = this.fpRgba(rift.color, 0.12);
+        ctx.strokeStyle = this.fpRgba(rift.color, 0.72);
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.ellipse(ground.x, ground.y, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        const top = project(rift.x, rift.y, 170);
+        if (top) {
+          const column = ctx.createLinearGradient(0, ground.y, 0, top.y);
+          column.addColorStop(0, this.fpRgba(rift.color, 0.26));
+          column.addColorStop(0.55, this.fpRgba(rift.color, 0.1));
+          column.addColorStop(1, this.fpRgba(rift.color, 0));
+          ctx.fillStyle = column;
+          ctx.fillRect(ground.x - rx * 0.48, top.y, rx * 0.96, ground.y - top.y);
+        }
+        ctx.fillStyle = this.fpRgba(rift.color, pulse);
+        for (let i = 0; i < 8; i += 1) {
+          const angle = this.time * 1.2 + i * Math.PI / 4;
+          ctx.beginPath();
+          ctx.arc(ground.x + Math.cos(angle) * rx * 0.72, ground.y + Math.sin(angle) * ry * 0.72, 1.4, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.restore();
       });
-      this.enemyBullets.forEach((bullet) => {
-        const now = this.fpProject(bullet.x, bullet.y, 20, camera);
+      this.barricades.forEach((barricade) => {
+        const cos = Math.cos(barricade.angle);
+        const sin = Math.sin(barricade.angle);
+        const half = barricade.radius * 0.8;
+        const a = project(barricade.x - cos * half, barricade.y - sin * half, 0);
+        const b = project(barricade.x + cos * half, barricade.y + sin * half, 0);
+        const at = project(barricade.x - cos * half, barricade.y - sin * half, barricade.radius * 1.35);
+        const bt = project(barricade.x + cos * half, barricade.y + sin * half, barricade.radius * 1.35);
+        if (!a || !b || !at || !bt) return;
+        ctx.save();
+        const wall = ctx.createLinearGradient(0, Math.min(at.y, bt.y), 0, Math.max(a.y, b.y));
+        wall.addColorStop(0, this.fpRgba(barricade.color, 0.08));
+        wall.addColorStop(0.55, this.fpRgba(barricade.color, 0.22));
+        wall.addColorStop(1, this.fpRgba(barricade.color, 0.52));
+        ctx.fillStyle = wall;
+        ctx.strokeStyle = this.fpRgba(barricade.color, 0.82);
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.lineTo(bt.x, bt.y);
+        ctx.lineTo(at.x, at.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 244, 209, .7)';
+        ctx.lineWidth = 1;
+        for (let i = 1; i < 4; i += 1) {
+          const t = i / 4;
+          ctx.beginPath();
+          ctx.moveTo(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+          ctx.lineTo(at.x + (bt.x - at.x) * t, at.y + (bt.y - at.y) * t);
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+      this.vortexes.forEach((vortex) => {
+        const point = project(vortex.x, vortex.y, 26);
+        if (!point) return;
+        const radius = clamp(vortex.radius * point.scale, 5, w * 0.45);
+        const ratio = clamp(vortex.time / Math.max(0.01, vortex.max), 0, 1);
+        ctx.save();
+        ctx.globalAlpha = 0.35 + ratio * 0.55;
+        ctx.strokeStyle = vortex.color;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = vortex.color;
+        ctx.shadowBlur = 18;
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.ellipse(point.x, point.y, radius * (0.32 + i * 0.18), radius * (0.12 + i * 0.05), this.time * (0.5 + i * 0.2), 0, Math.PI * 1.25);
+          ctx.stroke();
+        }
+        const core = ctx.createRadialGradient(point.x, point.y, 1, point.x, point.y, radius);
+        core.addColorStop(0, this.fpRgba(vortex.color, 0.36));
+        core.addColorStop(1, this.fpRgba(vortex.color, 0));
+        ctx.fillStyle = core;
+        ctx.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+        ctx.restore();
+      });
+      this.superEffects.forEach((effect) => {
+        const point = project(effect.x, effect.y, 34);
+        const nearPlayer = effect.follow || dist(effect.x, effect.y, playerPoint.x, playerPoint.y) < 90;
+        if (!point) {
+          if (nearPlayer) drawSelfAura(effect.color, 0.8);
+          return;
+        }
+        if (nearPlayer) drawSelfAura(effect.color, 0.42);
+        const radius = clamp((effect.radius || 100) * point.scale, 7, w * 0.6);
+        const fade = clamp(effect.time / Math.max(0.01, effect.max), 0, 1);
+        const color = effect.color || '#e9f3ef';
+        const quiet = effect.kind === 'silence-squall';
+        ctx.save();
+        ctx.globalAlpha = 0.35 + fade * 0.55;
+        ctx.strokeStyle = this.fpRgba(color, 0.8);
+        ctx.fillStyle = this.fpRgba(color, 0.065);
+        ctx.lineWidth = quiet ? 2.4 : 1.8;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = quiet ? 30 : 18;
+        ctx.beginPath();
+        ctx.ellipse(point.x, point.y, radius, Math.max(2, radius * 0.3), 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        const top = project(effect.x, effect.y, quiet ? 300 : 210);
+        if (top) {
+          const column = ctx.createLinearGradient(0, point.y, 0, top.y);
+          column.addColorStop(0, this.fpRgba(color, quiet ? 0.26 : 0.14));
+          column.addColorStop(0.55, this.fpRgba(color, 0.07));
+          column.addColorStop(1, this.fpRgba(color, 0));
+          ctx.fillStyle = column;
+          ctx.fillRect(point.x - radius * 0.62, top.y, radius * 1.24, point.y - top.y);
+        }
+        const orbitCount = quiet ? 20 : 11;
+        for (let i = 0; i < orbitCount; i += 1) {
+          const angle = this.time * (quiet ? 0.9 : 1.5) + i * 2.399 + (effect.phase || 0);
+          const distance = radius * (quiet ? (0.35 + (i % 7) * 0.1) : (0.4 + (i % 4) * 0.16));
+          const px = point.x + Math.cos(angle) * distance;
+          const py = point.y + Math.sin(angle) * distance * 0.35 - (quiet ? Math.sin(this.time * 2 + i) * 16 : 0);
+          ctx.fillStyle = i % 3 === 0 ? 'rgba(255, 255, 248, .86)' : this.fpRgba(color, 0.7);
+          ctx.beginPath();
+          ctx.arc(px, py, quiet ? 1.8 : 1.25, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        if (quiet) {
+          for (let i = 0; i < 3; i += 1) {
+            ctx.strokeStyle = this.fpRgba(color, 0.34 - i * 0.08);
+            ctx.beginPath();
+            ctx.ellipse(point.x, point.y, radius * (0.7 + i * 0.28), radius * (0.24 + i * 0.1), this.time * (0.2 + i * 0.12), 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      });
+      ctx.restore();
+    }
+
+    drawFpCastOverlay(ctx, w, h) {
+      const cast = this.fpCast;
+      if (!cast || this.intro || this.transition || this.deathState) return;
+      const progress = clamp(cast.time / cast.max, 0, 1);
+      const impulse = Math.sin(Math.min(1, progress * 1.16) * Math.PI);
+      const color = cast.color || '#e9d39a';
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const tint = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.2, cx, cy, Math.max(w, h) * 0.72);
+      tint.addColorStop(0, this.fpRgba(color, 0));
+      tint.addColorStop(0.7, this.fpRgba(color, 0.035 * impulse));
+      tint.addColorStop(1, this.fpRgba(color, 0.2 * impulse));
+      ctx.fillStyle = tint;
+      ctx.fillRect(0, 0, w, h);
+      if (cast.kind === 'dodge') {
+        for (let i = 0; i < 34; i += 1) {
+          const angle = i * 2.399 + 0.4;
+          const inner = Math.min(w, h) * (0.1 + (i % 5) * 0.035);
+          const outer = Math.max(w, h) * (0.42 + (i % 7) * 0.07);
+          const alpha = impulse * (0.1 + (i % 5) * 0.045);
+          ctx.strokeStyle = this.fpRgba(i % 3 === 0 ? '#fff4d5' : color, alpha);
+          ctx.lineWidth = i % 4 === 0 ? 2 : 0.8;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+          ctx.lineTo(cx + Math.cos(angle + 0.035) * outer, cy + Math.sin(angle + 0.035) * outer);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = impulse * 0.45;
+        ctx.fillStyle = this.fpRgba(color, 0.32);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + h * 0.1, w * 0.22, h * 0.18, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (cast.kind === 'grenade') {
+        const charge = clamp(cast.time / 0.22, 0, 1);
+        const ox = w * 0.66;
+        const oy = h * 0.78;
+        const x = ox + (cx - ox) * charge * 0.7;
+        const y = oy + (cy - oy) * charge * 0.5 - Math.sin(charge * Math.PI) * h * 0.1;
+        const orb = ctx.createRadialGradient(x, y, 0.5, x, y, 76);
+        orb.addColorStop(0, 'rgba(255, 255, 246, .98)');
+        orb.addColorStop(0.2, this.fpRgba(color, 0.9));
+        orb.addColorStop(1, this.fpRgba(color, 0));
+        ctx.fillStyle = orb;
+        ctx.beginPath();
+        ctx.arc(x, y, 76, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(color, 0.65);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ox, oy + 12);
+        ctx.quadraticCurveTo((ox + x) * 0.5, Math.min(oy, y) - 40, x, y);
+        ctx.stroke();
+        ctx.fillStyle = this.fpRgba(color, 0.85);
+        ctx.beginPath();
+        ctx.arc(x, y, 6 + Math.sin(this.time * 22) * 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (cast.kind === 'melee') {
+        const sweep = clamp(cast.time / 0.28, 0, 1);
+        ctx.translate(cx + w * 0.05, cy + h * 0.05);
+        ctx.rotate(-0.75 + sweep * 0.55);
+        ctx.strokeStyle = 'rgba(255, 255, 244, .88)';
+        ctx.lineWidth = 4;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 24;
+        ctx.beginPath();
+        ctx.arc(0, 0, w * 0.24, -1.5, 0.8);
+        ctx.stroke();
+        ctx.strokeStyle = this.fpRgba(color, 0.72);
+        ctx.lineWidth = 18;
+        ctx.beginPath();
+        ctx.arc(0, 0, w * 0.24, -1.5, 0.8);
+        ctx.stroke();
+        for (let i = 0; i < 14; i += 1) {
+          const angle = -1.5 + (i / 13) * 2.3;
+          const radius = w * (0.26 + (i % 4) * 0.012);
+          ctx.fillStyle = i % 2 ? this.fpRgba(color, 0.66) : 'rgba(255,255,248,.85)';
+          ctx.beginPath();
+          ctx.arc(Math.cos(angle) * radius, Math.sin(angle) * radius, 1.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (cast.kind === 'class') {
+        const ringRadius = Math.min(w, h) * (0.18 + progress * 0.18);
+        ctx.strokeStyle = this.fpRgba(color, 0.62 * (1 - progress * 0.4));
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(cx, h * 0.82, ringRadius, ringRadius * 0.28, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        const column = ctx.createLinearGradient(0, h * 0.82, 0, h * 0.32);
+        column.addColorStop(0, this.fpRgba(color, 0.24));
+        column.addColorStop(1, this.fpRgba(color, 0));
+        ctx.fillStyle = column;
+        ctx.fillRect(cx - ringRadius * 0.52, h * 0.32, ringRadius * 1.04, h * 0.5);
+        for (let i = 0; i < 16; i += 1) {
+          const angle = i * 2.399 + this.time * 1.7;
+          const radius = ringRadius * (0.3 + (i % 5) * 0.14);
+          ctx.fillStyle = i % 3 === 0 ? 'rgba(255,255,245,.86)' : this.fpRgba(color, 0.62);
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(angle) * radius, h * 0.82 + Math.sin(angle) * radius * 0.28 - progress * h * 0.12, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (cast.kind === 'golden-gun') {
+        const windup = clamp(cast.time / Math.max(0.01, cast.windup || 0.46), 0, 1);
+        const fired = Boolean(cast.fired);
+        const edge = ctx.createLinearGradient(0, h * 0.25, 0, h);
+        edge.addColorStop(0, 'rgba(255, 186, 76, 0)');
+        edge.addColorStop(1, 'rgba(255, 168, 52, ' + (0.1 + windup * 0.18) + ')');
+        ctx.fillStyle = edge;
+        ctx.fillRect(0, h * 0.25, w, h * 0.75);
+        const sunX = w * 0.68;
+        const sunY = h * 0.7;
+        const sun = ctx.createRadialGradient(sunX, sunY, 2, sunX, sunY, h * 0.46);
+        sun.addColorStop(0, 'rgba(255, 255, 236, .96)');
+        sun.addColorStop(0.12, 'rgba(255, 220, 128, .8)');
+        sun.addColorStop(0.42, 'rgba(255, 156, 43, .23)');
+        sun.addColorStop(1, 'rgba(255, 128, 24, 0)');
+        ctx.fillStyle = sun;
+        ctx.fillRect(0, h * 0.2, w, h * 0.8);
+        ctx.save();
+        ctx.translate(sunX, sunY);
+        ctx.rotate(this.time * 0.25);
+        for (let i = 0; i < 16; i += 1) {
+          const angle = (i / 16) * Math.PI * 2;
+          ctx.strokeStyle = this.fpRgba('#ffd27e', 0.12 + windup * 0.16);
+          ctx.lineWidth = i % 3 === 0 ? 2 : 0.8;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * h * 0.16, Math.sin(angle) * h * 0.16);
+          ctx.lineTo(Math.cos(angle) * h * (0.27 + (i % 4) * 0.045), Math.sin(angle) * h * (0.27 + (i % 4) * 0.045));
+          ctx.stroke();
+        }
+        ctx.restore();
+        const scale = clamp(h / 650, 0.9, 1.6);
+        ctx.save();
+        ctx.translate(w * 0.73, h * 0.99 + (1 - windup) * 60);
+        ctx.rotate(-0.3);
+        ctx.scale(scale, scale);
+        const gold = ctx.createLinearGradient(-160, -70, 60, 50);
+        gold.addColorStop(0, '#fff4ca');
+        gold.addColorStop(0.32, '#ffd477');
+        gold.addColorStop(0.72, '#d88d2e');
+        gold.addColorStop(1, '#6b3712');
+        ctx.fillStyle = gold;
+        ctx.strokeStyle = 'rgba(255, 246, 207, .72)';
+        ctx.lineWidth = 1.4;
+        roundRect(ctx, -190, -74, 190, 34, 12);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#f3b855';
+        ctx.beginPath();
+        ctx.arc(-150, -57, 23, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 251, 225, .9)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.arc(-150, -57, 11 + i * 6, this.time * 2 + i, this.time * 2 + i + Math.PI);
+          ctx.stroke();
+        }
+        ctx.fillStyle = gold;
+        roundRect(ctx, -28, -48, 42, 128, 15);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(50, 23, 5, .8)';
+        roundRect(ctx, -17, -34, 18, 92, 7);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 245, 207, .65)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(-114 + i * 26, -74);
+          ctx.lineTo(-126 + i * 26, -40);
+          ctx.stroke();
+        }
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.shadowColor = '#ff9a32';
+        ctx.shadowBlur = 18;
+        for (let i = 0; i < 10; i += 1) {
+          const t = i / 9;
+          const bx = -184 + t * 178;
+          const flick = Math.sin(this.time * 11 + i * 1.7) * (7 + t * 5);
+          ctx.strokeStyle = i % 3 === 0 ? 'rgba(255, 252, 219, .92)' : i % 2 ? 'rgba(255, 177, 69, .78)' : 'rgba(255, 108, 24, .68)';
+          ctx.lineWidth = i % 3 === 0 ? 3 : 5.5;
+          ctx.beginPath();
+          ctx.moveTo(bx, -75);
+          ctx.quadraticCurveTo(bx + 7 + flick * 0.4, -90 - Math.abs(flick), bx + flick * 0.7, -106 - (i % 4) * 4);
+          ctx.stroke();
+        }
+        const chargeGlow = ctx.createRadialGradient(-190, -57, 2, -190, -57, 66);
+        chargeGlow.addColorStop(0, 'rgba(255, 255, 240, .96)');
+        chargeGlow.addColorStop(0.16, 'rgba(255, 208, 104, .82)');
+        chargeGlow.addColorStop(0.5, 'rgba(255, 122, 24, .24)');
+        chargeGlow.addColorStop(1, 'rgba(255, 100, 18, 0)');
+        ctx.fillStyle = chargeGlow;
+        ctx.beginPath();
+        ctx.arc(-190, -57, 66, 0, Math.PI * 2);
+        ctx.fill();
+        if (fired) {
+          const flash = clamp(1 - (cast.time - (cast.windup || 0.46)) / 0.3, 0, 1);
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = 'rgba(255, 250, 218, ' + (flash * 0.5) + ')';
+          ctx.fillRect(-320, -260, 520, 420);
+          ctx.fillStyle = 'rgba(255, 255, 248, .96)';
+          ctx.beginPath();
+          ctx.arc(-190, -57, 24 + flash * 36, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.globalAlpha = 0.55 + windup * 0.45;
+        const chargeRing = h * (0.2 + windup * 0.05);
+        ctx.strokeStyle = this.fpRgba('#ffd67e', 0.5 + windup * 0.4);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, chargeRing, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * windup);
+        ctx.stroke();
+      } else {
+        const ringRadius = Math.min(w, h) * (0.12 + progress * 0.22);
+        ctx.strokeStyle = this.fpRgba(color, 0.7 * (1 - progress * 0.45));
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let i = 0; i < 24; i += 1) {
+          const angle = i * 2.399 + this.time * 2.2;
+          const distance = ringRadius * (0.4 + (i % 7) * 0.09);
+          ctx.fillStyle = i % 3 === 0 ? 'rgba(255,255,247,.88)' : this.fpRgba(color, 0.7);
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(angle) * distance, cy + Math.sin(angle) * distance, 1.55, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      if (cast.label) {
+        ctx.globalAlpha = clamp(impulse * 1.2, 0, 1);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(249, 246, 232, .94)';
+        ctx.font = '600 12px "PingFang SC", "Segoe UI", sans-serif';
+        ctx.shadowColor = this.fpRgba(color, 0.8);
+        ctx.shadowBlur = 18;
+        ctx.fillText(cast.label, cx, h * 0.72);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = this.fpRgba(color, 0.82);
+        ctx.font = '500 7px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText(cast.kind === 'golden-gun' ? (cast.fired ? 'SOLAR LIGHT RELEASED' : 'CHARGING SOLAR LIGHT') : 'LIGHT ABILITY', cx, h * 0.72 + 13);
+      }
+      ctx.restore();
+    }
+
+    grenadeVisualPoint(grenade) {
+      const max = Math.max(0.001, grenade.max || 0.72);
+      const progress = clamp(1 - grenade.time / max, 0, 1);
+      const z = Math.max(0, (grenade.z0 ?? 16) + Math.sin(progress * Math.PI) * (grenade.arc ?? 0) - (grenade.drop ?? 0) * progress);
+      return { x: grenade.x, y: grenade.y, z, progress };
+    }
+
+    hammerVisualPoint(hammer) {
+      const max = Math.max(0.001, hammer.max || 0.6);
+      const progress = clamp(1 - hammer.time / max, 0, 1);
+      return { x: hammer.x, y: hammer.y, z: 32 + Math.sin(progress * Math.PI) * 54, progress };
+    }
+
+    drawFpProjectiles(ctx, w, h, camera) {
+      this.bullets.forEach((bullet) => {
+        const z = bullet.z ?? 30;
+        const stretch = bullet.explosive || bullet.melee ? 0.06 : 0.042;
+        const now = this.fpProject(bullet.x, bullet.y, z, camera);
+        const prev = this.fpProject(bullet.x - bullet.vx * stretch, bullet.y - bullet.vy * stretch, z, camera);
         if (!now) return;
-        const size = clamp(now.scale * (bullet.radius || 2.6), 1.5, 12);
+        const color = bullet.color || '#ffe5a6';
+        const width = clamp((bullet.width || 1.4) * clamp(now.scale * 0.3, 0.7, 3.4), 0.9, 8);
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = bullet.color || '#f07158';
-        ctx.shadowColor = bullet.color || '#f07158';
-        ctx.shadowBlur = 10;
+        ctx.lineCap = 'round';
+        const trail = ctx.createLinearGradient(prev ? prev.x : now.x, prev ? prev.y : now.y, now.x, now.y);
+        trail.addColorStop(0, this.fpRgba(color, 0));
+        trail.addColorStop(0.45, this.fpRgba(color, 0.48));
+        trail.addColorStop(1, this.fpRgba(color, 0.98));
+        ctx.strokeStyle = trail;
+        ctx.lineWidth = width * 2.8;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 16;
         ctx.beginPath();
-        ctx.arc(now.x, now.y, size, 0, Math.PI * 2);
+        ctx.moveTo(prev ? prev.x : now.x, prev ? prev.y : now.y);
+        ctx.lineTo(now.x, now.y);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 253, 241, .9)';
+        ctx.lineWidth = Math.max(0.7, width * 0.5);
+        ctx.shadowBlur = 4;
+        ctx.stroke();
+        const head = ctx.createRadialGradient(now.x, now.y, 1, now.x, now.y, width * 4.2);
+        head.addColorStop(0, 'rgba(255,255,246,.98)');
+        head.addColorStop(0.28, this.fpRgba(color, 0.82));
+        head.addColorStop(1, this.fpRgba(color, 0));
+        ctx.fillStyle = head;
+        ctx.beginPath();
+        ctx.arc(now.x, now.y, width * 4.2, 0, Math.PI * 2);
+        ctx.fill();
+        if (bullet.explosive || bullet.melee) {
+          ctx.strokeStyle = this.fpRgba(color, 0.66);
+          ctx.lineWidth = Math.max(1, width * 0.5);
+          ctx.beginPath();
+          ctx.arc(now.x, now.y, clamp(now.scale * 2.6, 3, 14), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+      this.enemyBullets.forEach((bullet) => {
+        const z = 22;
+        const now = this.fpProject(bullet.x, bullet.y, z, camera);
+        const prev = this.fpProject(bullet.x - bullet.vx * 0.05, bullet.y - bullet.vy * 0.05, z, camera);
+        if (!now) return;
+        const color = bullet.color || '#f07158';
+        const size = clamp(now.scale * (bullet.radius || 2.8), 1.8, 13);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        if (prev) {
+          const trail = ctx.createLinearGradient(prev.x, prev.y, now.x, now.y);
+          trail.addColorStop(0, this.fpRgba(color, 0));
+          trail.addColorStop(1, this.fpRgba(color, 0.64));
+          ctx.strokeStyle = trail;
+          ctx.lineWidth = Math.max(1.4, size * 0.9);
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(now.x, now.y);
+          ctx.stroke();
+        }
+        const glow = ctx.createRadialGradient(now.x, now.y, 0.5, now.x, now.y, size * 2.5);
+        glow.addColorStop(0, 'rgba(255, 246, 224, .96)');
+        glow.addColorStop(0.28, this.fpRgba(color, 0.9));
+        glow.addColorStop(1, this.fpRgba(color, 0));
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(now.x, now.y, size * 2.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       });
       this.grenades.forEach((grenade) => {
-        const progress = 1 - grenade.time / grenade.max;
-        const x = grenade.x + (grenade.tx - grenade.x) * progress;
-        const y = grenade.y + (grenade.ty - grenade.y) * progress;
-        const z = 16 + Math.sin(progress * Math.PI) * 74;
-        const point = this.fpProject(x, y, z, camera);
+        const visual = this.grenadeVisualPoint(grenade);
+        const point = this.fpProject(visual.x, visual.y, visual.z, camera);
         if (!point) return;
-        const color = this.activeSubclass().color;
+        const color = grenade.transcendent ? '#ffe0a6' : (this.activeSubclass().color || '#e9bd72');
+        const shadow = grenade.transcendent ? '#b58cff' : color;
+        const size = clamp(point.scale * 4.2, 2.5, 17);
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = this.fpRgba(color, 0.82);
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 18;
+        const glow = ctx.createRadialGradient(point.x, point.y, 0.5, point.x, point.y, size * 3.1);
+        glow.addColorStop(0, 'rgba(255,255,242,.98)');
+        glow.addColorStop(0.24, this.fpRgba(color, 0.9));
+        glow.addColorStop(0.62, this.fpRgba(shadow, 0.32));
+        glow.addColorStop(1, this.fpRgba(color, 0));
+        ctx.fillStyle = glow;
         ctx.beginPath();
-        ctx.arc(point.x, point.y, clamp(point.scale * 3.6, 2, 14), 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, size * 3.1, 0, Math.PI * 2);
         ctx.fill();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(this.time * 5.5 + (grenade.phase || 0));
+        if (grenade.transcendent) {
+          ctx.fillStyle = '#ffe8b0';
+          ctx.beginPath();
+          ctx.arc(-size * 0.5, 0, size * 0.62, -Math.PI / 2, Math.PI / 2);
+          ctx.fill();
+          ctx.fillStyle = '#a87cff';
+          ctx.beginPath();
+          ctx.arc(size * 0.5, 0, size * 0.62, Math.PI / 2, Math.PI * 1.5);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = this.fpRgba(color, 0.95);
+          ctx.beginPath();
+          ctx.arc(0, 0, size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 249, 232, .72)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, size * 1.35, 0, Math.PI * 2);
+          ctx.stroke();
+        }
         ctx.restore();
       });
       this.hammers.forEach((hammer) => {
-        const progress = 1 - hammer.time / hammer.max;
-        const x = hammer.x + (hammer.tx - hammer.x) * progress;
-        const y = hammer.y + (hammer.ty - hammer.y) * progress;
-        const z = 32 + Math.sin(progress * Math.PI) * 54;
-        const point = this.fpProject(x, y, z, camera);
+        const visual = this.hammerVisualPoint(hammer);
+        const point = this.fpProject(visual.x, visual.y, visual.z, camera);
         if (!point) return;
         const color = hammer.profile?.color || this.activeSubclass().color;
         ctx.save();
@@ -16493,6 +17580,7 @@
 
     drawFpWeapon(ctx, w, h) {
       if (!this.player || this.deathState || this.inventoryOpen) return;
+      if (this.fpCast?.kind === 'golden-gun') return;
       const spec = this.activeWeaponSpec();
       const energy = spec.elementColor || '#f2c57e';
       const subclass = this.activeSubclass().color;
@@ -16504,10 +17592,14 @@
       const recoil = this.fpShotPulse * 18 + this.fpRecoil * 160;
       const scale = clamp(h / 500, 1.05, 1.9);
       const baseX = w * 0.67 + bobX + sway;
-      const baseY = h + 20 + bobY + reloadDrop + recoil * 0.18;
+      const cast = this.fpCast;
+      const castProgress = cast ? clamp(cast.time / cast.max, 0, 1) : 0;
+      const castDrop = cast ? Math.sin(Math.min(1, castProgress * 1.16) * Math.PI) * (cast.kind === 'golden-gun' ? 54 : 30) : 0;
+      const jumpDrop = clamp((this.fpJumpZ || 0) * 0.22, 0, 15);
+      const baseY = h + 20 + bobY + reloadDrop + recoil * 0.18 + castDrop + jumpDrop;
       ctx.save();
       ctx.translate(baseX, baseY);
-      ctx.rotate(-0.065 + sway * 0.0015 + (this.player.reload > 0 ? 0.24 : 0));
+      ctx.rotate(-0.065 + sway * 0.0015 + (this.player.reload > 0 ? 0.24 : 0) + castDrop * 0.0018);
       ctx.scale(scale, scale);
       const metal = ctx.createLinearGradient(-180, -150, 20, 10);
       metal.addColorStop(0, '#20262c');
@@ -16664,6 +17756,8 @@
       vignette.addColorStop(1, 'rgba(0,0,0,.48)');
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, w, h);
+
+      this.drawFpCastOverlay(ctx, w, h);
 
       const healthRatio = this.player ? (this.player.hp + this.player.shield) / (this.player.maxHp + this.player.maxShield) : 1;
       if (healthRatio < 0.34 || this.player?.flash > 0.02) {
