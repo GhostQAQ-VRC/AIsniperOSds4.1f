@@ -7594,6 +7594,8 @@
       this.fpCast = null;
       this.fpPlatforms = [];
       this.fpPyramids = [];
+      this.fpStructures = [];
+      this.fpStructureWalls = [];
       this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
@@ -8044,6 +8046,8 @@
       this.fpLandDip = 0;
       this.fpPlatforms = [];
       this.fpPyramids = [];
+      this.fpStructures = [];
+      this.fpStructureWalls = [];
       this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
@@ -8734,6 +8738,8 @@
       this.fpCast = null;
       this.fpPlatforms = [];
       this.fpPyramids = [];
+      this.fpStructures = [];
+      this.fpStructureWalls = [];
       this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
@@ -11216,9 +11222,49 @@
       return texture;
     }
 
+    fpsVoidSkyTexture(style) {
+      if (typeof document === 'undefined') return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, 2048, 1024);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const cx = 1024;
+      const cy = 520;
+      for (let i = 0; i < 11; i += 1) {
+        const rx = 280 + i * 92;
+        const ry = 78 + i * 24;
+        ctx.strokeStyle = this.fpRgba(style.accent, 0.008 + (i % 3) * 0.006);
+        ctx.lineWidth = 2 + (i % 4) * 2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, -0.18 + i * 0.008, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 7; i += 1) {
+        ctx.strokeStyle = this.fpRgba(style.accent2 || style.accent, 0.011);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        const y = 120 + i * 120;
+        ctx.moveTo(0, y);
+        ctx.bezierCurveTo(520, y + 90, 1420, y - 110, 2048, y + 20);
+        ctx.stroke();
+      }
+      ctx.restore();
+      const texture = new window.THREE.CanvasTexture(canvas);
+      texture.wrapS = window.THREE.RepeatWrapping;
+      texture.wrapT = window.THREE.ClampToEdgeWrapping;
+      if ('encoding' in texture && window.THREE.sRGBEncoding !== undefined) texture.encoding = window.THREE.sRGBEncoding;
+      return texture;
+    }
+
     fpsSkyTexture(style) {
       if (typeof document === 'undefined') return null;
       if (style?.key === 'earth') return this.fpsEarthSkyTexture(style);
+      if (style?.key === 'blackhole' || style?.key === 'eternal') return this.fpsVoidSkyTexture(style);
       const canvas = document.createElement('canvas');
       canvas.width = 2048;
       canvas.height = 1024;
@@ -11383,13 +11429,13 @@
       const core = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 24), new THREE.MeshBasicMaterial({ color: 0x000000, fog: false }));
       group.add(core);
       const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: this.fpsGlowTexture(style.accent), color: 0xffffff, transparent: true, opacity: 0.85,
+        map: this.fpsGlowTexture(style.accent), color: 0xffffff, transparent: true, opacity: 0.16,
         blending: THREE.AdditiveBlending, depthWrite: false, fog: false
       }));
-      glow.scale.set(radius * 5.2, radius * 5.2, 1);
+      glow.scale.set(radius * 3.4, radius * 3.4, 1);
       group.add(glow);
       const diskMaterial = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(style.accent), transparent: true, opacity: 0.55,
+        color: new THREE.Color(style.accent), transparent: true, opacity: 0.2,
         side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, fog: false
       });
       const disk = new THREE.Mesh(new THREE.RingGeometry(radius * 1.3, radius * 3.2, 96), diskMaterial);
@@ -11397,15 +11443,18 @@
       disk.rotation.z = -0.2;
       group.add(disk);
       const lens = new THREE.Mesh(new THREE.TorusGeometry(radius * 1.1, radius * 0.035, 8, 80), new THREE.MeshBasicMaterial({
-        color: 0xffe1a6, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+        color: new THREE.Color(style.accent), transparent: true, opacity: 0.26, blending: THREE.AdditiveBlending, depthWrite: false, fog: false
       }));
       group.add(lens);
+      this.fpsVoidRings = [disk, lens];
       this.fpsWorld.add(group);
       return group;
     }
 
     fpsBuildSky(style) {
       const THREE = window.THREE;
+      const voidWorld = style.key === 'blackhole' || style.key === 'eternal';
+      this.fpsVoidRings = [];
       const skyTexture = this.fpsSkyTexture(style);
       if (skyTexture) {
         const sky = new THREE.Mesh(new THREE.SphereGeometry(30000, 40, 24), new THREE.MeshBasicMaterial({
@@ -11424,8 +11473,9 @@
       }));
       sunGlow.position.copy(sunPosition);
       sunGlow.scale.set(style.key === 'mercury' ? 5600 : 3200, style.key === 'mercury' ? 5600 : 3200, 1);
+      sunGlow.visible = !voidWorld;
       this.fpsWorld.add(sunGlow);
-      const sun = new THREE.DirectionalLight(new THREE.Color(style.key === 'earth' ? '#ffd2a1' : style.key === 'mercury' ? '#ffd08a' : style.accent), style.key === 'earth' ? 1.32 : style.key === 'mercury' ? 1.55 : 1.15);
+      const sun = new THREE.DirectionalLight(new THREE.Color(style.key === 'earth' ? '#ffd2a1' : style.key === 'mercury' ? '#ffd08a' : style.accent), voidWorld ? 0.045 : style.key === 'earth' ? 1.32 : style.key === 'mercury' ? 1.55 : 1.15);
       sun.position.copy(sunPosition);
       this.fpsWorld.add(sun);
       const planetAngle = -Math.PI / 2 + 0.42;
@@ -11469,14 +11519,27 @@
       } else if (style.type === 'blackhole') {
         this.fpsBuildBlackHole(style, planetPosition, planetRadius);
       } else if (style.key === 'eternal') {
-        const eternalBody = {
-          key: 'eternal-companion', type: 'gas', base: '#b9a2dd', dark: '#1a0d28',
-          accent: '#8ff7ea', clouds: true, rings: true
-        };
         const eternalPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 18000, 5200, centerZ + Math.sin(planetAngle) * 18000);
-        addCompanion(eternalBody, 1380, eternalPosition, { atmosphere: 0.54, halo: 4.7, tilt: 0.22, rings: true });
+        const darkCore = new THREE.Mesh(new THREE.SphereGeometry(1180, 32, 24), new THREE.MeshBasicMaterial({ color: 0x000000, fog: false }));
+        darkCore.position.copy(eternalPosition);
+        this.fpsWorld.add(darkCore);
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(1210, 8, 8, 96), new THREE.MeshBasicMaterial({
+          color: new THREE.Color('#8ff7ea'), transparent: true, opacity: 0.19,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+        }));
+        rim.position.copy(eternalPosition);
+        rim.rotation.x = 0.4;
+        this.fpsWorld.add(rim);
+        const rim2 = new THREE.Mesh(new THREE.TorusGeometry(1510, 3.5, 6, 96), new THREE.MeshBasicMaterial({
+          color: new THREE.Color('#d8b8ff'), transparent: true, opacity: 0.11,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+        }));
+        rim2.position.copy(eternalPosition);
+        rim2.rotation.set(0.2, 0.45, 0.15);
+        this.fpsWorld.add(rim2);
+        this.fpsVoidRings.push(rim, rim2);
         const monolith = new THREE.Mesh(new THREE.ConeGeometry(620, 1500, 4), new THREE.MeshStandardMaterial({
-          color: 0x12091c, emissive: new THREE.Color('#8ff7ea'), emissiveIntensity: 0.14,
+          color: 0x050309, emissive: new THREE.Color('#8ff7ea'), emissiveIntensity: 0.035,
           roughness: 0.72, metalness: 0.35
         }));
         monolith.position.set(centerX + Math.cos(planetAngle + 0.2) * 16000, 3600, centerZ + Math.sin(planetAngle + 0.2) * 16000);
@@ -11515,7 +11578,19 @@
           atmosphere: 0.2 + (style.clouds ? 0.12 : 0), halo: 4.4, tilt: 0.16, rings: false
         });
       }
-      if (style.key !== 'earth') {
+      if (voidWorld) {
+        for (let i = 0; i < 4; i += 1) {
+          const arc = new THREE.Mesh(new THREE.TorusGeometry(6200 + i * 1750, 5 + i * 1.2, 5, 128, Math.PI * 1.48), new THREE.MeshBasicMaterial({
+            color: new THREE.Color(i % 2 ? style.accent2 : style.accent), transparent: true,
+            opacity: 0.022 + i * 0.006, blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+          }));
+          arc.position.set(centerX, 2600 + i * 480, centerZ);
+          arc.rotation.set(0.9 + i * 0.18, 0.3 + i * 0.26, -0.4 + i * 0.12);
+          this.fpsWorld.add(arc);
+          this.fpsVoidRings.push(arc);
+        }
+      }
+      if (style.key !== 'earth' && !voidWorld) {
         const nebula = new THREE.Sprite(new THREE.SpriteMaterial({
           map: this.fpsGlowTexture(style.base), color: new THREE.Color(style.base), transparent: true, opacity: 0.12,
           blending: THREE.AdditiveBlending, depthWrite: false, fog: false
@@ -11918,6 +11993,127 @@
       });
     }
 
+    refreshFpStructureHeights() {
+      if (!this.fpStructures?.length) return;
+      this.fpStructureWalls = [];
+      this.fpStructures.forEach((structure) => {
+        const samples = [
+          [structure.x, structure.y],
+          [structure.x - structure.w * 0.5, structure.y - structure.d * 0.5],
+          [structure.x + structure.w * 0.5, structure.y - structure.d * 0.5],
+          [structure.x - structure.w * 0.5, structure.y + structure.d * 0.5],
+          [structure.x + structure.w * 0.5, structure.y + structure.d * 0.5]
+        ];
+        const ground = Math.max(...samples.map(([nx, ny]) => this.fpTerrainHeightAt(nx * this.w, ny * this.h)));
+        structure.floor = ground + 2;
+        (structure.walls || []).forEach((wall) => {
+          wall.top = structure.floor + structure.height;
+          this.fpStructureWalls.push(wall);
+        });
+      });
+    }
+
+    fpsBuildStructures(style) {
+      if (!this.fpStructures?.length || !window.THREE) return;
+      const THREE = window.THREE;
+      const unitBox = new THREE.BoxGeometry(1, 1, 1);
+      this.fpStructures.forEach((structure, structureIndex) => {
+        const voidHall = structure.kind === 'void-sanctum';
+        const cityRuin = structure.kind === 'city-ruin';
+        const temple = structure.kind === 'sun-temple';
+        const wallColor = voidHall ? '#050308' : cityRuin ? '#2a2c2a' : temple ? '#9b7445' : new THREE.Color(style.dark).offsetHSL(0, 0, 0.06);
+        const wallMaterial = new THREE.MeshStandardMaterial({
+          color: wallColor, roughness: voidHall ? 0.48 : 0.94, metalness: voidHall ? 0.55 : 0.08,
+          side: THREE.DoubleSide, emissive: new THREE.Color(style.accent), emissiveIntensity: voidHall ? 0.025 : 0.01
+        });
+        const trimMaterial = new THREE.MeshBasicMaterial({
+          color: new THREE.Color(voidHall ? '#8ff7ea' : style.accent), transparent: true,
+          opacity: voidHall ? 0.58 : 0.3, blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        const floorMaterial = new THREE.MeshStandardMaterial({
+          color: voidHall ? '#09050d' : cityRuin ? '#30312f' : temple ? '#ab7c48' : new THREE.Color(style.dark).offsetHSL(0, 0, 0.08),
+          roughness: 0.87, metalness: voidHall ? 0.3 : 0.08
+        });
+        const addBox = (material, x, y, z, sx, sy, sz) => {
+          const mesh = new THREE.Mesh(unitBox, material);
+          mesh.position.set(x, y, z);
+          mesh.scale.set(sx, sy, sz);
+          this.fpsWorld.add(mesh);
+          return mesh;
+        };
+        const cx = structure.x * this.w;
+        const cz = structure.y * this.h;
+        const width = structure.w * this.w;
+        const depth = structure.d * this.h;
+        const floor = structure.floor;
+        const height = structure.height;
+        addBox(floorMaterial, cx, floor - 3, cz, width, 6, depth);
+        (structure.walls || []).forEach((wall) => {
+          const x = wall.x * this.w;
+          const z = wall.y * this.h;
+          const w = wall.w * this.w;
+          const d = wall.d * this.h;
+          addBox(wallMaterial, x, floor + height * 0.5, z, w, height, d);
+          addBox(trimMaterial, x, floor + height * 0.14, z, w * 0.86, 1.4, d * 1.05);
+          addBox(trimMaterial, x, floor + height * 0.78, z, w * 0.65, 1.1, d * 1.05);
+        });
+        if (structure.roof) {
+          addBox(wallMaterial, cx, floor + height + 5, cz, width, 10, depth);
+          addBox(trimMaterial, cx, floor + height - 2, cz, width * 0.72, 1.2, depth * 0.58);
+        }
+        const southZ = structure.y * this.h + structure.d * this.h * 0.5;
+        const doorW = (structure.door || 0.14) * this.w;
+        addBox(wallMaterial, cx, floor + 112, southZ, doorW, 26, 12);
+        addBox(trimMaterial, cx, floor + 102, southZ - 6, doorW * 0.9, 1.6, 2);
+        addBox(trimMaterial, cx - doorW * 0.55, floor + 55, southZ - 7, 1.6, 104, 2);
+        addBox(trimMaterial, cx + doorW * 0.55, floor + 55, southZ - 7, 1.6, 104, 2);
+        addBox(floorMaterial, cx, floor - 9, southZ - 18, doorW * 1.18, 20, 36);
+        if (voidHall) {
+          addBox(wallMaterial, cx, floor + 4, southZ - 18, doorW * 1.18, 6, 36);
+        }
+        const innerW = width * 0.72;
+        const innerD = depth * 0.62;
+        [-1, 1].forEach((sx) => {
+          [-1, 1].forEach((sz) => {
+            const column = addBox(wallMaterial, cx + sx * innerW * 0.5, floor + height * 0.5, cz + sz * innerD * 0.5, 16, height, 16);
+            column.rotation.y = 0.2 + structureIndex * 0.3;
+            addBox(trimMaterial, cx + sx * innerW * 0.5, floor + height * 0.52, cz + sz * innerD * 0.5, 3, height * 0.56, 17);
+          });
+        });
+        if (!cityRuin) {
+          const consoleRing = new THREE.Mesh(new THREE.TorusGeometry(28, 2.2, 8, 48), trimMaterial);
+          consoleRing.rotation.x = Math.PI / 2;
+          consoleRing.position.set(cx, floor + 16, cz - depth * 0.2);
+          this.fpsWorld.add(consoleRing);
+          const core = new THREE.Mesh(new THREE.OctahedronGeometry(7, 0), new THREE.MeshBasicMaterial({ color: voidHall ? 0x8ff7ea : style.accent }));
+          core.position.set(cx, floor + 34, cz - depth * 0.2);
+          this.fpsWorld.add(core);
+        }
+        if (voidHall || temple) {
+          const lightA = new THREE.PointLight(new THREE.Color('#8ff7ea'), voidHall ? 0.8 : 0.55, 420, 2);
+          lightA.position.set(cx, floor + 72, cz - depth * 0.22);
+          this.fpsWorld.add(lightA);
+          [-1, 1].forEach((side) => {
+            const lamp = new THREE.PointLight(new THREE.Color(side < 0 ? '#b78cff' : '#8ff7ea'), 0.42, 260, 2);
+            lamp.position.set(cx + side * width * 0.28, floor + 54, cz + depth * 0.2);
+            this.fpsWorld.add(lamp);
+          });
+        } else if (!cityRuin) {
+          const lamp = new THREE.PointLight(new THREE.Color(style.accent), 0.7, 380, 2);
+          lamp.position.set(cx, floor + 62, cz);
+          this.fpsWorld.add(lamp);
+        }
+        if (cityRuin) {
+          for (let i = 0; i < 5; i += 1) {
+            const rubble = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), floorMaterial);
+            rubble.position.set(cx + (i - 2) * width * 0.9, floor + 5, cz - depth * 0.9);
+            rubble.scale.set(5 + i * 2, 2.5 + i, 5 + (i % 3) * 2);
+            this.fpsWorld.add(rubble);
+          }
+        }
+      });
+    }
+
     fpsBuildProps(style) {
       if (this.isCitySurface()) {
         this.fpsBuildCity(style);
@@ -12229,18 +12425,19 @@
       const positions = geometry.attributes.position;
       const colors = new Float32Array(positions.count * 3);
       const city = this.isCitySurface();
+      const voidWorld = style.key === 'blackhole' || style.key === 'eternal';
       const biome = this.biomeConfig(this.mission);
-      const lowColor = new THREE.Color(city ? '#171a1b' : style.dark);
-      const baseColor = new THREE.Color(city ? '#3a3d3d' : (biome.ground || style.dark));
-      const highColor = new THREE.Color(city ? '#66625b' : style.accent);
+      const lowColor = new THREE.Color(voidWorld ? '#000000' : city ? '#171a1b' : style.dark);
+      const baseColor = new THREE.Color(voidWorld ? '#050309' : city ? '#3a3d3d' : (biome.ground || style.dark));
+      const highColor = new THREE.Color(voidWorld ? style.accent : city ? '#66625b' : style.accent);
       const color = new THREE.Color();
       for (let index = 0; index < positions.count; index += 1) {
         const x = positions.getX(index);
         const z = positions.getZ(index);
         const height = this.fpTerrainHeightAt(x, z);
         positions.setY(index, height);
-        const high = clamp(height / (city ? 42 : 95), 0, 1);
-        color.copy(baseColor).lerp(highColor, high * 0.5);
+        const high = clamp(height / (voidWorld ? 130 : city ? 42 : 95), 0, 1);
+        color.copy(baseColor).lerp(highColor, high * (voidWorld ? 0.17 : 0.5));
         if (height < 3) color.lerp(lowColor, 0.16);
         color.offsetHSL(0, 0, Math.sin(x * 0.017 + z * 0.013) * 0.025);
         color.toArray(colors, index * 3);
@@ -12248,14 +12445,14 @@
       positions.needsUpdate = true;
       geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       geometry.computeVertexNormals();
-      const texture = city ? this.fpsCityGroundTexture(style) : this.fpsGroundTexture(style);
+      const texture = voidWorld ? null : city ? this.fpsCityGroundTexture(style) : this.fpsGroundTexture(style);
       if (texture) texture.repeat.set(city ? 18 : 26, city ? 14 : 21);
       const material = new THREE.MeshStandardMaterial({
         map: texture || null,
         color: 0xffffff,
         vertexColors: true,
-        roughness: 0.97,
-        metalness: city ? 0.05 : 0.02
+        roughness: voidWorld ? 0.82 : 0.97,
+        metalness: voidWorld ? 0.16 : city ? 0.05 : 0.02
       });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.y = 0;
@@ -12270,6 +12467,7 @@
       const citySurface = this.isCitySurface();
       const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
       const openWorld = !arenaMode;
+      const voidWorld = style.key === 'blackhole' || style.key === 'eternal';
       const groundTexture = this.fpsGroundTexture(style);
       const groundMaterial = new THREE.MeshStandardMaterial({
         map: groundTexture || null,
@@ -12281,6 +12479,7 @@
       ground.position.set(this.w * 0.5, openWorld ? -120 : 0, this.h * 0.5);
       this.fpsWorld.add(ground);
       if (openWorld) this.fpsBuildTerrain(style);
+      this.fpsBuildStructures(style);
       const arena = new THREE.Mesh(new THREE.CircleGeometry(Math.min(this.w, this.h) * 0.55, 64), new THREE.MeshBasicMaterial({
         color: new THREE.Color(style.dark), transparent: true, opacity: 0.16, depthWrite: false
       }));
@@ -12306,19 +12505,31 @@
       this.fpsBuildBiomeLandmarks(style);
       this.fpsBuildPlatforms(style);
       this.fpsWorld.add(new THREE.HemisphereLight(
-        new THREE.Color(citySurface ? '#b7cbd4' : style.accent),
-        new THREE.Color(citySurface ? '#5a4637' : (biome.ground || style.dark)),
-        citySurface ? 0.9 : 0.72
+        new THREE.Color(voidWorld ? style.accent : citySurface ? '#b7cbd4' : style.accent),
+        new THREE.Color(voidWorld ? '#000000' : citySurface ? '#5a4637' : (biome.ground || style.dark)),
+        voidWorld ? 0.055 : citySurface ? 0.9 : 0.72
       ));
-      this.fpsWorld.add(new THREE.AmbientLight(new THREE.Color(citySurface ? '#ffd4a8' : style.accent), citySurface ? 0.34 : 0.28));
-      const accentLight = new THREE.PointLight(new THREE.Color(citySurface ? '#ffc98f' : style.accent), 1.2, 1800, 2);
+      this.fpsWorld.add(new THREE.AmbientLight(
+        new THREE.Color(voidWorld ? style.accent : citySurface ? '#ffd4a8' : style.accent),
+        voidWorld ? 0.035 : citySurface ? 0.34 : 0.28
+      ));
+      const accentLight = new THREE.PointLight(new THREE.Color(voidWorld ? style.accent : citySurface ? '#ffc98f' : style.accent), voidWorld ? 0.28 : 1.2, voidWorld ? 900 : 1800, 2);
       accentLight.position.set(this.w * 0.5, 180, this.h * 0.5);
       this.fpsWorld.add(accentLight);
+      if (this.fpsSuitLight) {
+        this.fpsCamera.remove(this.fpsSuitLight);
+        this.fpsSuitLight = null;
+      }
+      if (voidWorld && this.fpsCamera) {
+        this.fpsSuitLight = new THREE.PointLight(new THREE.Color(style.accent), 1.25, 430, 2);
+        this.fpsSuitLight.position.set(0, 0, -2);
+        this.fpsCamera.add(this.fpsSuitLight);
+      }
       const fogDistance = this.fpSettings?.viewDistance || 2600;
       this.fpsScene.fog = new THREE.Fog(
-        new THREE.Color(citySurface ? '#4c4038' : style.dark),
-        openWorld ? Math.max(1300, fogDistance * 0.55) : fogDistance * 0.35,
-        openWorld ? Math.max(7200, fogDistance * 2.3) : fogDistance
+        new THREE.Color(voidWorld ? '#000000' : citySurface ? '#4c4038' : style.dark),
+        voidWorld ? 280 : openWorld ? Math.max(1300, fogDistance * 0.55) : fogDistance * 0.35,
+        voidWorld ? 2100 : openWorld ? Math.max(7200, fogDistance * 2.3) : fogDistance
       );
       const dustCount = 220;
       const dustPositions = new Float32Array(dustCount * 3);
@@ -12381,6 +12592,9 @@
       this.fpsWorld = null;
       this.fpsWeaponGroup = null;
       this.fpsMuzzleFlash = null;
+      this.fpsSuitLight = null;
+      this.fpAltarRelic = null;
+      this.fpsVoidRings = [];
       this.fpsSceneKey = null;
       this.fpsEnemyModels.clear();
       this.fpsBossModels.clear();
@@ -13207,8 +13421,9 @@
       if (this.fpsScene?.fog) {
         const viewDistance = settings.viewDistance || 2600;
         const openWorld = !['range', 'crucible', 'gambit'].includes(this.currentMode);
-        this.fpsScene.fog.near = openWorld ? Math.max(1300, viewDistance * 0.55) : viewDistance * 0.35;
-        this.fpsScene.fog.far = openWorld ? Math.max(7200, viewDistance * 2.3) : viewDistance;
+        const voidWorld = ['blackhole', 'eternal'].includes(this.fpsStyle?.key);
+        this.fpsScene.fog.near = voidWorld ? 280 : openWorld ? Math.max(1300, viewDistance * 0.55) : viewDistance * 0.35;
+        this.fpsScene.fog.far = voidWorld ? 2100 : openWorld ? Math.max(7200, viewDistance * 2.3) : viewDistance;
       }
     }
 
@@ -13231,6 +13446,14 @@
           this.fpAltarRelic.rotation.z = 0.3 + Math.sin(this.time * 1.8) * 0.12;
           this.fpAltarRelic.position.y = (this.fpAltarRelic.userData.baseY || 0) + Math.sin(this.time * 2.2) * 4;
         }
+        (this.fpsVoidRings || []).forEach((ring, index) => {
+          if (ring.userData.voidBase === undefined) ring.userData.voidBase = ring.rotation.z;
+          ring.rotation.z = ring.userData.voidBase + this.time * (0.012 + index * 0.006);
+          if (ring.material) {
+            if (ring.userData.voidAlpha === undefined) ring.userData.voidAlpha = ring.material.opacity;
+            ring.material.opacity = ring.userData.voidAlpha * (0.72 + Math.sin(this.time * 0.65 + index) * 0.28);
+          }
+        });
         this.fpsRenderer.render(this.fpsScene, this.fpsCamera);
         this.fpsViewW = w;
         this.fpsViewH = h;
@@ -13296,8 +13519,17 @@
       return Math.max(0, height);
     }
 
+    fpStructureAt(worldX, worldZ) {
+      return (this.fpStructures || []).find((structure) => (
+        Math.abs(worldX - structure.x * this.w) <= structure.w * this.w * 0.5
+        && Math.abs(worldZ - structure.y * this.h) <= structure.d * this.h * 0.5
+      )) || null;
+    }
+
     fpGroundHeightAt(worldX, worldZ) {
-      return Math.max(this.fpTerrainHeightAt(worldX, worldZ), this.fpPlatformHeightAt(worldX, worldZ));
+      const structure = this.fpStructureAt(worldX, worldZ);
+      const base = Math.max(this.fpTerrainHeightAt(worldX, worldZ), this.fpPlatformHeightAt(worldX, worldZ));
+      return structure ? Math.max(base, structure.floor || 0) : base;
     }
 
     fpPlatformHeightAt(worldX, worldZ) {
@@ -13321,6 +13553,11 @@
         const half = pyramid.base * 0.44;
         return Math.abs(wx - pyramid.x * this.w) <= half && Math.abs(wz - pyramid.y * this.h) <= half;
       })) return true;
+      if ((this.fpStructureWalls || []).some((wall) => (
+        feet < (wall.top || 0) - 1
+        && Math.abs(wx - wall.x * this.w) <= wall.w * this.w * 0.5
+        && Math.abs(wz - wall.y * this.h) <= wall.d * this.h * 0.5
+      ))) return true;
       return (this.fpProps || []).some((prop) => {
         if (!['building', 'wreck', 'tower', 'spire', 'arch', 'obelisk'].includes(prop.kind)) return false;
         if ((prop.height || 0) <= feet + 14) return false;
@@ -13335,7 +13572,8 @@
       if (this.fpPropBlocksAt(nx, ny)) return false;
       const floor = this.fpGroundHeightAt(nx * this.w, ny * this.h);
       const feet = this.fpJumpZ || 0;
-      const step = this.fpGrounded ? 16 : 2.5;
+      const insideStructure = Boolean(this.fpStructureAt(nx * this.w, ny * this.h));
+      const step = this.fpGrounded ? (insideStructure ? 52 : 16) : 2.5;
       return floor <= feet + step + 0.01;
     }
 
@@ -13390,7 +13628,8 @@
       const feet = this.fpJumpZ || 0;
       if (this.fpGrounded) {
         if (floor > feet + 0.5) {
-          if (floor - feet <= 16) {
+          const insideStructure = Boolean(this.fpStructureAt(point.x, point.y));
+          if (floor - feet <= (insideStructure ? 52 : 16)) {
             this.fpJumpZ = floor;
             this.fpLandDip = Math.max(this.fpLandDip || 0, Math.min(2.4, (floor - feet) * 0.18));
           }
@@ -13596,8 +13835,8 @@
           zones
         };
         if (this.mission?.id === 'eternal-throne') {
-          const altarX = 0.5;
-          const altarY = 0.58;
+          const altarX = 0.78;
+          const altarY = 0.6;
           const levels = [12, 24, 36, 50];
           const widths = [0.3, 0.25, 0.2, 0.145];
           const depths = [0.2, 0.16, 0.12, 0.085];
@@ -13621,6 +13860,53 @@
           { x: 0.5, y: 2.95, base: 185, height: 175, rotation: 0.08 }
         ];
       }
+      this.fpStructures = [];
+      this.fpStructureWalls = [];
+      if (!arenaMode) {
+        const structureStyle = this.fpsPlanetStyle().key;
+        const addFpStructure = (spec) => {
+          const samples = [
+            [spec.x, spec.y],
+            [spec.x - spec.w * 0.5, spec.y - spec.d * 0.5],
+            [spec.x + spec.w * 0.5, spec.y - spec.d * 0.5],
+            [spec.x - spec.w * 0.5, spec.y + spec.d * 0.5],
+            [spec.x + spec.w * 0.5, spec.y + spec.d * 0.5]
+          ];
+          const ground = Math.max(...samples.map(([nx, ny]) => this.fpTerrainHeightAt(nx * this.w, ny * this.h)));
+          spec.floor = ground + 2;
+          spec.styleKey = structureStyle;
+          const tx = 0.02;
+          const tz = 0.024;
+          const door = spec.door || 0.14;
+          const sideWidth = Math.max(0.05, (spec.w - door) * 0.5);
+          const southY = spec.y + spec.d * 0.5 - tz * 0.5;
+          const northY = spec.y - spec.d * 0.5 + tz * 0.5;
+          const wallTop = spec.floor + spec.height;
+          const walls = [
+            { x: spec.x - door * 0.5 - sideWidth * 0.5, y: southY, w: sideWidth, d: tz, top: wallTop },
+            { x: spec.x + door * 0.5 + sideWidth * 0.5, y: southY, w: sideWidth, d: tz, top: wallTop },
+            { x: spec.x, y: northY, w: spec.w, d: tz, top: wallTop },
+            { x: spec.x - spec.w * 0.5 + tx * 0.5, y: spec.y, w: tx, d: spec.d, top: wallTop },
+            { x: spec.x + spec.w * 0.5 - tx * 0.5, y: spec.y, w: tx, d: spec.d, top: wallTop }
+          ];
+          spec.walls = walls;
+          this.fpStructures.push(spec);
+          walls.forEach((wall) => this.fpStructureWalls.push(wall));
+        };
+        if (structureStyle === 'blackhole' || structureStyle === 'eternal') {
+          addFpStructure({ kind: 'void-sanctum', x: 0.5, y: 0.22, w: 0.74, d: 0.34, height: 255, door: 0.16, roof: true });
+        } else if (this.isCitySurface()) {
+          addFpStructure({ kind: 'city-ruin', x: -2.2, y: 0.55, w: 0.38, d: 0.24, height: 140, door: 0.13, roof: false });
+        } else if (structureStyle === 'mercury') {
+          addFpStructure({ kind: 'sun-temple', x: -2.25, y: 0.55, w: 0.34, d: 0.24, height: 155, door: 0.12, roof: true });
+        } else {
+          addFpStructure({ kind: 'reliquary', x: -2.2, y: 0.55, w: 0.34, d: 0.23, height: 150, door: 0.12, roof: true });
+        }
+      }
+      const nearStructure = (x, y) => (this.fpStructures || []).some((structure) => (
+        Math.abs(x - structure.x) < structure.w * 0.5 + 0.03
+        && Math.abs(y - structure.y) < structure.d * 0.5 + 0.03
+      ));
       const nearAltar = (x, y, padding = 0.16) => Boolean(this.fpAltar)
         && Math.abs(x - this.fpAltar.x) < 0.18 + padding
         && Math.abs(y - this.fpAltar.y) < 0.16 + padding;
@@ -13639,7 +13925,7 @@
           rows.forEach((row, rowIndex) => {
             const x = col + (next() - 0.5) * 0.1;
             const y = row + (next() - 0.5) * 0.1;
-            if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y)) return;
+            if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearStructure(x, y)) return;
             if (next() < 0.06) return;
             const roll = next();
             const kind = roll < 0.8 ? 'building' : roll < 0.87 ? 'wreck' : 'rubble';
@@ -13661,7 +13947,7 @@
         for (let index = 0; index < 64; index += 1) {
           let x = streetBounds.minX + 0.25 + next() * (streetBounds.maxX - streetBounds.minX - 0.5);
           let y = streetBounds.minY + 0.22 + next() * (streetBounds.maxY - streetBounds.minY - 0.44);
-          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearPyramid(x, y)) continue;
+          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearPyramid(x, y) || nearStructure(x, y)) continue;
           const lamp = index % 2 === 0;
           this.fpProps.push({
             x, y,
@@ -13683,9 +13969,9 @@
           for (let tries = 0; tries < 24; tries += 1) {
             x = propBounds.minX + 0.22 + next() * (propBounds.maxX - propBounds.minX - 0.44);
             y = propBounds.minY + 0.2 + next() * (propBounds.maxY - propBounds.minY - 0.4);
-            if (Math.hypot(x - 0.5, y - 0.5) > 0.24 && !nearAltar(x, y, 0.02) && !nearSpawn(x, y) && !nearDais(x, y) && !nearPyramid(x, y)) break;
+            if (Math.hypot(x - 0.5, y - 0.5) > 0.24 && !nearAltar(x, y, 0.02) && !nearSpawn(x, y) && !nearDais(x, y) && !nearPyramid(x, y) && !nearStructure(x, y)) break;
           }
-          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y)) continue;
+          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearPyramid(x, y) || nearStructure(x, y)) continue;
           const kindRoll = next();
           this.fpProps.push({
             x, y,
@@ -14973,6 +15259,7 @@
       };
       this.toast(`${this.raidConfig.name} · 第 ${state.encounterIndex + 1} / ${state.encounters.length} 关 · ${config.name} · ${stageLabel}`);
       this.audio?.play('raidStage');
+      if (this.currentMode === 'raid') this.refreshFpStructureHeights();
       if (this.fpView && this.player) {
         const point = this.playerPoint();
         this.fpJumpZ = this.fpGroundHeightAt(point.x, point.y);
@@ -18684,20 +18971,69 @@
       ctx.restore();
     }
 
+    drawFpVoidDistortion(ctx, w, h) {
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const accent = this.fpsStyle?.accent || '#a98bff';
+      const accent2 = this.fpsStyle?.key === 'eternal' ? '#8ff7ea' : '#e7b96e';
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const aura = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.04, cx, cy, Math.max(w, h) * 0.64);
+      aura.addColorStop(0, 'rgba(0,0,0,0)');
+      aura.addColorStop(0.62, this.fpRgba(accent, 0.008));
+      aura.addColorStop(0.82, this.fpRgba(accent, 0.024));
+      aura.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = aura;
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 5; i += 1) {
+        const radius = Math.min(w, h) * (0.18 + i * 0.075) + Math.sin(this.time * 0.35 + i) * 7;
+        ctx.strokeStyle = this.fpRgba(i % 2 ? accent2 : accent, 0.035 - i * 0.004);
+        ctx.lineWidth = 1 + (i % 2) * 0.7;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + Math.sin(this.time * 0.28 + i) * 8, radius * 1.25, radius * 0.62, -0.16 + i * 0.035 + this.time * 0.006, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 9; i += 1) {
+        const side = i % 2 ? 1 : -1;
+        const baseY = h * (0.14 + (i / 9) * 0.72);
+        const wobble = Math.sin(this.time * 0.33 + i * 1.4) * h * 0.045;
+        ctx.strokeStyle = this.fpRgba(i % 3 === 0 ? accent2 : accent, 0.018);
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(side < 0 ? 0 : w, baseY + wobble);
+        ctx.bezierCurveTo(cx * 0.5, baseY + wobble - 36, cx * 1.35, baseY - wobble + 24, cx, cy);
+        ctx.stroke();
+      }
+      const pulse = (this.time % 7.5) / 7.5;
+      if (pulse > 0.55) {
+        const p = (pulse - 0.55) / 0.45;
+        ctx.strokeStyle = this.fpRgba(accent, 0.075 * (1 - p));
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, Math.min(w, h) * (0.16 + p * 0.5), Math.min(w, h) * (0.08 + p * 0.26), -0.18, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     drawFpScreenFx(ctx, w, h, camera) {
       const biome = this.biomeConfig(this.mission);
       const particleColor = this.fpParticleKind === 'snow' ? '#dff4ff' : this.fpParticleKind === 'embers' ? '#f0ad6a' : this.fpParticleKind === 'spores' ? '#a8e8b7' : this.fpParticleKind === 'neon' ? '#f0a9df' : biome.accent2;
+      const voidKey = this.fpsStyle?.key || this.fpsPlanetStyle().key;
+      const voidWorld = voidKey === 'blackhole' || voidKey === 'eternal';
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      (this.fpParticles || []).forEach((particle, index) => {
-        const x = ((particle.x + Math.sin(this.time * 0.18 + particle.phase) * 0.025 + particle.drift * this.time) % 1 + 1) % 1 * w;
-        const y = ((particle.y + this.time * particle.speed) % 0.82 + 0.04) * h;
-        ctx.globalAlpha = 0.18 + (index % 5) * 0.07;
-        ctx.fillStyle = particleColor;
-        ctx.beginPath();
-        ctx.arc(x, y, particle.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
+      if (!voidWorld) {
+        (this.fpParticles || []).forEach((particle, index) => {
+          const x = ((particle.x + Math.sin(this.time * 0.18 + particle.phase) * 0.025 + particle.drift * this.time) % 1 + 1) % 1 * w;
+          const y = ((particle.y + this.time * particle.speed) % 0.82 + 0.04) * h;
+          ctx.globalAlpha = 0.18 + (index % 5) * 0.07;
+          ctx.fillStyle = particleColor;
+          ctx.beginPath();
+          ctx.arc(x, y, particle.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
       ctx.restore();
 
       const vignette = ctx.createRadialGradient(w * 0.5, h * 0.52, Math.min(w, h) * 0.24, w * 0.5, h * 0.52, Math.max(w, h) * 0.72);
@@ -18706,6 +19042,8 @@
       vignette.addColorStop(1, 'rgba(0,0,0,.48)');
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, w, h);
+
+      if (voidWorld) this.drawFpVoidDistortion(ctx, w, h);
 
       this.drawFpCastOverlay(ctx, w, h);
 
