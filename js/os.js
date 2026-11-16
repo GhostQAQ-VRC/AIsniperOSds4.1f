@@ -52,11 +52,15 @@
     abyss: { name: '深潜', hint: '钴蓝深渊' }
   };
   const WALLPAPER_KEYS = Object.keys(WALLPAPERS);
+  const FONT_SCALES = [0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
+  const GAME_FONT_SCALES = [1, 1.15, 1.25, 1.5, 1.75, 2];
 
   const defaultState = {
     appearance: 'dark',
     wallpaper: 'meridian',
     accent: 'solar',
+    fontScale: 1,
+    gameFontScale: 1.5,
     glass: true,
     reduceMotion: false,
     animateWallpaper: true,
@@ -100,6 +104,8 @@
       if (['light', 'dark', 'auto'].includes(saved.appearance)) safe.appearance = saved.appearance;
       if (WALLPAPER_KEYS.includes(saved.wallpaper)) safe.wallpaper = saved.wallpaper;
       if (['solar', 'signal', 'iris', 'ember'].includes(saved.accent)) safe.accent = saved.accent;
+      if (FONT_SCALES.includes(saved.fontScale)) safe.fontScale = saved.fontScale;
+      if (GAME_FONT_SCALES.includes(saved.gameFontScale)) safe.gameFontScale = saved.gameFontScale;
       ['glass', 'reduceMotion', 'animateWallpaper', 'widgets', 'magnification', 'dockAutoHide', 'dockIndicators', 'wifi', 'askNetworks', 'interfaceSounds', 'notifications', 'notificationSounds', 'notificationBadges', 'focusReduceMotion', 'locationServices', 'cameraAccess', 'micAccess', 'analytics', 'firewall', 'clock24', 'showMenuDate', 'autoTime', 'autoUpdates', 'autoLogin', 'showLoginHint', 'restoreWindows'].forEach((key) => {
         if (typeof saved[key] === 'boolean') safe[key] = saved[key];
       });
@@ -160,6 +166,7 @@
     root.dataset.theme = theme;
     root.dataset.wallpaper = state.wallpaper;
     root.dataset.accent = state.accent;
+    window.AISniperDisplay?.setScales?.(state.fontScale, state.gameFontScale);
     document.body.classList.toggle('no-glass', !state.glass);
     document.body.classList.toggle('reduce-motion', state.reduceMotion);
     document.body.classList.toggle('no-wallpaper-motion', !state.animateWallpaper);
@@ -218,6 +225,23 @@
       choice.classList.toggle('is-selected', selected);
       choice.setAttribute('aria-pressed', String(selected));
     });
+    $$('[data-font-scale-choice]').forEach((choice) => {
+      const selected = Math.abs(Number(choice.dataset.fontScaleChoice) - state.fontScale) < 0.001;
+      choice.classList.toggle('is-selected', selected);
+      choice.setAttribute('aria-pressed', String(selected));
+    });
+    $$('[data-game-font-scale-choice]').forEach((choice) => {
+      const selected = Math.abs(Number(choice.dataset.gameFontScaleChoice) - state.gameFontScale) < 0.001;
+      choice.classList.toggle('is-selected', selected);
+      choice.setAttribute('aria-pressed', String(selected));
+    });
+    const fontScaleLabel = $('#fontScaleValue');
+    if (fontScaleLabel) {
+      const percent = Math.round(state.fontScale * 100);
+      fontScaleLabel.textContent = `${percent}% · ${percent <= 100 ? '紧凑' : percent <= 125 ? '标准' : percent <= 150 ? '舒适' : '大字号'}`;
+    }
+    const gameFontScaleLabel = $('#gameFontScaleValue');
+    if (gameFontScaleLabel) gameFontScaleLabel.textContent = `额外 ${Math.round(state.gameFontScale * 100)}%`;
 
     /* Alert sound */
     $$('[data-alert-sound]').forEach((choice) => {
@@ -358,6 +382,28 @@
     state.accent = name;
     saveSettings();
     applyVisualState();
+  }
+
+  function setFontScale(value, options = {}) {
+    const next = Number(value);
+    if (!FONT_SCALES.includes(next)) return;
+    state.fontScale = next;
+    saveSettings();
+    applyVisualState();
+    if (options.announce) {
+      showToast({ title: '系统字体已缩放', message: `${Math.round(next * 100)}% · 文字、控件与界面间距会同步适配。`, icon: 'i-expand' });
+    }
+  }
+
+  function setGameFontScale(value, options = {}) {
+    const next = Number(value);
+    if (!GAME_FONT_SCALES.includes(next)) return;
+    state.gameFontScale = next;
+    saveSettings();
+    applyVisualState();
+    if (options.announce) {
+      showToast({ title: '游戏字体已增强', message: `HUD 与 Canvas 文字额外放大 ${Math.round(next * 100)}%。`, icon: 'app-steam' });
+    }
   }
 
   function setWifi(enabled, options = {}) {
@@ -2571,7 +2617,7 @@
     } else {
       const doc = document.createElement('div');
       doc.className = 'quick-doc';
-      doc.innerHTML = `<div class="quick-doc-meta">AISNIPER 预览</div><h4>${escapeHTML(item.name.replace(/\.[^.]+$/, ''))}</h4><p>此文件尚未建立可视化预览。双击原文件，即可用对应的应用打开。</p><p style="opacity:.55;font-size:10px;margin-top:22px">${escapeHTML(item.meta)}</p>`;
+      doc.innerHTML = `<div class="quick-doc-meta">AISNIPER 预览</div><h4>${escapeHTML(item.name.replace(/\.[^.]+$/, ''))}</h4><p>此文件尚未建立可视化预览。双击原文件，即可用对应的应用打开。</p><p style="opacity:.55;font-size:calc(var(--font-scale, 1) * 10px);margin-top:22px">${escapeHTML(item.meta)}</p>`;
       preview.appendChild(doc);
     }
     if (item.body) {
@@ -3294,6 +3340,18 @@
         playInterfaceTone('click');
         return;
       }
+      const fontScale = event.target.closest('[data-font-scale-choice]');
+      if (fontScale) {
+        setFontScale(fontScale.dataset.fontScaleChoice, { announce: true });
+        playInterfaceTone('click');
+        return;
+      }
+      const gameFontScale = event.target.closest('[data-game-font-scale-choice]');
+      if (gameFontScale) {
+        setGameFontScale(gameFontScale.dataset.gameFontScaleChoice, { announce: true });
+        playInterfaceTone('click');
+        return;
+      }
       const alert = event.target.closest('[data-alert-sound]');
       if (alert) {
         state.alertSound = alert.dataset.alertSound;
@@ -3513,7 +3571,7 @@
     result.textContent = shown;
     result.classList.toggle('is-error', calcState.error);
     const length = shown.length;
-    result.style.fontSize = length > 14 ? '30px' : length > 10 ? '39px' : '';
+    result.style.fontSize = length > 14 ? 'calc(var(--font-scale, 1) * 30px)' : length > 10 ? 'calc(var(--font-scale, 1) * 39px)' : '';
     if (expression) expression.innerHTML = calcState.expression || '&nbsp;';
     renderCalculatorHistory();
   }
@@ -6931,6 +6989,7 @@
       { title: resolvedTheme() === 'dark' ? '切换到浅色外观' : '切换到深色外观', subtitle: '切换 AISniperOS 的整体界面', type: '操作', icon: 'i-sun', keywords: '外观 主题 浅色 深色 theme appearance dark light', action: () => toggleAppearance({ announce: true }) },
       { title: '部署宝塔面板', subtitle: '启动演示服务器、网站与容器', type: '操作', icon: 'app-ops', keywords: '部署 宝塔 面板 容器 docker server deploy container baota', action: () => { const result = opsController?.deployBaota?.({ open: true }); if (!result) openApp('ops'); } },
       { title: '更换墙纸', subtitle: '子午线、余烬旷野、冰川空气等 12 套动态地平线', type: '设置', icon: 'i-image', keywords: '桌面 背景 壁纸 地平线 极夜 樱雾 沙丘 苔林 潮汐 星云 石墨 日冕 深潜 background horizon', action: () => openApp('settings', { panel: 'wallpaper' }) },
+      { title: '字体缩放', subtitle: '系统 90%–200% · 游戏 HUD 额外 100%–200%', type: '设置', icon: 'i-expand', keywords: '字体 字号 太小 4K 缩放 显示 游戏 HUD canvas text scale font', action: () => openApp('settings', { panel: 'displays' }) },
       { title: '网络', subtitle: '以太网、Wi-Fi 与网络诊断', type: '设置', icon: 'i-ethernet', keywords: '网络 有线 以太网 无线 局域网 wifi wi-fi 互联网 network ethernet wireless internet', action: () => openApp('settings', { panel: 'wifi' }) },
       { title: '通知与专注', subtitle: '横幅、声音与勿扰专注', type: '设置', icon: 'i-bell', keywords: '通知 横幅 声音 专注 勿扰 notifications focus do not disturb', action: () => openApp('settings', { panel: 'notifications' }) },
       { title: '用户与账户', subtitle: 'Sniper、登录与自动登录', type: '设置', icon: 'i-user', keywords: '用户 账户 登录 密码 account user login', action: () => openApp('settings', { panel: 'users' }) },
