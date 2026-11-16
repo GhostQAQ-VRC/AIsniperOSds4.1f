@@ -125,7 +125,7 @@
       tags: ['Director 星图', '13 个目的地', '10 DLC · 技能分支'],
       objective: '在 Director 星图点击星球，进入对应剧情线',
       description: '红色军团撕开了最后的城市的天际线。光能被夺走之后，一名守护者仍然可以向旗舰走去。',
-      controls: [['点击', '锁定鼠标'], ['WASD', '移动'], ['鼠标', '转向'], ['左键', '射击'], ['1/2/3', '切换武器'], ['R', '换弹'], ['Q', '手雷'], ['C', '近战'], ['V', '职业技能'], ['F', '超能'], ['E', '拾取'], ['F1', '装备栏']],
+      controls: [['点击', '锁定鼠标'], ['WASD', '移动'], ['鼠标', '转向'], ['左键', '射击'], ['1/2/3', '切换武器'], ['R', '换弹'], ['Q', '手雷'], ['C', '近战'], ['V', '职业技能'], ['F', '超能'], ['E', '拾取'], ['F1', '装备栏'], ['F2', '视角设置']],
       scoreLabel: '击杀',
       startLabel: '进入 Director',
       chapters: ['归乡', '火花', '1AU', '选择', '猩红终局'],
@@ -911,10 +911,54 @@
               <p>当前进度已经保留。继续后回到刚才的位置。</p>
               <div class="sgm-panel-actions">
                 <button class="sgm-btn primary" data-sgm-action="resume" type="button">继续游戏</button>
+                <button class="sgm-btn ghost" data-sgm-action="fp-settings" data-sgm-fp-only type="button">第一人称设置</button>
                 <button class="sgm-btn ghost" data-sgm-action="menu" type="button">返回标题</button>
                 <button class="sgm-btn quiet" data-sgm-action="library" type="button">返回 Steam 库</button>
               </div>
-              <small>按 Esc 或 P 也可以继续</small>
+              <small>按 Esc 或 P 也可以继续 · F2 打开第一人称设置</small>
+            </div>
+          </section>
+          <section class="sgm-overlay sgm-fpsettings" data-sgm-fpsettings hidden>
+            <div class="sgm-fp-panel">
+              <span class="sgm-eyebrow">DESTINY 2 · FIRST-PERSON SETTINGS</span>
+              <h2>视角与鼠标</h2>
+              <p>调低灵敏度、开启平滑或减少镜头晃动，可以明显减轻转向眩晕。</p>
+              <div class="sgm-fp-list">
+                <label class="sgm-fp-row" for="sgmFpSensitivity">
+                  <span>鼠标灵敏度 <b data-fp-value="sensitivity">0.75×</b></span>
+                  <small>数值越低，鼠标转向越慢</small>
+                  <input id="sgmFpSensitivity" type="range" min="0.2" max="2.5" step="0.05" value="0.75" data-fp-setting="sensitivity">
+                </label>
+                <label class="sgm-fp-row" for="sgmFpFov">
+                  <span>视野 FOV <b data-fp-value="fov">90°</b></span>
+                  <small>水平视野；更高能看到更多，但边缘会拉伸</small>
+                  <input id="sgmFpFov" type="range" min="65" max="110" step="1" value="90" data-fp-setting="fov">
+                </label>
+                <label class="sgm-fp-row" for="sgmFpDistance">
+                  <span>视距 <b data-fp-value="viewDistance">2600</b></span>
+                  <small>远处目标与场景的可见距离</small>
+                  <input id="sgmFpDistance" type="range" min="1000" max="4000" step="100" value="2600" data-fp-setting="viewDistance">
+                </label>
+                <label class="sgm-fp-row" for="sgmFpSmoothing">
+                  <span>转向平滑 <b data-fp-value="smoothing">55%</b></span>
+                  <small>平滑鼠标输入，减少急转和抖动</small>
+                  <input id="sgmFpSmoothing" type="range" min="0" max="100" step="1" value="55" data-fp-setting="smoothing">
+                </label>
+                <label class="sgm-fp-row" for="sgmFpBob">
+                  <span>镜头晃动 <b data-fp-value="bob">30%</b></span>
+                  <small>行走时的相机与武器起伏</small>
+                  <input id="sgmFpBob" type="range" min="0" max="100" step="1" value="30" data-fp-setting="bob">
+                </label>
+                <label class="sgm-fp-toggle" for="sgmFpInvert">
+                  <span>反转 Y 轴 <small>鼠标向下时视角向上</small></span>
+                  <input id="sgmFpInvert" type="checkbox" data-fp-setting="invertY">
+                </label>
+              </div>
+              <div class="sgm-panel-actions">
+                <button class="sgm-btn primary" data-sgm-action="fp-settings-close" type="button">返回游戏</button>
+                <button class="sgm-btn ghost" data-sgm-action="fp-settings-reset" type="button">恢复默认</button>
+              </div>
+              <small>设置保存在本机，仅影响命运 2 第一人称相机。</small>
             </div>
           </section>
           <section class="sgm-overlay sgm-result" data-sgm-result hidden>
@@ -951,6 +995,7 @@
       this.hud = $('.sgm-hud', this.root);
       this.menu = $('[data-sgm-menu]', this.root);
       this.pauseOverlay = $('[data-sgm-pause]', this.root);
+      this.fpSettingsOverlay = $('[data-sgm-fpsettings]', this.root);
       this.resultOverlay = $('[data-sgm-result]', this.root);
       this.toastEl = $('.sgm-toast', this.root);
       this.objectiveEl = $('[data-sgm-objective]', this.root);
@@ -973,9 +1018,25 @@
         if (name === 'start' || name === 'replay') this.start();
         else if (name === 'resume') this.resume();
         else if (name === 'pause') this.pause();
+        else if (name === 'fp-settings') this.openFpSettings();
+        else if (name === 'fp-settings-close') this.closeFpSettings(true);
+        else if (name === 'fp-settings-reset') { this.instance?.resetFpSettings?.(); this.populateFpSettings(); }
         else if (name === 'menu') this.goMenu();
         else if (name === 'skip-loading') this.finishLoading();
         else if (name === 'library') this.host.onExit?.();
+      });
+      this.fpSettingsOverlay?.addEventListener('input', (event) => {
+        const key = event.target.dataset?.fpSetting;
+        if (!key) return;
+        let value = event.target.type === 'checkbox' ? event.target.checked : Number(event.target.value);
+        if (key === 'smoothing' || key === 'bob') value /= 100;
+        this.instance?.setFpSetting?.(key, value);
+        this.syncFpSettingLabels();
+      });
+      this.fpSettingsOverlay?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        this.closeFpSettings(false);
       });
       this.canvas.addEventListener('pointermove', (event) => this.onPointerMove(event));
       this.canvas.addEventListener('pointerdown', (event) => {
@@ -1032,7 +1093,17 @@
         }
         return;
       }
+      if (event.code === 'F2' && this.activeId === 'destiny2') {
+        event.preventDefault();
+        this.openFpSettings();
+        return;
+      }
       if (event.code === 'Escape') {
+        if (this.mode === 'paused' && this.fpSettingsOverlay && !this.fpSettingsOverlay.hidden) {
+          event.preventDefault();
+          this.closeFpSettings(false);
+          return;
+        }
         if (this.mode === 'playing' && this.instance?.inventoryOpen) {
           event.preventDefault();
           this.instance.keyDown?.(event.code, event);
@@ -1108,6 +1179,7 @@
       this.menu.hidden = true;
       this.hud.hidden = true;
       this.pauseOverlay.hidden = true;
+      if (this.fpSettingsOverlay) this.fpSettingsOverlay.hidden = true;
       this.resultOverlay.hidden = true;
       this.loadingEl.hidden = false;
       const isDestiny = id === 'destiny2';
@@ -1199,6 +1271,9 @@
       this.titleEl.textContent = `${meta.title} · ${meta.cn}`;
       if (this.win) this.win.setAttribute('aria-label', `${meta.title} 本地演示`);
       this.controlsEl.textContent = meta.controls.map(([key, label]) => `${key} ${label}`).join('  ·  ');
+      this.root.querySelectorAll('[data-sgm-fp-only]').forEach((element) => {
+        element.hidden = this.activeId !== 'destiny2';
+      });
     }
 
     renderMenu() {
@@ -1253,6 +1328,7 @@
       this.mode = 'playing';
       this.menu.hidden = true;
       this.pauseOverlay.hidden = true;
+      if (this.fpSettingsOverlay) this.fpSettingsOverlay.hidden = true;
       this.resultOverlay.hidden = true;
       this.hud.hidden = this.activeId === 'destiny2';
       this.keys.clear();
@@ -1267,6 +1343,49 @@
       this.canvas.focus({ preventScroll: true });
     }
 
+    openFpSettings() {
+      if (this.activeId !== 'destiny2' || !this.instance?.getFpSettings) return;
+      if (this.mode === 'playing') this.pause();
+      this.pauseOverlay.hidden = true;
+      this.fpSettingsOverlay.hidden = false;
+      this.populateFpSettings();
+    }
+
+    closeFpSettings(resumeGame = true) {
+      if (!this.fpSettingsOverlay) return;
+      this.fpSettingsOverlay.hidden = true;
+      if (resumeGame) this.resume();
+      else if (this.mode === 'paused') this.pauseOverlay.hidden = false;
+    }
+
+    populateFpSettings() {
+      const settings = this.instance?.getFpSettings?.();
+      if (!settings || !this.fpSettingsOverlay) return;
+      this.fpSettingsOverlay.querySelectorAll('[data-fp-setting]').forEach((input) => {
+        const key = input.dataset.fpSetting;
+        if (input.type === 'checkbox') input.checked = Boolean(settings[key]);
+        else if (key === 'smoothing' || key === 'bob') input.value = String(Math.round(Number(settings[key]) * 100));
+        else input.value = String(settings[key]);
+      });
+      this.syncFpSettingLabels();
+    }
+
+    syncFpSettingLabels() {
+      const settings = this.instance?.getFpSettings?.();
+      if (!settings || !this.fpSettingsOverlay) return;
+      const values = {
+        sensitivity: `${Number(settings.sensitivity).toFixed(2)}×`,
+        fov: `${Math.round(settings.fov)}°`,
+        viewDistance: String(Math.round(settings.viewDistance)),
+        smoothing: `${Math.round(settings.smoothing * 100)}%`,
+        bob: `${Math.round(settings.bob * 100)}%`
+      };
+      this.fpSettingsOverlay.querySelectorAll('[data-fp-value]').forEach((label) => {
+        const key = label.dataset.fpValue;
+        if (values[key]) label.textContent = values[key];
+      });
+    }
+
     pause() {
       if (this.mode !== 'playing') return;
       this.mode = 'paused';
@@ -1274,6 +1393,7 @@
       this.mouse.down = false;
       if (document.pointerLockElement === this.canvas) document.exitPointerLock?.();
       this.pauseOverlay.hidden = false;
+      if (this.fpSettingsOverlay) this.fpSettingsOverlay.hidden = true;
       this.instance?.onPause?.();
     }
 
@@ -1285,6 +1405,7 @@
       if (this.mode !== 'paused') return;
       this.mode = 'playing';
       this.pauseOverlay.hidden = true;
+      if (this.fpSettingsOverlay) this.fpSettingsOverlay.hidden = true;
       this.keys.clear();
       this.lastFrame = performance.now();
       this.canvas.focus({ preventScroll: true });
@@ -1305,6 +1426,7 @@
       this.mouse.down = false;
       this.hud.hidden = true;
       this.pauseOverlay.hidden = true;
+      if (this.fpSettingsOverlay) this.fpSettingsOverlay.hidden = true;
       this.resultOverlay.hidden = true;
       if (show) this.renderMenu();
       this.menu.hidden = false;
@@ -7375,6 +7497,7 @@
   });
 
   const DESTINY_SAVE_KEY = 'aisniper.destiny2.progress.v1';
+  const DESTINY_FP_SETTINGS_KEY = 'aisniper.destiny.fps.v1';
 
   class Destiny2RedWar extends MiniGameBase {
     constructor(manager) {
@@ -7400,8 +7523,13 @@
       this.enemyAssets = null;
       this.playerAssets = null;
       this.fpView = true;
+      this.fpSettings = this.loadFpSettings();
+      this.fpLookDX = 0;
+      this.fpLookDY = 0;
       this.fpYaw = -Math.PI / 2;
       this.fpPitch = 0;
+      this.fpLookDX = 0;
+      this.fpLookDY = 0;
       this.fpBob = 0;
       this.fpRecoil = 0;
       this.fpMoving = false;
@@ -8611,7 +8739,7 @@
       this.updateHUD();
       if (!this.fpHintShown) {
         this.fpHintShown = true;
-        this.toast('第一人称已启用 · 点击画面锁定鼠标，WASD 移动，Esc 释放鼠标');
+        this.toast('第一人称已启用 · 点击锁定鼠标，WASD 移动，F2 调节灵敏度 / FOV');
       }
     }
 
@@ -10686,33 +10814,109 @@
       if (this.manager.hud) this.manager.hud.hidden = true;
     }
 
+    defaultFpSettings() {
+      return {
+        sensitivity: 0.75,
+        fov: 90,
+        viewDistance: 2600,
+        smoothing: 0.55,
+        bob: 0.3,
+        invertY: false
+      };
+    }
+
+    loadFpSettings() {
+      const defaults = this.defaultFpSettings();
+      try {
+        const raw = localStorage.getItem(DESTINY_FP_SETTINGS_KEY);
+        if (!raw) return defaults;
+        const saved = JSON.parse(raw);
+        return {
+          sensitivity: clamp(Number(saved.sensitivity) || defaults.sensitivity, 0.2, 3),
+          fov: clamp(Number(saved.fov) || defaults.fov, 65, 110),
+          viewDistance: clamp(Number(saved.viewDistance) || defaults.viewDistance, 1000, 4000),
+          smoothing: clamp(Number.isFinite(Number(saved.smoothing)) ? Number(saved.smoothing) : defaults.smoothing, 0, 1),
+          bob: clamp(Number.isFinite(Number(saved.bob)) ? Number(saved.bob) : defaults.bob, 0, 1),
+          invertY: Boolean(saved.invertY)
+        };
+      } catch (error) {
+        return defaults;
+      }
+    }
+
+    saveFpSettings() {
+      try { localStorage.setItem(DESTINY_FP_SETTINGS_KEY, JSON.stringify(this.fpSettings)); } catch (error) { /* no-op */ }
+    }
+
+    getFpSettings() {
+      return { ...this.fpSettings };
+    }
+
+    setFpSetting(key, value) {
+      if (!Object.prototype.hasOwnProperty.call(this.fpSettings, key)) return;
+      if (key === 'invertY') this.fpSettings.invertY = Boolean(value);
+      else if (key === 'fov') this.fpSettings.fov = clamp(Number(value) || 90, 65, 110);
+      else if (key === 'viewDistance') this.fpSettings.viewDistance = clamp(Number(value) || 2600, 1000, 4000);
+      else if (key === 'sensitivity') this.fpSettings.sensitivity = clamp(Number(value) || 0.75, 0.2, 3);
+      else if (key === 'smoothing') this.fpSettings.smoothing = clamp(Number(value) || 0, 0, 1);
+      else if (key === 'bob') this.fpSettings.bob = clamp(Number(value) || 0, 0, 1);
+      this.fpLookDX = 0;
+      this.fpLookDY = 0;
+      this.saveFpSettings();
+    }
+
+    resetFpSettings() {
+      this.fpSettings = this.defaultFpSettings();
+      this.fpLookDX = 0;
+      this.fpLookDY = 0;
+      this.saveFpSettings();
+      return this.getFpSettings();
+    }
+
     firstPersonActive() {
       return Boolean(this.fpView && this.screen === 'play' && this.player);
     }
 
     updateFirstPersonLook(dt) {
+      const settings = this.fpSettings || this.defaultFpSettings();
       const keys = this.manager.keys;
-      if (keys.has('ArrowLeft')) this.fpYaw -= 1.8 * dt;
-      if (keys.has('ArrowRight')) this.fpYaw += 1.8 * dt;
-      if (keys.has('ArrowUp')) this.fpPitch += 0.95 * dt;
-      if (keys.has('ArrowDown')) this.fpPitch -= 0.95 * dt;
+      if (keys.has('ArrowLeft')) this.fpYaw -= 1.55 * dt * settings.sensitivity;
+      if (keys.has('ArrowRight')) this.fpYaw += 1.55 * dt * settings.sensitivity;
+      if (keys.has('ArrowUp')) this.fpPitch += 0.82 * dt * settings.sensitivity * (settings.invertY ? -1 : 1);
+      if (keys.has('ArrowDown')) this.fpPitch -= 0.82 * dt * settings.sensitivity * (settings.invertY ? -1 : 1);
       if (!this.manager.pointerLocked && this.manager.pointerMoved) {
         const mouse = this.manager.mouse || { x: (this.viewW || this.manager.width) / 2, y: (this.viewH || this.manager.height) / 2 };
         const viewW = this.viewW || this.manager.width || 960;
         const viewH = this.viewH || this.manager.height || 560;
         const nx = (mouse.x - viewW / 2) / (viewW / 2);
         const ny = (mouse.y - viewH / 2) / (viewH / 2);
-        if (Math.abs(nx) > 0.06) this.fpYaw += nx * 1.65 * dt;
-        if (Math.abs(ny) > 0.1) this.fpPitch -= ny * 0.82 * dt;
+        if (Math.abs(nx) > 0.06) this.fpYaw += nx * 1.4 * dt * settings.sensitivity;
+        if (Math.abs(ny) > 0.1) this.fpPitch -= ny * 0.7 * dt * settings.sensitivity * (settings.invertY ? -1 : 1);
+      }
+      const smoothing = clamp(settings.smoothing, 0, 1);
+      const response = 1 - Math.exp(-dt * (18 + (1 - smoothing) * 42));
+      const sensitivity = 0.00205 * settings.sensitivity;
+      if (this.fpLookDX || this.fpLookDY) {
+        this.fpYaw += this.fpLookDX * sensitivity * response;
+        this.fpPitch -= this.fpLookDY * sensitivity * response * (settings.invertY ? -1 : 1);
+        this.fpLookDX *= 1 - response;
+        this.fpLookDY *= 1 - response;
+        if (Math.abs(this.fpLookDX) < 0.01) this.fpLookDX = 0;
+        if (Math.abs(this.fpLookDY) < 0.01) this.fpLookDY = 0;
       }
       this.fpPitch = clamp(this.fpPitch, -0.62, 0.62);
     }
 
     lookMove(dx, dy) {
       if (!this.firstPersonActive()) return;
-      const sensitivity = 0.00215;
-      this.fpYaw += dx * sensitivity;
-      this.fpPitch = clamp(this.fpPitch - dy * sensitivity, -0.62, 0.62);
+      this.fpLookDX += dx;
+      this.fpLookDY += dy;
+    }
+
+    onPause() {
+      this.fpLookDX = 0;
+      this.fpLookDY = 0;
+      this.manager.mouse.down = false;
     }
 
     wantsPointerLock() {
@@ -10761,8 +10965,11 @@
 
     firstPersonCamera(w, h) {
       const point = this.playerPoint();
-      const bob = Math.sin(this.fpBob) * 1.35;
-      const focal = h * 0.94;
+      const settings = this.fpSettings || this.defaultFpSettings();
+      const bobScale = clamp(settings.bob, 0, 1);
+      const bob = Math.sin(this.fpBob) * 1.18 * bobScale;
+      const fov = clamp(settings.fov, 65, 110);
+      const focal = (w * 0.5) / Math.tan((fov * Math.PI) / 360);
       return {
         x: point.x,
         y: point.y,
@@ -10770,7 +10977,9 @@
         pitch: this.fpPitch + this.fpRecoil * 0.028,
         height: 36 + bob,
         focal,
-        horizon: h * 0.47 + Math.tan(this.fpPitch) * focal + bob * 0.7,
+        horizon: h * 0.47 + Math.tan(this.fpPitch) * focal + bob * 0.55,
+        viewDistance: settings.viewDistance,
+        fov,
         w,
         h
       };
@@ -10784,11 +10993,15 @@
       const forward = dx * cos + dy * sin;
       if (forward < 18) return null;
       const right = -dx * sin + dy * cos;
+      const viewDistance = camera.viewDistance || 2600;
+      if (forward > viewDistance * 1.4) return null;
       const scale = camera.focal / forward;
       const sx = camera.w * 0.5 + right * scale;
       const sy = camera.horizon + (camera.height - (z || 0)) * scale;
       if (sx < -camera.w * 0.4 || sx > camera.w * 1.4 || sy < -camera.h * 0.8 || sy > camera.h * 1.5) return null;
-      return { x: sx, y: sy, scale, forward, depth: forward, alpha: clamp(1 - Math.max(0, forward - 720) / 1800, 0.12, 1) };
+      const fogStart = viewDistance * 0.45;
+      const alpha = clamp(1 - Math.max(0, forward - fogStart) / (viewDistance * 0.55), 0.08, 1);
+      return { x: sx, y: sy, scale, forward, depth: forward, alpha };
     }
 
     fpProjectNormalized(nx, ny, z, camera) {
@@ -14213,7 +14426,7 @@
       props.forEach((prop) => {
         const ground = this.fpProjectNormalized(prop.x, prop.y, 0, camera);
         const top = this.fpProjectNormalized(prop.x, prop.y, prop.height, camera);
-        if (!ground || !top || ground.forward < 72) return;
+        if (!ground || !top || ground.forward < 72 || ground.forward > camera.viewDistance) return;
         projected.push({ prop, ground, top, depth: ground.forward });
       });
       projected.sort((a, b) => b.depth - a.depth);
@@ -15031,7 +15244,7 @@
         ctx.textAlign = 'center';
         ctx.fillStyle = 'rgba(235, 242, 233, .9)';
         ctx.font = '500 8px "SFMono-Regular", Consolas, monospace';
-        ctx.fillText('点击画面锁定鼠标 · ESC 暂停', w * 0.5, h * 0.59);
+        ctx.fillText('点击画面锁定鼠标 · ESC 暂停 · F2 视角设置', w * 0.5, h * 0.59);
         ctx.restore();
       }
 
