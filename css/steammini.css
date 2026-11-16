@@ -26,6 +26,10 @@
 }
 .sgm-shell button { cursor: pointer; }
 .sgm-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: 0; touch-action: none; }
+.sgm-fps-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: none; z-index: 1; pointer-events: none; background: #03060a; }
+.sgm-fps-canvas.is-active { display: block; }
+.sgm-shell[data-sgm-game="destiny2"] .sgm-canvas { z-index: 3; }
+.sgm-shell[data-sgm-game="destiny2"] .sgm-canvas.is-3d-hud { background: transparent; }
 .sgm-shell[data-sgm-game="alyx"] .sgm-canvas,
 .sgm-shell[data-sgm-game="deadlock"] .sgm-canvas,
 .sgm-shell[data-sgm-game="destiny2"] .sgm-canvas { cursor: default; }
