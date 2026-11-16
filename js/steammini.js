@@ -5106,11 +5106,13 @@
   ];
 
   const DESTINY_BIOMES = {
-    mercury: { sky: '#6b4329', sky2: '#170e0a', ground: '#4b3422', accent: '#e6bb70', accent2: '#8ed9ce', horizon: 'vex-spires', particles: 'embers' },
+    mercury: { sky: '#7a421d', sky2: '#1c0d06', ground: '#b98753', accent: '#f6d58a', accent2: '#e39a50', horizon: 'mercury-desert', particles: 'dust' },
     venus: { sky: '#5b4829', sky2: '#161007', ground: '#4a3a23', accent: '#e8ca78', accent2: '#8fe0b5', horizon: 'venus-jungle', particles: 'spores' },
     vaultglass: { sky: '#453b27', sky2: '#0d0b07', ground: '#3a3423', accent: '#e7d38d', accent2: '#8ce7dc', horizon: 'vault-glass', particles: 'data' },
     blackhole: { sky: '#10091c', sky2: '#020104', ground: '#120b1c', accent: '#e7b96e', accent2: '#a98bff', horizon: 'blackhole', particles: 'motes' },
     eventhorizon: { sky: '#0a0614', sky2: '#010103', ground: '#100a18', accent: '#f0cb85', accent2: '#b496ff', horizon: 'blackhole', particles: 'motes' },
+    eternal: { sky: '#1b0f2b', sky2: '#030106', ground: '#21182c', accent: '#e7caff', accent2: '#7cf2e8', horizon: 'eternal', particles: 'motes' },
+    eternalcore: { sky: '#24162d', sky2: '#050208', ground: '#2a1f31', accent: '#ffe2a4', accent2: '#b78cff', horizon: 'eternal', particles: 'motes' },
     vexforest: { sky: '#294d45', sky2: '#081310', ground: '#2b4037', accent: '#79dfc3', accent2: '#b9f3df', horizon: 'vex-forest', particles: 'data' },
     vexcore: { sky: '#1c3d49', sky2: '#061015', ground: '#253b43', accent: '#75d7e9', accent2: '#d4f8ff', horizon: 'vex-core', particles: 'data' },
     mars: { sky: '#5b3020', sky2: '#160b0a', ground: '#4b3326', accent: '#e2a968', accent2: '#f3d9ae', horizon: 'bray-towers', particles: 'snow' },
@@ -5167,6 +5169,8 @@
   DESTINY_PLANET_SVG.venus = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="g" cx="34%" cy="25%" r="85%"><stop offset="0" stop-color="#fff1c5"/><stop offset=".32" stop-color="#e5c87e"/><stop offset=".66" stop-color="#a47b43"/><stop offset="1" stop-color="#3b2917"/></radialGradient><radialGradient id="s" cx="71%" cy="78%" r="66%"><stop offset="0" stop-color="#140c05" stop-opacity=".64"/><stop offset="1" stop-color="#140c05" stop-opacity="0"/></radialGradient><clipPath id="c"><circle cx="48" cy="48" r="40"/></clipPath></defs><circle cx="48" cy="48" r="44" fill="#efd38a" opacity=".11"/><circle cx="48" cy="48" r="40" fill="url(#g)"/><g clip-path="url(#c)"><path d="M9 36c11-8 21-9 33-4s23 3 45-4" stroke="#fff4cb" stroke-width="3.2" fill="none" opacity=".45"/><path d="M12 52c12-5 21-4 31 1s23 4 41-3" stroke="#f8e2a5" stroke-width="2.4" fill="none" opacity=".4"/><path d="M20 68c11 3 20 1 30-4s20-3 29 1" stroke="#ddb970" stroke-width="1.8" fill="none" opacity=".32"/><path d="M23 47l14-9 10 4-3 12-14 7-9-5z" fill="#69764a" opacity=".45"/><path d="M55 62l11-5 11 4-2 10-12 4-9-5z" fill="#5f7144" opacity=".4"/><path d="M58 24l8-3 9 3-1 7-9 3-8-3z" fill="#7a7c4d" opacity=".32"/><path d="M11 61c15-7 27-5 39 1s25 3 39-4" stroke="#8df0c7" stroke-width="1.2" fill="none" opacity=".4"/><circle cx="61" cy="33" r="1.6" fill="#a7ffe3" opacity=".8"/><circle cx="69" cy="39" r="1.1" fill="#a7ffe3" opacity=".65"/><circle cx="27" cy="60" r="1.2" fill="#d8f5ab" opacity=".6"/><circle cx="48" cy="48" r="40" fill="url(#s)"/></g><circle cx="48" cy="48" r="40.6" fill="none" stroke="#f6df9e" stroke-opacity=".55"/></svg>`;
   DESTINY_PLANET_SVG.blackhole = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="bh" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe7b5" stop-opacity=".95"/><stop offset=".2" stop-color="#e9b56b" stop-opacity=".58"/><stop offset=".48" stop-color="#9b6be0" stop-opacity=".26"/><stop offset=".76" stop-color="#2d184b" stop-opacity=".12"/><stop offset="1" stop-color="#08050f" stop-opacity="0"/></radialGradient><linearGradient id="disk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4b234b" stop-opacity="0"/><stop offset=".18" stop-color="#b96b3f"/><stop offset=".34" stop-color="#ffe5a4"/><stop offset=".52" stop-color="#fff8dc"/><stop offset=".7" stop-color="#df9a55"/><stop offset=".86" stop-color="#7c5fc4"/><stop offset="1" stop-color="#170d2b" stop-opacity="0"/></linearGradient><radialGradient id="core" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#000"/><stop offset=".72" stop-color="#000"/><stop offset=".84" stop-color="#09040f"/><stop offset=".92" stop-color="#5b3f91" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter></defs><circle cx="48" cy="48" r="46" fill="url(#bh)"/><g transform="rotate(-18 48 48)" filter="url(#soft)" opacity=".9"><ellipse cx="48" cy="48" rx="41" ry="10" fill="none" stroke="url(#disk)" stroke-width="4.2"/><ellipse cx="48" cy="48" rx="33" ry="6.5" fill="none" stroke="url(#disk)" stroke-width="2" opacity=".65"/></g><circle cx="48" cy="48" r="19" fill="url(#core)"/><circle cx="48" cy="48" r="21" fill="none" stroke="#ffe5a8" stroke-width="1.6" opacity=".92"/><path d="M19 43C29 29 67 29 77 43M19 53C29 67 67 67 77 53" fill="none" stroke="#d9c0ff" stroke-width="1.1" opacity=".58"/><path d="M8 48C23 64 73 64 88 48" fill="none" stroke="url(#disk)" stroke-width="4.4" opacity=".96"/><circle cx="22" cy="37" r=".9" fill="#f4eaff"/><circle cx="77" cy="32" r=".7" fill="#f4eaff"/><circle cx="67" cy="73" r="1" fill="#ffe2ac"/><circle cx="18" cy="66" r=".7" fill="#c6b2ff"/><circle cx="48" cy="48" r="41" fill="none" stroke="#f1d391" stroke-opacity=".32"/></svg>`;
 
+  DESTINY_PLANET_SVG.eternal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><radialGradient id="et" cx="35%" cy="25%" r="82%"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#e4d5ff"/><stop offset=".55" stop-color="#8d6bc4"/><stop offset=".82" stop-color="#33214f"/><stop offset="1" stop-color="#09040f"/></radialGradient><radialGradient id="eh" cx="50%" cy="50%" r="50%"><stop offset=".54" stop-color="#bda3ff" stop-opacity="0"/><stop offset=".72" stop-color="#bda3ff" stop-opacity=".28"/><stop offset="1" stop-color="#7cf2e8" stop-opacity="0"/></radialGradient><linearGradient id="er" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7cf2e8"/><stop offset=".48" stop-color="#f8e7ff"/><stop offset="1" stop-color="#b27bdf"/></linearGradient><clipPath id="ec"><circle cx="48" cy="48" r="37"/></clipPath></defs><circle cx="48" cy="48" r="46" fill="url(#eh)"/><circle cx="48" cy="48" r="37" fill="url(#et)"/><g clip-path="url(#ec)"><path d="M22 58l13-31 16 31 11-21 13 28-48 1z" fill="#2a183d" opacity=".5"/><path d="M18 72l34-18 28 13-20 12-36 0z" fill="#120a1b" opacity=".66"/><path d="M25 31c12-9 28-7 39 5M22 48c13 8 27 10 44 4M27 65c12-4 25-4 36 2" fill="none" stroke="#f0ddff" stroke-width="1.1" opacity=".4"/><path d="M39 12l9 18 9-18" fill="none" stroke="#7cf2e8" stroke-width="1.4" opacity=".7"/><circle cx="34" cy="35" r="1.2" fill="#fff"/><circle cx="65" cy="43" r="1" fill="#7cf2e8"/><circle cx="55" cy="61" r="1.4" fill="#ffe9ac"/></g><g transform="rotate(-22 48 48)"><ellipse cx="48" cy="48" rx="46" ry="12" fill="none" stroke="url(#er)" stroke-width="2.6" opacity=".82"/><ellipse cx="48" cy="48" rx="37" ry="7" fill="none" stroke="#e7d0ff" stroke-width="1" opacity=".5" stroke-dasharray="2 6"/></g><circle cx="48" cy="48" r="38.5" fill="none" stroke="#d9c2ff" stroke-opacity=".7"/><circle cx="48" cy="48" r="42" fill="none" stroke="#7cf2e8" stroke-opacity=".22"/></svg>`;
+
   const DESTINY_PLANET_TINTS = {
     earth: ['#9dd8f2', '#3f8bc8', '#06182e'],
     mars: ['#ebae82', '#b95d40', '#2b1113'],
@@ -5182,7 +5186,8 @@
     tharsis: ['#e7ae7e', '#a9533b', '#221011'],
     nessus: ['#c9d39a', '#7b9362', '#1f2619'],
     venus: ['#fff1c5', '#e5c87e', '#3b2917'],
-    blackhole: ['#ffe7b5', '#9b6be0', '#08050f']
+    blackhole: ['#ffe7b5', '#9b6be0', '#08050f'],
+    eternal: ['#e8d3ff', '#8b6fba', '#06030b']
   };
 
   const DESTINY_PLANET_BY_BIOME = {
@@ -5218,6 +5223,8 @@
     vaultglass: 'venus',
     blackhole: 'blackhole',
     eventhorizon: 'blackhole',
+    eternal: 'eternal',
+    eternalcore: 'eternal',
     tharsis: 'tharsis',
     'tharsis-city': 'tharsis',
     'tharsis-fort': 'tharsis',
@@ -5238,6 +5245,7 @@
     const isOrganic = /organic|sanctum/.test(horizon);
     const isKepler = /kepler|singularity/.test(horizon);
     const isTharsis = /tharsis/.test(horizon);
+    if (horizon === 'mercury-desert' || horizon === 'eternal') return '';
     if (isVex) {
       if (variant === 0) {
         art += `<path d="M250 286L400 92L550 286" fill="none" stroke="${accent}" stroke-width="9" opacity=".34"/><path d="M292 286L400 142L508 286" fill="none" stroke="${accent2}" stroke-width="2" opacity=".34"/><circle cx="400" cy="158" r="13" fill="${accent}" opacity=".55"/><path d="M400 158V286" stroke="${accent2}" stroke-width="2" opacity=".25" stroke-dasharray="4 8"/>`;
@@ -5436,10 +5444,22 @@
     </svg>`;
   }
 
+  function destinyEternalSceneSvg(missionId = '') {
+    let hash = 41;
+    for (let i = 0; i < missionId.length; i += 1) hash = (hash * 31 + missionId.charCodeAt(i)) % 9973;
+    const stars = Array.from({ length: 56 }, (_, i) => {
+      const x = (i * 127 + hash) % 800;
+      const y = (i * 67 + hash * 0.4) % 260;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${i % 9 === 0 ? 1.5 : 0.7}" fill="${i % 6 === 0 ? '#7cf2e8' : '#efdcff'}" opacity="${0.18 + (i % 5) * 0.1}"/>`;
+    }).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b0f2b"/><stop offset=".56" stop-color="#080310"/><stop offset="1" stop-color="#020104"/></linearGradient><radialGradient id="halo" cx="50%" cy="45%" r="50%"><stop offset="0" stop-color="#e8ccff" stop-opacity=".42"/><stop offset=".28" stop-color="#8a61c7" stop-opacity=".18"/><stop offset="1" stop-color="#1b0f2b" stop-opacity="0"/></radialGradient><linearGradient id="ring" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#7cf2e8" stop-opacity="0"/><stop offset=".35" stop-color="#f2dcff"/><stop offset=".68" stop-color="#8ff7ea"/><stop offset="1" stop-color="#b78cff" stop-opacity="0"/></linearGradient><linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#24182e"/><stop offset="1" stop-color="#030105"/></linearGradient></defs><rect width="800" height="450" fill="url(#sky)"/><circle cx="410" cy="185" r="220" fill="url(#halo)"/>${stars}<g transform="rotate(-16 400 190)"><ellipse cx="400" cy="190" rx="285" ry="54" fill="none" stroke="url(#ring)" stroke-width="7" opacity=".74"/><ellipse cx="400" cy="190" rx="208" ry="34" fill="none" stroke="#ead5ff" stroke-width="1.5" opacity=".38" stroke-dasharray="4 11"/></g><g fill="#0b0611" opacity=".9"><path d="M90 286V170l42-70 38 70v116z"/><path d="M285 286V132l30-58 32 58v154z"/><path d="M520 286V150l46-82 44 82v136z"/><path d="M690 286V192l28-52 30 52v94z"/></g><g fill="none" stroke="#9b7bd0" stroke-width="1.2" opacity=".34"><path d="M96 230h64M290 190h64M526 208h78M696 238h44"/><path d="M400 20v90M360 50l80 40M440 50l-80 40"/></g><g fill="#7cf2e8" opacity=".7"><circle cx="132" cy="174" r="2"/><circle cx="317" cy="142" r="1.5"/><circle cx="565" cy="158" r="2"/><circle cx="720" cy="198" r="1.4"/></g><path d="M0 286H800V450H0Z" fill="url(#floor)"/><g opacity=".32" stroke="#c49aff" stroke-width=".7"><path d="M0 322H800M0 364H800M0 410H800"/><path d="M400 286L90 450M400 286L245 450M400 286L400 450M400 286L555 450M400 286L710 450"/></g><ellipse cx="400" cy="286" rx="360" ry="18" fill="#dfc3ff" opacity=".07"/></svg>`;
+  }
+
   function destinySceneSvg(biomeKey, missionId = '') {
     const palette = DESTINY_BIOMES[biomeKey] || DESTINY_BIOMES.mercury;
     const horizon = palette.horizon || 'vex-spires';
     if (horizon === 'blackhole') return destinyBlackHoleSceneSvg(missionId);
+    if (horizon === 'eternal') return destinyEternalSceneSvg(missionId);
     let hash = 17;
     for (let i = 0; i < missionId.length; i += 1) hash = (hash * 31 + missionId.charCodeAt(i)) % 9973;
     const n = (step) => ((hash * step) % 97) / 97;
@@ -5465,7 +5485,10 @@
       return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${color}" opacity=".88"/>${lights}<rect x="${(x - 4).toFixed(1)}" y="${(y - 4).toFixed(1)}" width="${(w + 8).toFixed(1)}" height="4" fill="${light}" opacity=".22"/>`;
     }).join('');
     let landmarks = '';
-    if (horizon === 'venus-jungle' || horizon === 'vault-glass') {
+    if (horizon === 'mercury-desert') {
+      const pyramid = (cx, base, height, shade, opacity = 0.9) => `<path d="M${cx - base / 2} 286L${cx} ${286 - height}L${cx + base / 2} 286Z" fill="${shade}" opacity="${opacity}"/><path d="M${cx} ${286 - height}v${height}" stroke="${palette.accent}" stroke-width="1" opacity=".24"/>`;
+      landmarks = `${pyramid(210 + n(2) * 60, 150, 122, '#8f633a')}${pyramid(430 + n(4) * 90, 224, 184, '#7d542f')}${pyramid(675 + n(5) * 45, 126, 106, '#9a6c3e', 0.82)}<path d="M0 286c90-28 180-34 270-12s170 20 260-4 190-22 270 4v12H0z" fill="#6c4828" opacity=".5"/><path d="M60 260c80-20 150-18 220 4M470 250c84-18 150-10 220 12" fill="none" stroke="${palette.accent}" stroke-width="2" opacity=".2"/>`;
+    } else if (horizon === 'venus-jungle' || horizon === 'vault-glass') {
       if (horizon === 'vault-glass') {
         landmarks = `${spires(8, '#3b3621', 20, 104)}<g fill="none" stroke="${palette.accent}" opacity=".38"><ellipse cx="590" cy="178" rx="78" ry="26"/><ellipse cx="590" cy="178" rx="54" ry="16"/><ellipse cx="590" cy="178" rx="30" ry="9"/></g><path d="M590 152v52M564 178h52" stroke="${palette.accent2}" stroke-width="1" opacity=".35"/><g fill="none" stroke="${palette.accent2}" opacity=".18">${Array.from({ length: 6 }, (_, i) => `<path d="M${90 + i * 120} 286V${196 + n(i + 5) * 54}"/><path d="M${90 + i * 120} ${230 + n(i + 3) * 30}l-22-16"/>`).join('')}</g>`;
       } else {
@@ -5842,6 +5865,32 @@
       { id: 'blackhole-time', title: '时间膨胀', en: 'Time Dilation', location: 'SAGITTARIUS A* // THE SLOW LIGHT', brief: '越靠近视界，时间越慢。你的每一次呼吸都被拉成一段回声，而 Dread 正在利用这段延迟。', objective: '穿过时间膨胀区并同步信标', biome: 'eventhorizon', faction: 'dread' },
       { id: 'blackhole-tide', title: '潮汐锁定', en: 'Tidal Lock', location: 'SAGITTARIUS A* // TERMINUS', brief: '潮汐力把整片空间撕成同心弧。稳定航道，别让舰队被拖过最后一道临界线。', objective: '稳定潮汐航道并击退 Dread 舰队', biome: 'eventhorizon', faction: 'dread' },
       { id: 'blackhole-singularity', title: '事件视界', en: 'Event Horizon', location: 'SAGITTARIUS A* // THE SINGULARITY', brief: '在光的尽头，奇点睁开了眼。穿过视界边缘，击败 The Singularity，或者和它一起消失。', objective: '击败 The Singularity', biome: 'eventhorizon', faction: 'dread', boss: true, bossName: 'The Singularity', bossKind: 'dread' }
+    ]
+  };
+
+  const DESTINY_ETERNAL_DESTINATION = {
+    id: 'eternal-realm',
+    title: 'Eternal Realm',
+    cn: '永恒领域',
+    planet: 'Sagittarius A*',
+    planetEn: 'ETERNAL REALM',
+    planetCn: '永恒领域',
+    regionCn: '视界之内',
+    date: '2026-08-16',
+    installed: true,
+    accent: '#e7caff',
+    accent2: '#7cf2e8',
+    biome: 'eternal',
+    faction: 'dread',
+    factionCn: 'Dread · 永恒回响',
+    map: { x: 0.845, y: 0.205 },
+    story: '穿过事件视界之后，恒星、距离和因果都被留在身后。这里没有地平线，只有倒悬的城市、永恒回响的钟声，以及一个试图把时间本身钉在奇点里的存在。',
+    missions: [
+      { id: 'eternal-threshold', title: '逆光回廊', en: 'Threshold', location: 'SAGITTARIUS A* // ETERNAL THRESHOLD', brief: '越过视界之后，光从四面八方倒流。沿着逆光回廊建立锚点，确认这里仍然存在方向。', objective: '建立三道逆光锚点', biome: 'eternal', faction: 'dread' },
+      { id: 'eternal-hourglass', title: '无时沙漏', en: 'The Hourglass', location: 'ETERNAL REALM // HOURGLASS', brief: '一座没有时间的沙漏悬在虚空里。沙粒向上坠落，Dread 正在窃取其中被封存的年代。', objective: '稳定无时沙漏并击退 Dread', biome: 'eternal', faction: 'dread' },
+      { id: 'eternal-city', title: '倒悬之城', en: 'Inverted City', location: 'ETERNAL REALM // THE INVERTED CITY', brief: '城市的尖塔朝下生长，街道悬挂在头顶。穿过倒悬的建筑群，找到通往永恒王座的裂隙。', objective: '穿过倒悬之城并开启裂隙', biome: 'eternalcore', faction: 'dread' },
+      { id: 'eternal-mirror', title: '镜面天穹', en: 'Mirror Sky', location: 'ETERNAL REALM // MIRROR FIRMAMENT', brief: '天空像一面破碎的镜子，映出每一段没有发生的未来。别相信镜子里的你。', objective: '击碎镜面天穹的三枚回响核心', biome: 'eternalcore', faction: 'dread' },
+      { id: 'eternal-throne', title: '永恒王座', en: 'The Eternal Throne', location: 'ETERNAL REALM // THE ETERNAL THRONE', brief: '在时间停止的地方，永恒回响坐在自己的王座上。登上祭坛，让这片领域重新开始流动。', objective: '击败 The Eternal Echo', biome: 'eternalcore', faction: 'dread', boss: true, bossName: 'The Eternal Echo', bossKind: 'dread' }
     ]
   };
 
@@ -7544,6 +7593,7 @@
       this.fpLandDip = 0;
       this.fpCast = null;
       this.fpPlatforms = [];
+      this.fpPyramids = [];
       this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
@@ -7993,6 +8043,7 @@
       this.fpGrounded = true;
       this.fpLandDip = 0;
       this.fpPlatforms = [];
+      this.fpPyramids = [];
       this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
@@ -8486,6 +8537,7 @@
       if (id === 'nessus') return DESTINY_NESSUS_DESTINATION;
       if (id === 'venus') return DESTINY_VENUS_DESTINATION;
       if (id === 'blackhole') return DESTINY_BLACKHOLE_DESTINATION;
+      if (id === 'eternal-realm') return DESTINY_ETERNAL_DESTINATION;
       return this.dlcModes.find((entry) => entry.id === id) || null;
     }
 
@@ -8494,7 +8546,7 @@
       if (destination.id === 'redwar') return DESTINY_MISSIONS;
       if (destination.id === 'dreaming-city') return buildDlcMissions(destination);
       if (destination.id === 'nessus') return buildDlcMissions(destination);
-      if (destination.id === 'venus' || destination.id === 'blackhole') return buildDlcMissions(destination);
+      if (destination.id === 'venus' || destination.id === 'blackhole' || destination.id === 'eternal-realm') return buildDlcMissions(destination);
       return destination.missions?.length ? destination.missions : buildDlcMissions(destination);
     }
 
@@ -8681,6 +8733,7 @@
       this.fpLandDip = 0;
       this.fpCast = null;
       this.fpPlatforms = [];
+      this.fpPyramids = [];
       this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
@@ -11026,7 +11079,7 @@
       const biomeId = String(this.mission?.biomeId || this.mission?.biome || '').toLowerCase();
       const biomeStyle = {
         mercury: 'mercury', venus: 'venus', vaultglass: 'mercury',
-        blackhole: 'blackhole', eventhorizon: 'blackhole',
+        blackhole: 'blackhole', eventhorizon: 'blackhole', eternal: 'eternal', eternalcore: 'eternal',
         vexforest: 'nessus', vexcore: 'nessus', nessus: 'nessus',
         mars: 'mars', braytech: 'mars', warmind: 'mars',
         tharsis: 'mars', 'tharsis-city': 'mars', 'tharsis-fort': 'mars',
@@ -11044,13 +11097,16 @@
         key: 'unknown', type: 'rock', base: biome.accent || '#7d8794', dark: biome.sky2 || '#11151c',
         accent: biome.accent2 || '#9ddbd0', clouds: false, rings: false, name: '未知天体'
       };
+      if (/eternal/.test(hay)) {
+        return { key: 'eternal', type: 'eternal', base: '#7f5fa8', dark: '#08030d', accent: '#e7caff', clouds: true, rings: true, name: '永恒领域' };
+      }
       if (/blackhole|eventhorizon|singularity/.test(hay)) {
         return { key: 'blackhole', type: 'blackhole', base: '#05030a', dark: '#010103', accent: '#f0c177', clouds: false, rings: true, name: '事件视界' };
       }
       if (/earth|edz|lastcity|redwar|cosmodrome|tower/.test(hay)) {
         return { key: 'earth', type: 'earth', base: '#2f6f9f', dark: '#0c1a2a', accent: '#8fd8ff', clouds: true, rings: false, name: '地球' };
       }
-      if (/mercury/.test(hay)) return { key: 'mercury', type: 'rock', base: '#9b9283', dark: '#252320', accent: '#e0cfaf', clouds: false, rings: false, name: '水星' };
+      if (/mercury/.test(hay)) return { key: 'mercury', type: 'rock', base: '#c08a52', dark: '#3a1d12', accent: '#ffd88f', clouds: false, rings: false, name: '水星' };
       if (/venus/.test(hay)) return { key: 'venus', type: 'gas', base: '#d8b46d', dark: '#4b351b', accent: '#ffe3a0', clouds: true, rings: false, name: '金星' };
       if (/mars|tharsis|bray|warmind/.test(hay)) return { key: 'mars', type: 'rock', base: '#b25a3d', dark: '#391911', accent: '#f0aa78', clouds: false, rings: false, name: '火星' };
       if (/nessus/.test(hay)) return { key: 'nessus', type: 'rock', base: '#82945d', dark: '#263018', accent: '#b9e88b', clouds: false, rings: false, name: '涅索斯' };
@@ -11367,9 +11423,9 @@
         blending: THREE.AdditiveBlending, depthWrite: false, fog: false
       }));
       sunGlow.position.copy(sunPosition);
-      sunGlow.scale.set(3200, 3200, 1);
+      sunGlow.scale.set(style.key === 'mercury' ? 5600 : 3200, style.key === 'mercury' ? 5600 : 3200, 1);
       this.fpsWorld.add(sunGlow);
-      const sun = new THREE.DirectionalLight(new THREE.Color(style.key === 'earth' ? '#ffd2a1' : style.accent), style.key === 'earth' ? 1.32 : 1.15);
+      const sun = new THREE.DirectionalLight(new THREE.Color(style.key === 'earth' ? '#ffd2a1' : style.key === 'mercury' ? '#ffd08a' : style.accent), style.key === 'earth' ? 1.32 : style.key === 'mercury' ? 1.55 : 1.15);
       sun.position.copy(sunPosition);
       this.fpsWorld.add(sun);
       const planetAngle = -Math.PI / 2 + 0.42;
@@ -11412,6 +11468,20 @@
         addCompanion(moonStyle, 520, moonPosition, { atmosphere: 0.18, halo: 3.6, tilt: 0.1 });
       } else if (style.type === 'blackhole') {
         this.fpsBuildBlackHole(style, planetPosition, planetRadius);
+      } else if (style.key === 'eternal') {
+        const eternalBody = {
+          key: 'eternal-companion', type: 'gas', base: '#b9a2dd', dark: '#1a0d28',
+          accent: '#8ff7ea', clouds: true, rings: true
+        };
+        const eternalPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 18000, 5200, centerZ + Math.sin(planetAngle) * 18000);
+        addCompanion(eternalBody, 1380, eternalPosition, { atmosphere: 0.54, halo: 4.7, tilt: 0.22, rings: true });
+        const monolith = new THREE.Mesh(new THREE.ConeGeometry(620, 1500, 4), new THREE.MeshStandardMaterial({
+          color: 0x12091c, emissive: new THREE.Color('#8ff7ea'), emissiveIntensity: 0.14,
+          roughness: 0.72, metalness: 0.35
+        }));
+        monolith.position.set(centerX + Math.cos(planetAngle + 0.2) * 16000, 3600, centerZ + Math.sin(planetAngle + 0.2) * 16000);
+        monolith.rotation.set(Math.PI, 0.35, 0.18);
+        this.fpsWorld.add(monolith);
       } else if (style.key === 'moon') {
         const earthStyle = {
           key: 'earth-companion', type: 'earth', base: '#2f6f9f', dark: '#0c1a2a',
@@ -11659,6 +11729,193 @@
         smoke.scale.set(520, 820, 1);
         this.fpsWorld.add(smoke);
       }
+    }
+
+    fpsBuildPyramids(style) {
+      if (!this.fpPyramids?.length || !window.THREE) return;
+      const THREE = window.THREE;
+      const unitBox = new THREE.BoxGeometry(1, 1, 1);
+      const sandstone = new THREE.MeshStandardMaterial({ color: 0xb58650, roughness: 0.94, metalness: 0.03 });
+      const sunStone = new THREE.MeshStandardMaterial({ color: 0xd6aa68, roughness: 0.86, metalness: 0.06 });
+      const shadowStone = new THREE.MeshStandardMaterial({ color: 0x3a2417, roughness: 0.98, metalness: 0.01 });
+      const gold = new THREE.MeshStandardMaterial({
+        color: 0xffdf8f, emissive: 0xffb44f, emissiveIntensity: 1.15, metalness: 0.55, roughness: 0.25
+      });
+      this.fpPyramids.forEach((pyramid, index) => {
+        const x = pyramid.x * this.w;
+        const z = pyramid.y * this.h;
+        const ground = this.fpGroundHeightAt(x, z);
+        const group = new THREE.Group();
+        group.position.set(x, ground, z);
+        group.rotation.y = pyramid.rotation || 0;
+        const levels = 7;
+        const stepHeight = pyramid.height / levels;
+        for (let level = 0; level < levels; level += 1) {
+          const width = pyramid.base * (1 - level * 0.112);
+          const block = new THREE.Mesh(unitBox, level === levels - 1 ? sunStone : sandstone);
+          block.position.set(0, level * stepHeight + stepHeight * 0.5, 0);
+          block.scale.set(width, stepHeight, width * 0.92);
+          group.add(block);
+          const seam = new THREE.Mesh(unitBox, new THREE.MeshBasicMaterial({
+            color: 0xffdc9a, transparent: true, opacity: 0.1 + level * 0.012,
+            blending: THREE.AdditiveBlending, depthWrite: false
+          }));
+          seam.position.set(0, level * stepHeight + stepHeight, width * 0.47);
+          seam.scale.set(width * 0.86, 0.55, 0.8);
+          group.add(seam);
+        }
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(pyramid.base * 0.075, pyramid.height * 0.09, 4), gold);
+        cap.position.y = pyramid.height + pyramid.height * 0.035;
+        cap.rotation.y = Math.PI / 4;
+        group.add(cap);
+        const door = new THREE.Mesh(unitBox, shadowStone);
+        door.position.set(0, pyramid.height * 0.035, pyramid.base * 0.43);
+        door.scale.set(pyramid.base * 0.12, pyramid.height * 0.1, pyramid.base * 0.025);
+        group.add(door);
+        const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: this.fpsGlowTexture('#ffd479'), color: 0xffcf7d, transparent: true, opacity: 0.32,
+          blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        glow.position.y = pyramid.height + pyramid.height * 0.06;
+        glow.scale.set(pyramid.base * 0.38, pyramid.base * 0.38, 1);
+        group.add(glow);
+        const light = new THREE.PointLight(0xffc36e, 0.55, pyramid.base * 1.2, 2);
+        light.position.y = pyramid.height + 18;
+        group.add(light);
+        this.fpsWorld.add(group);
+      });
+      const obelisks = [
+        [-1.9, 0.7], [1.8, 0.7], [-2.2, 2.0], [2.9, 0.9], [3.15, 1.8],
+        [-0.7, 2.4], [1.3, 2.7], [-3.1, -0.4], [2.0, -2.0]
+      ];
+      obelisks.forEach(([nx, ny], index) => {
+        const x = nx * this.w;
+        const z = ny * this.h;
+        const ground = this.fpGroundHeightAt(x, z);
+        const height = 92 + (index % 4) * 20;
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(3.8, 8.5, height, 4), sandstone);
+        body.position.set(x, ground + height * 0.5, z);
+        body.rotation.y = Math.PI * 0.25;
+        this.fpsWorld.add(body);
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(5.2, 16, 4), gold);
+        tip.position.set(x, ground + height + 8, z);
+        tip.rotation.y = Math.PI * 0.25;
+        this.fpsWorld.add(tip);
+      });
+    }
+
+    fpsBuildBiomeLandmarks(style) {
+      if (!window.THREE || !this.fpOpenWorld() || this.isCitySurface() || style.key === 'mercury') return;
+      const THREE = window.THREE;
+      const unitBox = new THREE.BoxGeometry(1, 1, 1);
+      const accent = new THREE.Color(style.accent);
+      const dark = new THREE.Color(style.dark);
+      const stone = new THREE.MeshStandardMaterial({ color: dark, roughness: 0.9, metalness: 0.16 });
+      const glow = new THREE.MeshBasicMaterial({
+        color: accent, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const addBox = (group, material, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0) => {
+        const mesh = new THREE.Mesh(unitBox, material);
+        mesh.position.set(x, y, z);
+        mesh.scale.set(sx, sy, sz);
+        mesh.rotation.set(rx, ry, rz);
+        group.add(mesh);
+        return mesh;
+      };
+      const sites = [
+        { x: -2.75, y: 0.95, scale: 1.15 },
+        { x: 2.85, y: -0.75, scale: 0.86 }
+      ];
+      sites.forEach((site, index) => {
+        const wx = site.x * this.w;
+        const wz = site.y * this.h;
+        const group = new THREE.Group();
+        group.position.set(wx, this.fpGroundHeightAt(wx, wz), wz);
+        group.scale.setScalar(site.scale);
+        if (style.key === 'eternal') {
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(72, 4.2, 8, 64), glow);
+          ring.position.y = 105;
+          ring.rotation.x = Math.PI * 0.18;
+          ring.rotation.y = 0.3 + index * 0.4;
+          group.add(ring);
+          const ring2 = new THREE.Mesh(new THREE.TorusGeometry(47, 2.1, 8, 48), glow);
+          ring2.position.y = 105;
+          ring2.rotation.x = Math.PI * 0.18;
+          ring2.rotation.y = 0.3 + index * 0.4;
+          group.add(ring2);
+          addBox(group, stone, 0, 52, 0, 20, 104, 20, 0.1, 0.5, -0.12);
+          const inverted = new THREE.Mesh(new THREE.ConeGeometry(25, 56, 4), stone);
+          inverted.position.y = 160;
+          inverted.rotation.set(Math.PI, 0.4, 0.2);
+          group.add(inverted);
+          const core = new THREE.Mesh(new THREE.OctahedronGeometry(8, 0), new THREE.MeshBasicMaterial({ color: 0x8ff7ea }));
+          core.position.y = 104;
+          group.add(core);
+        } else if (style.key === 'mars') {
+          addBox(group, stone, 0, 46, 0, 82, 92, 66);
+          addBox(group, stone, -32, 58, -12, 34, 116, 38);
+          addBox(group, stone, 34, 43, 8, 38, 86, 42);
+          addBox(group, glow, 0, 94, 0, 52, 1.2, 4);
+          addBox(group, glow, -32, 117, -12, 22, 1.1, 3);
+          const antenna = new THREE.Mesh(new THREE.ConeGeometry(7, 32, 4), glow);
+          antenna.position.set(34, 100, 8);
+          group.add(antenna);
+        } else if (style.key === 'moon' || style.key === 'throne') {
+          for (let i = 0; i < 5; i += 1) {
+            const spire = new THREE.Mesh(new THREE.ConeGeometry(8 + (i % 3) * 4, 90 + (i % 4) * 38, 5), stone);
+            spire.position.set((i - 2) * 26, (90 + (i % 4) * 38) * 0.5, (i % 2 ? 12 : -10));
+            spire.rotation.z = (i - 2) * 0.035;
+            group.add(spire);
+          }
+          addBox(group, glow, 0, 70, 0, 44, 2, 2);
+          const halo = new THREE.Mesh(new THREE.TorusGeometry(38, 2, 6, 40), glow);
+          halo.position.y = 86;
+          halo.rotation.x = Math.PI / 2;
+          group.add(halo);
+        } else if (style.key === 'europa') {
+          for (let i = 0; i < 7; i += 1) {
+            const crystal = new THREE.Mesh(new THREE.ConeGeometry(5 + (i % 3) * 4, 54 + (i % 4) * 28, 5), new THREE.MeshStandardMaterial({
+              color: 0xdaf8ff, emissive: accent, emissiveIntensity: 0.15, roughness: 0.24, metalness: 0.18, transparent: true, opacity: 0.82
+            }));
+            crystal.position.set((i - 3) * 16, 27 + (i % 4) * 14, (i % 3 - 1) * 14);
+            crystal.rotation.set((i % 2 ? 1 : -1) * 0.2, i * 0.7, (i - 3) * 0.05);
+            group.add(crystal);
+          }
+        } else if (style.key === 'nessus') {
+          addBox(group, stone, -38, 50, 0, 22, 100, 22);
+          addBox(group, stone, 38, 50, 0, 22, 100, 22);
+          const gate = new THREE.Mesh(new THREE.TorusGeometry(44, 5, 8, 48, Math.PI), glow);
+          gate.position.y = 92;
+          gate.rotation.z = Math.PI;
+          group.add(gate);
+          addBox(group, glow, 0, 92, 0, 82, 1.5, 3);
+        } else if (style.key === 'dreaming' || style.key === 'neptune' || style.key === 'kepler') {
+          addBox(group, stone, -28, 55, 0, 18, 110, 24);
+          addBox(group, stone, 28, 55, 0, 18, 110, 24);
+          const arch = new THREE.Mesh(new THREE.TorusGeometry(30, 3.4, 7, 48, Math.PI), glow);
+          arch.position.y = 108;
+          arch.rotation.z = Math.PI;
+          group.add(arch);
+          const orb = new THREE.Mesh(new THREE.SphereGeometry(8, 12, 8), glow);
+          orb.position.y = 110;
+          group.add(orb);
+        } else if (style.key === 'dread') {
+          const pyramid = new THREE.Mesh(new THREE.ConeGeometry(50, 82, 4), stone);
+          pyramid.position.y = 41;
+          pyramid.rotation.y = Math.PI * 0.25;
+          group.add(pyramid);
+          addBox(group, glow, 0, 58, 0, 6, 42, 6);
+        } else {
+          for (let i = 0; i < 4; i += 1) {
+            addBox(group, stone, (i - 1.5) * 24, 34 + i * 11, 0, 14, 68 + i * 22, 16);
+          }
+          addBox(group, glow, 0, 48, 0, 1.4, 42, 1.4);
+        }
+        const beacon = new THREE.PointLight(new THREE.Color(style.accent), 0.7, 340, 2);
+        beacon.position.y = 100;
+        group.add(beacon);
+        this.fpsWorld.add(group);
+      });
     }
 
     fpsBuildProps(style) {
@@ -12045,6 +12302,8 @@
       ring.visible = arenaMode;
       this.fpsWorld.add(ring);
       this.fpsBuildProps(style);
+      if (this.fpPyramids?.length) this.fpsBuildPyramids(style);
+      this.fpsBuildBiomeLandmarks(style);
       this.fpsBuildPlatforms(style);
       this.fpsWorld.add(new THREE.HemisphereLight(
         new THREE.Color(citySurface ? '#b7cbd4' : style.accent),
@@ -13058,6 +13317,10 @@
       const wx = nx * this.w;
       const wz = ny * this.h;
       const feet = this.fpJumpZ || 0;
+      if ((this.fpPyramids || []).some((pyramid) => {
+        const half = pyramid.base * 0.44;
+        return Math.abs(wx - pyramid.x * this.w) <= half && Math.abs(wz - pyramid.y * this.h) <= half;
+      })) return true;
       return (this.fpProps || []).some((prop) => {
         if (!['building', 'wreck', 'tower', 'spire', 'arch', 'obelisk'].includes(prop.kind)) return false;
         if ((prop.height || 0) <= feet + 14) return false;
@@ -13160,7 +13423,7 @@
         const altarDistance = Math.hypot(point.x - altar.x * this.w, point.y - altar.y * this.h);
         if (!this.fpAltarHintShown && altarDistance < this.w * 0.2) {
           this.fpAltarHintShown = true;
-          this.toast('发现圣坛 · 沿台阶登顶可恢复超能与护盾');
+          this.toast(altar.kind === 'eternal' ? '发现永恒回响祭坛 · 登顶可恢复超能与护盾' : '发现圣坛 · 沿台阶登顶可恢复超能与护盾');
         }
         const onTop = Math.abs((this.fpJumpZ || 0) - altar.top) < 2.4
           && altarDistance < altar.radius * this.w;
@@ -13174,7 +13437,7 @@
             this.player.shield = Math.min(this.player.maxShield, this.player.shield + 32);
             this.player.shieldTimer = Math.max(this.player.shieldTimer || 0, 3);
             this.fx.ring(altar.x * this.w, altar.y * this.h, '#ffd58a', altar.radius * 1.8, 0.7, 3);
-            this.toast('圣坛祝福 · 超能 +24% · 护盾恢复');
+            this.toast(altar.kind === 'eternal' ? '永恒回响 · 超能 +24% · 护盾恢复' : '圣坛祝福 · 超能 +24% · 护盾恢复');
           }
         } else {
           this.fpAltarStand = 0;
@@ -13231,9 +13494,11 @@
       this.fpSunAngle = -Math.PI / 2 + (next() - 0.5) * 1.7;
       this.fpProps = [];
       this.fpPlatforms = [];
+      this.fpPyramids = [];
       this.fpTerrain = null;
       this.fpAltar = null;
       const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
+      const mercury = (this.mission?.biomeId || this.mission?.biome) === 'mercury';
       if (!arenaMode) {
         const stage = this.raidState?.encounterIndex || 0;
         const city = this.isCitySurface();
@@ -13255,8 +13520,8 @@
           const wave = Math.sin((index + 1) * 2.17 + terrainSeed * 0.01);
           zones.push({
             ...zone,
-            height: (city ? (this.currentMode === 'raid' ? 26 : 15) : 32)
-              + Math.abs(wave) * (city ? (this.currentMode === 'raid' ? 40 : 18) : 44),
+            height: (city ? (this.currentMode === 'raid' ? 26 : 15) : mercury ? 18 : 32)
+              + Math.abs(wave) * (city ? (this.currentMode === 'raid' ? 40 : 18) : mercury ? 26 : 44),
             stageStep: city ? (this.currentMode === 'raid' ? 4 : 2) : 7,
             driftX: Math.sin(index * 1.7) * 0.09,
             driftY: Math.cos(index * 1.3) * 0.07,
@@ -13326,26 +13591,43 @@
         });
         this.fpTerrain = {
           seed: terrainSeed * 0.017,
-          amplitude: city ? 5 : 13,
-          detail: city ? 2 : 4.5,
+          amplitude: city ? 5 : mercury ? 9 : 13,
+          detail: city ? 2 : mercury ? 3 : 4.5,
           zones
         };
-        const altarX = 0.78;
-        const altarY = 0.6;
-        const levels = [10, 20, 32, 46];
-        const widths = [0.34, 0.285, 0.23, 0.17];
-        const depths = [0.23, 0.185, 0.14, 0.095];
-        levels.forEach((top, index) => {
-          this.fpPlatforms.push({
-            x: altarX, y: altarY, w: widths[index], d: depths[index], top, kind: 'altar'
+        if (this.mission?.id === 'eternal-throne') {
+          const altarX = 0.5;
+          const altarY = 0.58;
+          const levels = [12, 24, 36, 50];
+          const widths = [0.3, 0.25, 0.2, 0.145];
+          const depths = [0.2, 0.16, 0.12, 0.085];
+          levels.forEach((top, index) => {
+            this.fpPlatforms.push({
+              x: altarX, y: altarY, w: widths[index], d: depths[index], top, kind: 'eternal-altar'
+            });
           });
-        });
-        this.fpAltar = {
-          x: altarX, y: altarY, top: levels[levels.length - 1],
-          radius: widths[widths.length - 1] * 0.34, color: biome.accent
-        };
+          this.fpAltar = {
+            x: altarX, y: altarY, top: levels[levels.length - 1],
+            radius: widths[widths.length - 1] * 0.34, color: '#8df5e6', kind: 'eternal'
+          };
+        }
       }
-      const nearAltar = (x, y, padding = 0.16) => Math.abs(x - 0.78) < 0.18 + padding && Math.abs(y - 0.6) < 0.16 + padding;
+      if (!arenaMode && mercury) {
+        this.fpPyramids = [
+          { x: -2.6, y: 1.3, base: 380, height: 330, rotation: 0.16 },
+          { x: 2.35, y: -1.35, base: 310, height: 285, rotation: -0.22 },
+          { x: 3.45, y: 2.2, base: 255, height: 235, rotation: 0.34 },
+          { x: -1.4, y: -2.1, base: 225, height: 205, rotation: -0.4 },
+          { x: 0.5, y: 2.95, base: 185, height: 175, rotation: 0.08 }
+        ];
+      }
+      const nearAltar = (x, y, padding = 0.16) => Boolean(this.fpAltar)
+        && Math.abs(x - this.fpAltar.x) < 0.18 + padding
+        && Math.abs(y - this.fpAltar.y) < 0.16 + padding;
+      const nearPyramid = (x, y) => (this.fpPyramids || []).some((pyramid) => (
+        Math.abs(x - pyramid.x) < pyramid.base * 0.48 / this.w
+        && Math.abs(y - pyramid.y) < pyramid.base * 0.48 / this.h
+      ));
       const nearDais = (x, y) => Math.abs(x - 0.5) < 0.56 && Math.abs(y - 0.12) < 0.38;
       const nearSpawn = (x, y) => Math.hypot(x - 0.5, y - (this.currentMode === 'raid' ? 0.72 : 0.79)) < 0.2;
       if (this.isCitySurface() && !arenaMode) {
@@ -13379,7 +13661,7 @@
         for (let index = 0; index < 64; index += 1) {
           let x = streetBounds.minX + 0.25 + next() * (streetBounds.maxX - streetBounds.minX - 0.5);
           let y = streetBounds.minY + 0.22 + next() * (streetBounds.maxY - streetBounds.minY - 0.44);
-          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y)) continue;
+          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearPyramid(x, y)) continue;
           const lamp = index % 2 === 0;
           this.fpProps.push({
             x, y,
@@ -13401,7 +13683,7 @@
           for (let tries = 0; tries < 24; tries += 1) {
             x = propBounds.minX + 0.22 + next() * (propBounds.maxX - propBounds.minX - 0.44);
             y = propBounds.minY + 0.2 + next() * (propBounds.maxY - propBounds.minY - 0.4);
-            if (Math.hypot(x - 0.5, y - 0.5) > 0.24 && !nearAltar(x, y, 0.02) && !nearSpawn(x, y) && !nearDais(x, y)) break;
+            if (Math.hypot(x - 0.5, y - 0.5) > 0.24 && !nearAltar(x, y, 0.02) && !nearSpawn(x, y) && !nearDais(x, y) && !nearPyramid(x, y)) break;
           }
           if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y)) continue;
           const kindRoll = next();
@@ -15475,7 +15757,7 @@
     }
 
     destinations() {
-      return [DESTINY_RED_WAR_DESTINATION, ...this.dlcModes, this.destinationById('dreaming-city'), this.destinationById('nessus'), this.destinationById('venus'), this.destinationById('blackhole')];
+      return [DESTINY_RED_WAR_DESTINATION, ...this.dlcModes, this.destinationById('dreaming-city'), this.destinationById('nessus'), this.destinationById('venus'), this.destinationById('blackhole'), this.destinationById('eternal-realm')];
     }
 
     classSelectLayout(w, h) {
@@ -18435,7 +18717,7 @@
         ctx.fillStyle = 'rgba(255, 239, 198, .96)';
         ctx.shadowColor = 'rgba(255, 190, 96, .8)';
         ctx.shadowBlur = 14;
-        ctx.fillText('圣坛庇护 · 光能恢复', w * 0.5, h * 0.62);
+        ctx.fillText(this.fpAltar?.kind === 'eternal' ? '永恒回响 · 光能恢复' : '圣坛庇护 · 光能恢复', w * 0.5, h * 0.62);
         ctx.restore();
       }
 
@@ -18557,6 +18839,82 @@
         ctx.beginPath();
         ctx.ellipse(w * 0.5, h * 0.68, w * 0.4, h * 0.045, -0.12, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
+        return;
+      }
+      if (horizon === 'mercury-desert') {
+        const sky = ctx.createLinearGradient(0, 0, 0, h * 0.42);
+        sky.addColorStop(0, '#4b2412');
+        sky.addColorStop(0.55, '#9a5c29');
+        sky.addColorStop(1, '#d6a45f');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, w, h * 0.42);
+        const sun = ctx.createRadialGradient(w * 0.64, h * 0.18, 1, w * 0.64, h * 0.18, h * 0.23);
+        sun.addColorStop(0, 'rgba(255,255,238,.98)');
+        sun.addColorStop(0.16, 'rgba(255,221,151,.82)');
+        sun.addColorStop(0.52, 'rgba(255,157,64,.22)');
+        sun.addColorStop(1, 'rgba(255,130,35,0)');
+        ctx.fillStyle = sun;
+        ctx.beginPath();
+        ctx.arc(w * 0.64, h * 0.18, h * 0.23, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(58, 31, 17, .78)';
+        [[0.24, 0.2], [0.55, 0.27], [0.8, 0.16]].forEach(([px, size]) => {
+          const base = w * size;
+          const height = h * (0.12 + size * 0.22);
+          const x = w * px;
+          ctx.beginPath();
+          ctx.moveTo(x - base / 2, h * 0.42);
+          ctx.lineTo(x, h * 0.42 - height);
+          ctx.lineTo(x + base / 2, h * 0.42);
+          ctx.closePath();
+          ctx.fill();
+        });
+        const dunes = ctx.createLinearGradient(0, h * 0.38, 0, h);
+        dunes.addColorStop(0, 'rgba(194, 142, 82, .92)');
+        dunes.addColorStop(1, '#5d3b23');
+        ctx.fillStyle = dunes;
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.42);
+        for (let i = 0; i <= 8; i += 1) ctx.quadraticCurveTo(w * (i / 8 + 0.06), h * (0.36 + (i % 3) * 0.025), w * (i / 8), h * 0.43);
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+      if (horizon === 'eternal') {
+        const sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, '#1b0f2b');
+        sky.addColorStop(0.52, '#08030f');
+        sky.addColorStop(1, '#020104');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, w, h);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = 'rgba(185, 145, 255, .28)';
+        ctx.lineWidth = Math.max(2, h * 0.006);
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.24, w * 0.31, h * 0.085, -0.18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(124, 242, 232, .23)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.24, w * 0.24, h * 0.055, -0.18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(12, 6, 18, .9)';
+        [[0.18, 0.11], [0.4, 0.17], [0.72, 0.1], [0.87, 0.15]].forEach(([px, size]) => {
+          const x = w * px;
+          const height = h * size;
+          ctx.beginPath();
+          ctx.moveTo(x - w * 0.035, h * 0.37);
+          ctx.lineTo(x, h * 0.37 - height);
+          ctx.lineTo(x + w * 0.035, h * 0.37);
+          ctx.closePath();
+          ctx.fill();
+        });
+        ctx.restore();
         ctx.restore();
         return;
       }
