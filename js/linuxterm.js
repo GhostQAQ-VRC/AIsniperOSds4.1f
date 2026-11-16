@@ -138,6 +138,7 @@
         ['source <文件> / .', '执行 shell 文件'],
         ['clear / reset / exit', '清屏、重置、退出'],
         ['open <应用>', '打开访达、浏览器、Steam 等'],
+        ['music / cinema / textedit / code / runtimes', '打开媒体、创作与运行环境'],
         ['game / void', '启动《深空信号》'],
         ['deploy baota', '部署宝塔面板'],
         ['docker ps / images / run', '模拟容器'],
@@ -171,7 +172,8 @@
     'bash', 'sh', 'zsh',
     'open', 'game', 'void', 'theme', 'wifi', 'network', 'status', 'health', 'neofetch', 'fastfetch', 'whoami', 'uname', 'about', 'sudo', 'su', 'passwd', 'useradd', 'userdel', 'usermod', 'groupadd', 'adduser',
     'coffee', 'cowsay', 'fortune', 'sl', 'matrix', 'cmatrix', 'banner', 'figlet',
-    'deploy', 'docker', 'bt', 'panel', 'ops', 'scripts', 'steam', 'cs2', 'vrchat', 'steamvr', 'ovrtk', 'slimevr', 'unity'
+    'deploy', 'docker', 'bt', 'panel', 'ops', 'scripts', 'steam', 'cs2', 'vrchat', 'steamvr', 'ovrtk', 'slimevr', 'unity',
+    'music', 'cinema', 'video', 'textedit', 'code', 'runtimes'
   ];
 
   const ALIASES = {

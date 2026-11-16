@@ -12,6 +12,18 @@
 > **登录密码：** `aisniper`  
 > 登录界面也会显示密码提示。可以在「系统设置 → 用户与账户」中开启自动登录，或随时锁定屏幕。
 
+## 媒体与创作套件
+
+程序坞新增 **音乐、影院、文本、AISniper Code**，聚焦搜索、终端和 Code 侧栏可打开 **运行环境**。它们全部是本地应用，不上传文件，也不需要后端。
+
+- **音乐**：拖入 MP3、WAV、OGG、FLAC、M4A、AAC、OPUS 等本地音频，或通过文件选择器添加。使用原生 `<audio>` 真实播放，带播放/暂停、上一首/下一首、随机、单曲/列表循环、进度拖动、音量与静音、曲库搜索、移除/清空，以及 Web Audio `AnalyserNode` 驱动的频谱封面。关闭窗口会暂停，重新打开保留当前曲库。
+- **影院**：把本地视频直接拖进窗口即可播放，使用 `URL.createObjectURL()` 绑定原生 `<video>`，支持 MP4、WebM、MOV、M4V、OGV 等浏览器可解码格式。支持自动播放、播放列表、点击画面暂停、进度拖动、音量、0.5×–2× 倍速、画中画与舞台全屏；无法解码的编码会给出明确提示。文件只存在于当前标签页内，不会上传。
+- **文本**：TXT / Markdown / JSON / 代码文本编辑器。带行号、Markdown 预览、粗体/斜体/标题/列表/行内代码/链接快捷插入、文件名修改、自动保存、下载保存、拖拽打开与 `Ctrl/Cmd + S` / `Ctrl/Cmd + E` 快捷键。
+- **AISniper Code**：本地虚拟项目工作区，包含文件树、多标签、行号、语法高亮、自动缩进、括号补全、导入/新建/删除/导出文件。点击“运行”会通过沙箱 iframe 真实执行 HTML/CSS/JavaScript，并把预览页的 `console.log`、警告、错误和未捕获异常回传到内置控制台。Python 文件会显示本地模拟运行结果，并引导到运行环境。
+- **运行环境**：集中管理 Node.js、Python、Java、Go、Rust、.NET、PHP、Ruby、Deno、Bun、GCC、Docker、Nginx、Redis、MySQL、PostgreSQL 共 16 个模拟运行时。支持分类/搜索、安装与更新进度、启动/停止、内存与端口展示、环境变量增删、事件日志与状态持久化；也可以从卡片直接打开终端执行对应版本命令。
+
+终端新增 `music`、`cinema` / `video`、`textedit`、`code`、`runtimes` 命令；`open music` 等写法同样可用。
+
 ## 这次新增与修复
 
 - **真实登录流程**：开机 → 登录 → 桌面；支持锁定屏幕、自动登录、登录密码提示与工作区恢复。
@@ -303,6 +315,8 @@ js/steam.js            Steam 商店、游戏库、DLC 档案、下载、社区�
 js/steamgames.js       CS2 3D 大厅、假匹配与低模射击比赛、VRChat 第一人称社交世界
 js/steammini.js        八款可下载游戏的演示运行时、Three.js 第一人称 Destiny 战斗/突袭、Destiny 轨道与加载过场
 js/unity.js            伪 Unity 编辑器、Three.js 场景、Hierarchy / Inspector / Console
+js/studio.js           音乐、影院、文本、AISniper Code 与 Runtime Hub
+css/studio.css         媒体与创作套件、代码编辑器与运行环境样式
 css/steam.css          Steam 客户端、商店、DLC、SteamVR / OVR Toolkit / SlimeVR 样式
 css/steam-games.css    CS2 大厅、匹配界面与 VRChat 游戏窗口样式
 css/steammini.css      Steam 演示游戏窗口、开始界面与 HUD 样式
@@ -311,6 +325,6 @@ js/game.js             深空信号游戏运行时
 vendor/three.min.js    本地 Three.js r128 运行时
 ```
 
-主题、强调色、墙纸、程序坞、网络、通知、专注与登录偏好保存在 `localStorage` 中；浏览器收藏、游戏最高分、命运 2 的职业/战役/DLC/突袭/装备进度，以及 Steam 已安装游戏和 DLC 也会保存在 `localStorage`。Finder 的临时新建文件夹、解压结果、运维容器、RouterOS 设置、NAS 浏览记录和 Unity 场景都是当前会话内的本地模拟数据。
+音乐音量/循环设置、文本文稿、Code 项目文件和运行环境状态也保存在 `localStorage` 中；浏览器收藏、游戏最高分、命运 2 的职业/战役/DLC/突袭/装备进度，以及 Steam 已安装游戏和 DLC 也会保存在 `localStorage`。Finder 的临时新建文件夹、解压结果、运维容器、RouterOS 设置、NAS 浏览记录和 Unity 场景都是当前会话内的本地模拟数据。
 
 AISniperOS 是一个虚构的、自包含的桌面体验。除浏览器实际访问的网页外，所有系统遥测、账户、聊天、服务器、容器、内网后台、游戏、DLC 与部署均为本地模拟。

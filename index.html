@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/steam-games.css?v=26.7">
   <link rel="stylesheet" href="css/steammini.css?v=26.7.3">
   <link rel="stylesheet" href="css/unity.css?v=26.7">
+  <link rel="stylesheet" href="css/studio.css?v=26.8.1">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b1018'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%23f4a261' stroke-width='1.5'/%3E%3Cpath d='M16 4v6M16 22v6M4 16h6M22 16h6' stroke='%23f7f5ef' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23f4a261'/%3E%3C/svg%3E">
 </head>
 <body class="is-booting is-locked" data-app="finder">
@@ -158,6 +159,11 @@
       <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 7v5.3l3.2 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z" fill="currentColor"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5v14M19 6 9 12l10 6V6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M18 5v14M5 6l10 6-10 6V6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 7h3.5c4.5 0 4.5 10 9 10H20M4 17h3.5c1.2 0 2.2-.7 3-1.8M20 7h-3.5c-1.2 0-2.2.7-3 1.8M17 4l3 3-3 3M17 14l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-music-drop" viewBox="0 0 24 24"><path d="M9 18V6l9-2v11M9 9l9-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="2.2" fill="currentColor"/><circle cx="15" cy="15" r="2.2" fill="currentColor"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1" fill="currentColor"/></symbol>
     <symbol id="i-sound" viewBox="0 0 24 24">
       <path d="M4 9.5v5h3.4l4.6 3.7V5.8L7.4 9.5H4Z" fill="currentColor"/><path d="M15 9a4.5 4.5 0 0 1 0 6M17.6 6.5a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -429,6 +435,64 @@
       <path d="M13 25.5 23 34l-10 8.5" fill="none" stroke="#8ff0cb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M29 43h20" stroke="#f1f4f7" stroke-opacity=".78" stroke-width="3" stroke-linecap="round"/>
       <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".13"/>
+    </symbol>
+    <symbol id="app-music" viewBox="0 0 64 64">
+      <defs>
+        <linearGradient id="musicTile" x1="8" y1="2" x2="58" y2="63" gradientUnits="userSpaceOnUse"><stop stop-color="#3b1d50"/><stop offset=".5" stop-color="#a63d69"/><stop offset="1" stop-color="#f28b5c"/></linearGradient>
+        <radialGradient id="musicDisc" cx="35%" cy="28%" r="72%"><stop stop-color="#fff4ed"/><stop offset=".4" stop-color="#f0a58f"/><stop offset="1" stop-color="#542a4d"/></radialGradient>
+      </defs>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#musicTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".26"/>
+      <circle cx="32" cy="33" r="20" fill="url(#musicDisc)" stroke="#ffe8de" stroke-opacity=".42" stroke-width="1"/>
+      <circle cx="32" cy="33" r="14.5" fill="none" stroke="#4a2343" stroke-opacity=".35" stroke-width="1"/>
+      <circle cx="32" cy="33" r="9" fill="none" stroke="#fff6ef" stroke-opacity=".25" stroke-width="1"/>
+      <circle cx="32" cy="33" r="3.2" fill="#fff3e8"/><circle cx="32" cy="33" r="1.2" fill="#7b315d"/>
+      <path d="M42.5 18.5v14.7a4.6 4.6 0 1 1-2.1-3.8V24l-9 2v9.8a4.6 4.6 0 1 1-2.1-3.8V21.6l13.2-3.1Z" fill="#fff5ec" opacity=".92"/>
+      <path d="M11 18c3-5 7-8 12-10M45 55c4-2 7-5 9-9" stroke="#ffe6d9" stroke-opacity=".3" stroke-width="1.1" stroke-linecap="round"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".16"/>
+    </symbol>
+    <symbol id="app-cinema" viewBox="0 0 64 64">
+      <defs><linearGradient id="cinemaTile" x1="6" y1="3" x2="58" y2="62" gradientUnits="userSpaceOnUse"><stop stop-color="#071521"/><stop offset=".5" stop-color="#123952"/><stop offset="1" stop-color="#285d70"/></linearGradient></defs>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#cinemaTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".28"/>
+      <rect x="9" y="14" width="46" height="36" rx="6" fill="#061018" stroke="#dff7ff" stroke-opacity=".35"/>
+      <path d="M9 22h46M9 42h46" stroke="#aee8f5" stroke-opacity=".24"/>
+      <rect x="13" y="17.5" width="4" height="2" rx="1" fill="#a8e5f1"/><rect x="21" y="17.5" width="4" height="2" rx="1" fill="#a8e5f1"/><rect x="29" y="17.5" width="4" height="2" rx="1" fill="#a8e5f1"/><rect x="37" y="17.5" width="4" height="2" rx="1" fill="#a8e5f1"/><rect x="45" y="17.5" width="4" height="2" rx="1" fill="#a8e5f1"/>
+      <rect x="13" y="44.5" width="4" height="2" rx="1" fill="#a8e5f1"/><rect x="21" y="44.5" width="4" height="2" rx="1" fill="#a8e5f1"/><rect x="29" y="44.5" width="4" height="2" rx="1" fill="#a8e5f1"/><rect x="37" y="44.5" width="4" height="2" rx="1" fill="#a8e5f1"/><rect x="45" y="44.5" width="4" height="2" rx="1" fill="#a8e5f1"/>
+      <path d="m28 26 12 7-12 7V26Z" fill="#f6f0df"/>
+      <path d="M14 10c3-2 6-3.5 10-4M43 58c4-1 7-3 9-6" stroke="#c8f4fb" stroke-opacity=".25" stroke-width="1.1" stroke-linecap="round"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".15"/>
+    </symbol>
+    <symbol id="app-text" viewBox="0 0 64 64">
+      <defs><linearGradient id="textTile" x1="7" y1="2" x2="57" y2="63" gradientUnits="userSpaceOnUse"><stop stop-color="#f3e9d2"/><stop offset=".56" stop-color="#d9c49b"/><stop offset="1" stop-color="#a98351"/></linearGradient></defs>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#textTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".38"/>
+      <path d="M19 11h21l9 9v33H19V11Z" fill="#fffaf0" stroke="#7d5d37" stroke-opacity=".4"/>
+      <path d="M40 11v9h9" fill="#e7d6b6" stroke="#7d5d37" stroke-opacity=".4"/>
+      <path d="M25 28h17M25 34h17M25 40h12M25 46h8" stroke="#8b6a43" stroke-opacity=".72" stroke-width="2" stroke-linecap="round"/>
+      <path d="M11 19c2-3 5-5 8-6M48 55c2-2 4-4 5-7" stroke="#fff8e7" stroke-opacity=".38" stroke-width="1.1" stroke-linecap="round"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".2"/>
+    </symbol>
+    <symbol id="app-code" viewBox="0 0 64 64">
+      <defs><linearGradient id="codeTile" x1="5" y1="2" x2="59" y2="63" gradientUnits="userSpaceOnUse"><stop stop-color="#07141b"/><stop offset=".55" stop-color="#0d2f3a"/><stop offset="1" stop-color="#1b5961"/></linearGradient></defs>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#codeTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".24"/>
+      <path d="M25 20 12 32l13 12M39 20l13 12-13 12" fill="none" stroke="#d9fbff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="m35 17-7 30" stroke="#77e6cf" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M11 18c4-4 8-6 13-7M42 55c4-1 7-4 9-8" stroke="#b9f5ff" stroke-opacity=".24" stroke-width="1.1" stroke-linecap="round"/>
+      <circle cx="18" cy="14" r="1.4" fill="#7ce8d0"/><circle cx="50" cy="50" r="1.2" fill="#f2d18b"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".16"/>
+    </symbol>
+    <symbol id="app-runtime" viewBox="0 0 64 64">
+      <defs><linearGradient id="runtimeTile" x1="7" y1="3" x2="57" y2="62" gradientUnits="userSpaceOnUse"><stop stop-color="#07151a"/><stop offset=".5" stop-color="#123c3d"/><stop offset="1" stop-color="#2b6770"/></linearGradient></defs>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#runtimeTile)"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#glassSheen)" opacity=".25"/>
+      <path d="m32 11 16 9.5v19L32 49 16 39.5v-19Z" fill="none" stroke="#b8f7e8" stroke-width="1.8" stroke-opacity=".7"/>
+      <path d="m32 20 8 4.8v9.4L32 39l-8-4.8v-9.4Z" fill="#74e4c8" fill-opacity=".18" stroke="#a9f3de" stroke-opacity=".64"/>
+      <circle cx="32" cy="29" r="3.4" fill="#e8fff8"/><circle cx="32" cy="29" r="8" fill="none" stroke="#7ce8d0" stroke-opacity=".4"/>
+      <path d="M32 5v6M32 49v8M7 32h8M49 32h9" stroke="#f1cb83" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>
+      <circle cx="13" cy="13" r="1.4" fill="#8ff0d5"/><circle cx="51" cy="50" r="1.2" fill="#f4d18c"/>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".16"/>
     </symbol>
     <symbol id="app-game" viewBox="0 0 64 64">
       <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#gameTile)"/>
@@ -1802,6 +1866,76 @@
         <div class="terminal-footer"><span>⏎ 执行</span><span>↑ 历史</span><span>Tab 补全</span><span>⌘K 清屏</span><span class="terminal-footer-right">AISniper bash 5.2</span></div>
       </section>
 
+      <!-- MUSIC -->
+      <section class="window studio-window music-window" id="window-music" data-app="music" role="dialog" aria-label="音乐">
+        <div class="window-bar studio-window-bar music-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭音乐"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化音乐"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放音乐"></button>
+          </div>
+          <div class="window-title studio-window-title"><svg viewBox="0 0 64 64"><use href="#app-music"></use></svg>音乐 <span>// AISNIPER AUDIO</span></div>
+          <div class="window-bar-tools"><span class="studio-window-chip">LOCAL AUDIO</span></div>
+        </div>
+        <div class="studio-app-body" id="musicAppBody"></div>
+      </section>
+
+      <!-- CINEMA -->
+      <section class="window studio-window cinema-window" id="window-cinema" data-app="cinema" role="dialog" aria-label="影院">
+        <div class="window-bar studio-window-bar cinema-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭影院"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化影院"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放影院"></button>
+          </div>
+          <div class="window-title studio-window-title"><svg viewBox="0 0 64 64"><use href="#app-cinema"></use></svg>影院 <span>// LOCAL CINEMA</span></div>
+          <div class="window-bar-tools"><span class="studio-window-chip">真实视频播放</span></div>
+        </div>
+        <div class="studio-app-body" id="cinemaAppBody"></div>
+      </section>
+
+      <!-- TEXT -->
+      <section class="window studio-window text-window" id="window-textedit" data-app="textedit" role="dialog" aria-label="文本">
+        <div class="window-bar studio-window-bar text-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭文本"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化文本"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放文本"></button>
+          </div>
+          <div class="window-title studio-window-title"><svg viewBox="0 0 64 64"><use href="#app-text"></use></svg>文本 <span>// AISNIPER WRITE</span></div>
+          <div class="window-bar-tools"><span class="studio-window-chip">Markdown / TXT</span></div>
+        </div>
+        <div class="studio-app-body" id="textAppBody"></div>
+      </section>
+
+      <!-- CODE -->
+      <section class="window studio-window code-window" id="window-code" data-app="code" role="dialog" aria-label="AISniper Code">
+        <div class="window-bar studio-window-bar code-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭代码编辑器"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化代码编辑器"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放代码编辑器"></button>
+          </div>
+          <div class="window-title studio-window-title"><svg viewBox="0 0 64 64"><use href="#app-code"></use></svg>AISniper Code <span>// LOCAL WORKSPACE</span></div>
+          <div class="window-bar-tools"><span class="studio-window-chip" id="codeWindowChip">JavaScript · 可运行</span></div>
+        </div>
+        <div class="studio-app-body" id="codeAppBody"></div>
+      </section>
+
+      <!-- RUNTIMES -->
+      <section class="window studio-window runtime-window" id="window-runtimes" data-app="runtimes" role="dialog" aria-label="运行环境">
+        <div class="window-bar studio-window-bar runtime-window-bar" data-drag>
+          <div class="traffic-lights" aria-hidden="true">
+            <button class="traffic traffic-close" data-window-action="close" aria-label="关闭运行环境"></button>
+            <button class="traffic traffic-min" data-window-action="minimize" aria-label="最小化运行环境"></button>
+            <button class="traffic traffic-max" data-window-action="maximize" aria-label="缩放运行环境"></button>
+          </div>
+          <div class="window-title studio-window-title"><svg viewBox="0 0 64 64"><use href="#app-runtime"></use></svg>运行环境 <span>// RUNTIME HUB</span></div>
+          <div class="window-bar-tools"><span class="studio-window-chip" id="runtimeWindowChip">LOCAL STACK</span></div>
+        </div>
+        <div class="studio-app-body" id="runtimeAppBody"></div>
+      </section>
+
       <!-- GAME -->
       <section class="window game-window" id="window-game" data-app="game" role="dialog" aria-label="深空信号 太空射击游戏">
         <div class="window-bar game-bar" data-drag>
@@ -1879,11 +2013,23 @@
         <button class="dock-item app-launcher" data-launch="browser" aria-label="打开浏览器">
           <span class="dock-label">浏览器</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-browser"></use></svg></span><span class="dock-dot"></span>
         </button>
+        <button class="dock-item app-launcher studio-launcher" data-launch="music" aria-label="打开音乐">
+          <span class="dock-label">音乐</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-music"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher studio-launcher" data-launch="cinema" aria-label="打开影院">
+          <span class="dock-label">影院</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-cinema"></use></svg></span><span class="dock-dot"></span>
+        </button>
         <button class="dock-item app-launcher" data-launch="messages" aria-label="打开信息">
           <span class="dock-label">信息</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-messages"></use></svg><span class="dock-badge" id="messagesDockBadge">2</span></span><span class="dock-dot"></span>
         </button>
         <button class="dock-item app-launcher agent-launcher" data-launch="agent" aria-label="打开 AISniper 智能体">
           <span class="dock-label">智能体</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-agent"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher studio-launcher" data-launch="textedit" aria-label="打开文本">
+          <span class="dock-label">文本</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-text"></use></svg></span><span class="dock-dot"></span>
+        </button>
+        <button class="dock-item app-launcher studio-launcher" data-launch="code" aria-label="打开 AISniper Code">
+          <span class="dock-label">Code</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-code"></use></svg></span><span class="dock-dot"></span>
         </button>
         <button class="dock-item app-launcher" data-launch="calculator" aria-label="打开计算器">
           <span class="dock-label">计算器</span><span class="dock-icon"><svg viewBox="0 0 64 64"><use href="#app-calculator"></use></svg></span><span class="dock-dot"></span>
@@ -2067,7 +2213,8 @@
   <script src="js/steammini.js?v=26.7.3"></script>
   <script src="js/unity.js?v=26.4"></script>
   <script src="js/steam.js?v=26.4.29"></script>
-  <script src="js/linuxterm.js?v=26.6"></script>
-  <script src="js/os.js?v=26.7"></script>
+  <script src="js/linuxterm.js?v=26.8.1"></script>
+  <script src="js/studio.js?v=26.8.1"></script>
+  <script src="js/os.js?v=26.8.1"></script>
 </body>
 </html>

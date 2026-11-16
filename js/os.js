@@ -34,9 +34,14 @@
     slimevr: { name: 'SlimeVR', window: 'window-slimevr', width: 920, height: 620, minWidth: 720, minHeight: 480, resizable: true },
     steamdemo: { name: 'Steam 游戏', window: 'window-steamdemo', width: 1080, height: 680, minWidth: 720, minHeight: 500, resizable: true },
     unity: { name: 'AISniper Unity', window: 'window-unity', width: 1160, height: 720, minWidth: 800, minHeight: 560, resizable: true },
-    game: { name: '深空信号', window: 'window-game', width: 1080, height: 678, minWidth: 620, minHeight: 460, resizable: true }
+    game: { name: '深空信号', window: 'window-game', width: 1080, height: 678, minWidth: 620, minHeight: 460, resizable: true },
+    music: { name: '音乐', window: 'window-music', width: 1080, height: 690, minWidth: 780, minHeight: 520, resizable: true },
+    cinema: { name: '影院', window: 'window-cinema', width: 1120, height: 710, minWidth: 820, minHeight: 520, resizable: true },
+    textedit: { name: '文本', window: 'window-textedit', width: 980, height: 680, minWidth: 700, minHeight: 480, resizable: true },
+    code: { name: 'AISniper Code', window: 'window-code', width: 1180, height: 740, minWidth: 880, minHeight: 570, resizable: true },
+    runtimes: { name: '运行环境', window: 'window-runtimes', width: 1060, height: 700, minWidth: 820, minHeight: 530, resizable: true }
   };
-  const LAUNCH_APP = { finder: 'finder', browser: 'browser', messages: 'messages', agent: 'agent', calculator: 'calculator', settings: 'settings', terminal: 'terminal', ops: 'ops', steam: 'steam', unity: 'unity', game: 'game', trash: 'finder' };
+  const LAUNCH_APP = { finder: 'finder', browser: 'browser', music: 'music', cinema: 'cinema', messages: 'messages', agent: 'agent', textedit: 'textedit', code: 'code', calculator: 'calculator', settings: 'settings', terminal: 'terminal', runtimes: 'runtimes', ops: 'ops', steam: 'steam', unity: 'unity', game: 'game', trash: 'finder' };
   const WALLPAPERS = {
     meridian: { name: '子午线', hint: '高山黄昏' },
     ember: { name: '余烬旷野', hint: '日晕薄雾' },
@@ -141,6 +146,7 @@
   let opsController = null;
   let steamController = null;
   let unityController = null;
+  let studioController = null;
   let audioContext = null;
   let isLocked = true;
   let loginMode = 'initial';
@@ -1097,6 +1103,11 @@
     if (app === 'steam') steamController?.open?.(options);
     if (app === 'unity') unityController?.open?.(options);
     if (['cs2', 'vrchat', 'steamvr', 'ovrtk', 'slimevr', 'steamdemo'].includes(app)) steamController?.openSurface?.(app, options);
+    if (app === 'music') studioController?.openMusic?.(options);
+    if (app === 'cinema') studioController?.openCinema?.(options);
+    if (app === 'textedit') studioController?.openText?.(options);
+    if (app === 'code') studioController?.openCode?.(options);
+    if (app === 'runtimes') studioController?.openRuntimes?.(options);
     if (app === 'game') ensureGame();
     if (GAME_FULLSCREEN_APPS.has(app)) enterGameFullscreen(app, s);
     else if (fullscreenGameApp) exitGameFullscreen();
@@ -1135,6 +1146,11 @@
     if (fullscreenGameApp === app) exitGameFullscreen();
     if (app === 'game') suspendGame();
     if (app === 'unity') unityController?.close?.();
+    if (app === 'music') studioController?.closeMusic?.();
+    if (app === 'cinema') studioController?.closeCinema?.();
+    if (app === 'textedit') studioController?.closeText?.();
+    if (app === 'code') studioController?.closeCode?.();
+    if (app === 'runtimes') studioController?.closeRuntimes?.();
     if (app === 'finder') { closeQuicklook(); closePdfViewer(); closeArchiveSheet(); }
     s.isClosing = true;
     s.el.classList.add('is-closing');
@@ -6071,14 +6087,14 @@
       terminalHTML('<span class="term-muted">用法：</span>open <span class="term-key">finder | browser | messages | agent | calculator | settings | terminal | ops | steam | unity | game</span>');
       return;
     }
-    const aliases = { '访达': 'finder', '浏览器': 'browser', '计算器': 'calculator', '系统设置': 'settings', '终端': 'terminal', '深空信号': 'game', '游戏': 'game', '设置': 'settings', '信息': 'messages', '消息': 'messages', '智能体': 'agent', 'AI': 'agent', 'ai': 'agent', '运维台': 'ops', '面板': 'ops', '宝塔': 'ops', 'Steam': 'steam', 'steam': 'steam', '反恐精英': 'cs2', 'CS2': 'cs2', 'cs2': 'cs2', 'VR聊天': 'vrchat', 'VRChat': 'vrchat', 'vrchat': 'vrchat', 'SteamVR': 'steamvr', 'OVR': 'ovrtk', 'OVR Toolkit': 'ovrtk', 'ovr': 'ovrtk', '史莱姆': 'slimevr', 'SlimeVR': 'slimevr', 'slimevr': 'slimevr', 'Unity': 'unity', 'unity': 'unity', '编辑器': 'unity' };
+    const aliases = { '访达': 'finder', '浏览器': 'browser', '计算器': 'calculator', '系统设置': 'settings', '终端': 'terminal', '音乐': 'music', '影院': 'cinema', '视频': 'cinema', '文本': 'textedit', '代码': 'code', '运行环境': 'runtimes', '深空信号': 'game', '游戏': 'game', '设置': 'settings', '信息': 'messages', '消息': 'messages', '智能体': 'agent', 'AI': 'agent', 'ai': 'agent', '运维台': 'ops', '面板': 'ops', '宝塔': 'ops', 'Steam': 'steam', 'steam': 'steam', '反恐精英': 'cs2', 'CS2': 'cs2', 'cs2': 'cs2', 'VR聊天': 'vrchat', 'VRChat': 'vrchat', 'vrchat': 'vrchat', 'SteamVR': 'steamvr', 'OVR': 'ovrtk', 'OVR Toolkit': 'ovrtk', 'ovr': 'ovrtk', '史莱姆': 'slimevr', 'SlimeVR': 'slimevr', 'slimevr': 'slimevr', 'Unity': 'unity', 'unity': 'unity', '编辑器': 'unity' };
     const target = aliases[name] || name.toLowerCase();
     if (target === 'game' || target === 'void' || target === 'void signal') {
       openApp('game');
       terminalHTML('<span class="term-success">正在打开《深空信号》轨道界面…</span>');
       return;
     }
-    if (['finder', 'browser', 'messages', 'agent', 'calculator', 'settings', 'terminal', 'ops', 'steam', 'unity', 'cs2', 'vrchat', 'steamvr', 'ovrtk', 'slimevr'].includes(target)) {
+    if (['finder', 'browser', 'messages', 'agent', 'calculator', 'settings', 'terminal', 'ops', 'steam', 'unity', 'cs2', 'vrchat', 'steamvr', 'ovrtk', 'slimevr', 'music', 'cinema', 'textedit', 'code', 'runtimes'].includes(target)) {
       openApp(target);
       terminalHTML(`<span class="term-success">正在打开${escapeHTML(APPS[target].name)}…</span>`);
       return;
@@ -6677,6 +6693,7 @@
     else if (command === 'steam') { openApp('steam'); terminalHTML('<span class="term-success">正在打开 Steam…</span>'); }
     else if (command === 'unity') { openApp('unity'); terminalHTML('<span class="term-success">正在打开 AISniper Unity…</span>'); }
     else if (['cs2', 'vrchat', 'steamvr', 'ovrtk', 'slimevr'].includes(command)) { openApp(command); terminalHTML(`<span class="term-success">正在启动 ${escapeHTML(APPS[command].name)}…</span>`); }
+    else if (['music', 'cinema', 'video', 'textedit', 'code', 'runtimes'].includes(command)) { const target = command === 'video' ? 'cinema' : command; openApp(target); terminalHTML(`<span class="term-success">正在打开${escapeHTML(APPS[target].name)}…</span>`); }
     else if (command === 'scripts') terminalCommandScripts();
     else if (command === 'status' || command === 'health') terminalCommandStatus();
     else if (command === 'neofetch' || command === 'fastfetch') terminalCommandNeofetch();
@@ -6972,6 +6989,11 @@
       { title: '访达', subtitle: '浏览文件、项目与文件夹', type: '应用', icon: 'app-finder', app: true, keywords: '文件 文件夹 云盘 文稿 files folders drive documents', action: () => openApp('finder') },
       { title: '浏览器', subtitle: '搜索网页、打开网站与收藏', type: '应用', icon: 'app-browser', app: true, keywords: '浏览器 网页 搜索 网址 上网 browser web internet', action: () => openApp('browser') },
       { title: '信息', subtitle: '与团队、朋友和智能体保持联系', type: '应用', icon: 'app-messages', app: true, keywords: '消息 聊天 信息 对话 短信 messages chat imessage', action: () => openApp('messages') },
+      { title: '音乐', subtitle: '本地音频播放器、曲库与频谱', type: '应用', icon: 'app-music', app: true, keywords: '音乐 音频 播放器 mp3 wav ogg flac music audio player 歌曲', action: () => openApp('music') },
+      { title: '影院', subtitle: '拖动本地视频即可真实播放', type: '应用', icon: 'app-cinema', app: true, keywords: '视频 影院 播放器 电影 mp4 webm mov video cinema player movie', action: () => openApp('cinema') },
+      { title: '文本', subtitle: '纯文本与 Markdown 写作', type: '应用', icon: 'app-text', app: true, keywords: '文本 记事本 写作 markdown md txt editor notes write', action: () => openApp('textedit') },
+      { title: 'AISniper Code', subtitle: '代码编辑器、预览与可运行 JavaScript', type: '应用', icon: 'app-code', app: true, keywords: '代码 编程 ide 编辑器 javascript html css 开发 code editor vscode', action: () => openApp('code') },
+      { title: '运行环境', subtitle: 'Node、Python、Java、Go、Docker 模拟环境', type: '应用', icon: 'app-runtime', app: true, keywords: '运行环境 runtime node python java go rust docker php ruby sdk 开发', action: () => openApp('runtimes') },
       { title: '智能体', subtitle: 'SENTRY 本地神经任务代理', type: '应用', icon: 'app-agent', app: true, keywords: 'ai 智能体 助手 agent assistant sentry 人工智能', action: () => openApp('agent') },
       { title: '计算器', subtitle: '精确的口袋计算器', type: '应用', icon: 'app-calculator', app: true, keywords: '数学 数字 计算 math numbers arithmetic', action: () => openApp('calculator') },
       { title: '系统设置', subtitle: '网络、账户、通知与系统偏好', type: '应用', icon: 'app-settings', app: true, keywords: '设置 偏好 控制面板 preferences control panel', action: () => openApp('settings') },
@@ -7585,6 +7607,29 @@
         });
       } catch (error) {
         console.error('AISniperOS：AISniper Unity 初始化失败。', error);
+      }
+    }
+    if (window.AISniperStudio) {
+      try {
+        studioController = window.AISniperStudio.init({
+          openApp,
+          closeApp,
+          showToast,
+          openTerminal: (command = '') => {
+            openApp('terminal');
+            if (command) {
+              setTimeout(() => {
+                const terminalInput = $('#terminalInput');
+                if (terminalInput) {
+                  terminalInput.value = command;
+                  terminalInput.focus();
+                }
+              }, 180);
+            }
+          }
+        });
+      } catch (error) {
+        console.error('AISniperOS：创作与媒体应用初始化失败。', error);
       }
     }
     if (window.AISniperAgent) {
