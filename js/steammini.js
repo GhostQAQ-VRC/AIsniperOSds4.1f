@@ -7543,6 +7543,11 @@
       this.fpGrounded = true;
       this.fpLandDip = 0;
       this.fpCast = null;
+      this.fpPlatforms = [];
+      this.fpAltar = null;
+      this.fpAltarStand = 0;
+      this.fpAltarBuffCd = 0;
+      this.fpAltarHintShown = false;
       this.fpHintShown = false;
       this.fpProps = [];
       this.fpParticles = [];
@@ -7986,6 +7991,9 @@
       this.fpJumpV = 0;
       this.fpGrounded = true;
       this.fpLandDip = 0;
+      this.fpPlatforms = [];
+      this.fpAltar = null;
+      this.fpAltarStand = 0;
       this.crucible = null;
       this.gambit = null;
       this.dlcBoss = null;
@@ -8639,6 +8647,8 @@
       this.screen = 'play';
       this.currentMode = options.mode || 'campaign';
       this.dlcConfig = options.dlc || null;
+      this.raidConfig = this.currentMode === 'raid' ? (options.raid || this.raidConfig) : null;
+      this.strikeConfig = this.currentMode === 'strike' ? (options.strike || this.strikeConfig) : null;
       this.activityId = options.activityId || (this.currentMode === 'campaign' ? 'campaign' : this.currentMode);
       this.missionIndex = index;
       this.mission = options.mission || this.missions[index] || this.missions[0];
@@ -8668,6 +8678,11 @@
       this.fpGrounded = true;
       this.fpLandDip = 0;
       this.fpCast = null;
+      this.fpPlatforms = [];
+      this.fpAltar = null;
+      this.fpAltarStand = 0;
+      this.fpAltarBuffCd = 0;
+      this.fpAltarHintShown = false;
       this.setupFirstPersonEnvironment();
       this.ammoDrops = [];
       this.ammoDropTimer = rand(6, 10);
@@ -9813,10 +9828,20 @@
     spawnAmmoBox(x = null, y = null, kind = null) {
       const roll = Math.random();
       const chosen = kind || (roll < 0.48 ? 'primary' : roll < 0.78 ? 'energy' : roll < 0.94 ? 'power' : 'all');
+      const bounds = this.fpView ? this.fpBounds() : { minX: 0.04, maxX: 0.96, minY: 0.18, maxY: 0.94 };
+      let px = x === null ? rand(bounds.minX + 0.14, bounds.maxX - 0.14) : clamp(x, bounds.minX, bounds.maxX);
+      let py = y === null ? rand(bounds.minY + 0.18, bounds.maxY - 0.18) : clamp(y, bounds.minY, bounds.maxY);
+      if (x === null) {
+        for (let tries = 0; tries < 16; tries += 1) {
+          px = rand(bounds.minX + 0.14, bounds.maxX - 0.14);
+          py = rand(bounds.minY + 0.18, bounds.maxY - 0.18);
+          if (this.fpPlatformHeightAt(px * this.w, py * this.h) <= 0 && !this.fpPropBlocksAt(px, py)) break;
+        }
+      }
       this.ammoDrops.push({
         id: `ammo-${++this.ammoSeq}`,
-        x: x === null ? rand(0.12, 0.88) : clamp(x, 0.06, 0.94),
-        y: y === null ? rand(0.33, 0.72) : clamp(y, 0.18, 0.84),
+        x: px,
+        y: py,
         kind: chosen,
         phase: rand(0, Math.PI * 2)
       });
@@ -10103,12 +10128,17 @@
       let x = position?.x ?? 0.5;
       let y = position?.y ?? 0.5;
       if (!position) {
-        for (let tries = 0; tries < 16; tries += 1) {
+        const bounds = this.fpView ? this.fpBounds() : { minX: 0.04, maxX: 0.96, minY: 0.07, maxY: 0.94 };
+        const padX = (bounds.maxX - bounds.minX) * 0.045;
+        const padY = (bounds.maxY - bounds.minY) * 0.045;
+        for (let tries = 0; tries < 24; tries += 1) {
           const edge = Math.floor(Math.random() * 4);
-          if (edge === 0) { x = rand(0.08, 0.92); y = rand(0.07, 0.12); }
-          else if (edge === 1) { x = rand(0.9, 0.96); y = rand(0.12, 0.8); }
-          else if (edge === 2) { x = rand(0.08, 0.92); y = rand(0.86, 0.94); }
-          else { x = rand(0.04, 0.1); y = rand(0.12, 0.8); }
+          if (edge === 0) { x = rand(bounds.minX + padX, bounds.maxX - padX); y = bounds.minY + padY; }
+          else if (edge === 1) { x = bounds.maxX - padX; y = rand(bounds.minY + padY, bounds.maxY - padY); }
+          else if (edge === 2) { x = rand(bounds.minX + padX, bounds.maxX - padX); y = bounds.maxY - padY; }
+          else { x = bounds.minX + padX; y = rand(bounds.minY + padY, bounds.maxY - padY); }
+          if (this.fpPropBlocksAt(x, y)) continue;
+          if (this.fpPlatformHeightAt(x * this.w, y * this.h) > 0) continue;
           if (dist(x * this.w, y * this.h, this.player.x * this.w, this.player.y * this.h) > 210) break;
         }
       }
@@ -10845,6 +10875,7 @@
         this.fpJumpV = 0;
         this.fpGrounded = true;
         this.fpLandDip = 0;
+        this.fpAltarStand = 0;
         this.audio?.play('death');
         this.manager.releasePointerLock?.();
         if (this.manager.hud) this.manager.hud.hidden = true;
@@ -10968,7 +10999,30 @@
 
     fpsPlanetStyle() {
       const biome = this.biomeConfig(this.mission);
-      const hay = `${this.mission?.id || ''} ${this.mission?.biome || ''} ${this.mission?.title || ''} ${this.mission?.location || ''} ${this.activityId || ''} ${this.directorSelected || ''} ${this.raidConfig?.id || ''} ${this.raidConfig?.name || ''} ${this.raidConfig?.location || ''}`.toLowerCase();
+      const contextHay = this.currentMode === 'raid'
+        ? `${this.raidConfig?.id || ''} ${this.raidConfig?.name || ''} ${this.raidConfig?.location || ''}`
+        : this.currentMode === 'strike'
+          ? `${this.strikeConfig?.title || ''} ${this.strikeConfig?.location || ''}`
+          : this.currentMode === 'dlc'
+            ? `${this.directorSelected || ''}`
+            : '';
+      const biomeId = String(this.mission?.biomeId || this.mission?.biome || '').toLowerCase();
+      const biomeStyle = {
+        mercury: 'mercury', venus: 'venus', vaultglass: 'mercury',
+        blackhole: 'blackhole', eventhorizon: 'blackhole',
+        vexforest: 'nessus', vexcore: 'nessus', nessus: 'nessus',
+        mars: 'mars', braytech: 'mars', warmind: 'mars',
+        tharsis: 'mars', 'tharsis-city': 'mars', 'tharsis-fort': 'mars',
+        moon: 'moon', europa: 'europa',
+        neptune: 'neptune', neomuna: 'neptune', typhon: 'neptune',
+        dreaming: 'dreaming', kepler: 'kepler', 'kepler-academy': 'kepler', 'kepler-singularity': 'kepler',
+        throne: 'throne', temple: 'throne',
+        pyramid: 'dread', sanctum: 'dread',
+        lastcity: 'earth', edz: 'earth',
+        prison: 'unknown', tangled: 'unknown', scarlet: 'unknown', riis: 'unknown', paleheart: 'unknown',
+        almighty: 'unknown', cabalship: 'unknown', cabalthrone: 'unknown'
+      }[biomeId];
+      const hay = biomeStyle || `${this.mission?.id || ''} ${this.mission?.biome || ''} ${this.mission?.title || ''} ${this.mission?.location || ''} ${this.activityId || ''} ${contextHay}`.toLowerCase();
       const fallback = {
         key: 'unknown', type: 'rock', base: biome.accent || '#7d8794', dark: biome.sky2 || '#11151c',
         accent: biome.accent2 || '#9ddbd0', clouds: false, rings: false, name: '未知天体'
@@ -10976,7 +11030,7 @@
       if (/blackhole|eventhorizon|singularity/.test(hay)) {
         return { key: 'blackhole', type: 'blackhole', base: '#05030a', dark: '#010103', accent: '#f0c177', clouds: false, rings: true, name: '事件视界' };
       }
-      if (/earth|edz|lastcity|redwar|cosmodrome|tower|city/.test(hay)) {
+      if (/earth|edz|lastcity|redwar|cosmodrome|tower/.test(hay)) {
         return { key: 'earth', type: 'earth', base: '#2f6f9f', dark: '#0c1a2a', accent: '#8fd8ff', clouds: true, rings: false, name: '地球' };
       }
       if (/mercury/.test(hay)) return { key: 'mercury', type: 'rock', base: '#9b9283', dark: '#252320', accent: '#e0cfaf', clouds: false, rings: false, name: '水星' };
@@ -11149,6 +11203,15 @@
         ctx.fillRect(x - 40, y - 40, 80, 80);
       }
       ctx.globalCompositeOperation = 'source-over';
+      if (!['moon', 'mercury', 'blackhole', 'dread'].includes(style.key)) {
+        const haze = ctx.createLinearGradient(0, 620, 0, 1024);
+        haze.addColorStop(0, this.fpRgba(style.base, 0));
+        haze.addColorStop(0.5, this.fpRgba(style.base, 0.1));
+        haze.addColorStop(0.78, this.fpRgba(style.base, 0.2));
+        haze.addColorStop(1, this.fpRgba(style.accent, 0.34));
+        ctx.fillStyle = haze;
+        ctx.fillRect(0, 620, 2048, 404);
+      }
       const texture = new window.THREE.CanvasTexture(canvas);
       texture.wrapS = window.THREE.RepeatWrapping;
       texture.wrapT = window.THREE.ClampToEdgeWrapping;
@@ -11294,76 +11357,75 @@
       const planetAngle = -Math.PI / 2 + 0.42;
       const planetPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 5000, 1420, centerZ + Math.sin(planetAngle) * 5000);
       const planetRadius = style.type === 'blackhole' ? 620 : 1120;
-      if (style.key === 'earth') {
-        const moonStyle = { ...style, type: 'rock', base: '#a4a8a4', dark: '#2a2c2c', accent: '#e1e4dc', clouds: false, rings: false };
-        const moonTexture = this.fpsPlanetTexture(moonStyle);
-        const moonRadius = 188;
-        const moonAngle = -Math.PI / 2 + 0.26;
-        const moonPosition = new THREE.Vector3(centerX + Math.cos(moonAngle) * 6400, 2500, centerZ + Math.sin(moonAngle) * 6400);
-        const moon = new THREE.Mesh(new THREE.SphereGeometry(moonRadius, 32, 22), new THREE.MeshStandardMaterial({
-          map: moonTexture || null, color: moonTexture ? 0xffffff : 0x9fa39f, roughness: 1, metalness: 0.01, fog: false
-        }));
-        moon.position.copy(moonPosition);
-        this.fpsWorld.add(moon);
-        const moonGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-          map: this.fpsGlowTexture('#dce6e4'), color: 0xdce6e4, transparent: true, opacity: 0.2,
-          blending: THREE.AdditiveBlending, depthWrite: false, fog: false
-        }));
-        moonGlow.position.copy(moonPosition);
-        moonGlow.scale.set(640, 640, 1);
-        this.fpsWorld.add(moonGlow);
-      } else if (style.type === 'blackhole') {
-        this.fpsBuildBlackHole(style, planetPosition, planetRadius);
-      } else {
-        const planetTexture = this.fpsPlanetTexture(style);
-        const planetMaterial = new THREE.MeshStandardMaterial({
-          map: planetTexture || null, color: planetTexture ? 0xffffff : new THREE.Color(style.base),
+      const addCompanion = (companionStyle, radius, position, options = {}) => {
+        const texture = this.fpsPlanetTexture(companionStyle);
+        const material = new THREE.MeshStandardMaterial({
+          map: texture || null,
+          color: texture ? 0xffffff : new THREE.Color(companionStyle.base),
           roughness: 1, metalness: 0.02, fog: false
         });
-        const planet = new THREE.Mesh(new THREE.SphereGeometry(planetRadius, 40, 28), planetMaterial);
-        planet.position.copy(planetPosition);
-        planet.rotation.z = 0.18;
-        this.fpsWorld.add(planet);
+        const body = new THREE.Mesh(new THREE.SphereGeometry(radius, 40, 28), material);
+        body.position.copy(position);
+        body.rotation.z = options.tilt ?? 0.18;
+        this.fpsWorld.add(body);
         const atmosphere = new THREE.Sprite(new THREE.SpriteMaterial({
-          map: this.fpsGlowTexture(style.accent), color: new THREE.Color(style.accent), transparent: true, opacity: 0.44,
+          map: this.fpsGlowTexture(companionStyle.accent), color: new THREE.Color(companionStyle.accent),
+          transparent: true, opacity: options.atmosphere ?? 0.36,
           blending: THREE.AdditiveBlending, depthWrite: false, fog: false
         }));
-        atmosphere.position.copy(planetPosition);
-        atmosphere.scale.set(planetRadius * 3.7, planetRadius * 3.7, 1);
+        atmosphere.position.copy(position);
+        atmosphere.scale.set(radius * (options.halo ?? 3.4), radius * (options.halo ?? 3.4), 1);
         this.fpsWorld.add(atmosphere);
-        if (style.rings) {
-          const ring = new THREE.Mesh(new THREE.RingGeometry(planetRadius * 1.45, planetRadius * 2.4, 96), new THREE.MeshBasicMaterial({
-            color: new THREE.Color(style.accent), transparent: true, opacity: 0.3, side: THREE.DoubleSide,
-            depthWrite: false, blending: THREE.AdditiveBlending, fog: false
+        if (options.rings) {
+          const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 1.42, radius * 2.2, 96), new THREE.MeshBasicMaterial({
+            color: new THREE.Color(companionStyle.accent), transparent: true, opacity: 0.24,
+            side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, fog: false
           }));
-          ring.position.copy(planetPosition);
-          ring.rotation.x = Math.PI * 0.5 + 0.34;
-          ring.rotation.y = 0.2;
+          ring.position.copy(position);
+          ring.rotation.x = Math.PI * 0.5 + 0.32;
+          ring.rotation.y = 0.18;
           this.fpsWorld.add(ring);
         }
-        const moonStyle = { ...style, type: 'rock', base: '#858b8e', dark: '#222629', accent: '#d8e0e3' };
-        const moonTexture = this.fpsPlanetTexture(moonStyle);
-        const moon = new THREE.Mesh(new THREE.SphereGeometry(planetRadius * 0.18, 24, 18), new THREE.MeshStandardMaterial({
-          map: moonTexture || null, color: moonTexture ? 0xffffff : 0x8a8e8e, roughness: 1, fog: false
-        }));
-        moon.position.set(planetPosition.x + planetRadius * 2.1, planetPosition.y + planetRadius * 0.72, planetPosition.z - planetRadius * 0.5);
-        this.fpsWorld.add(moon);
-        const secondStyle = { ...style, base: '#9b7958', dark: '#241a12', accent: '#f2ca8d', type: 'gas', rings: false, clouds: true };
-        const secondTexture = this.fpsPlanetTexture(secondStyle);
-        const secondAngle = planetAngle + 2.18;
-        const secondPosition = new THREE.Vector3(centerX + Math.cos(secondAngle) * 6900, 2150, centerZ + Math.sin(secondAngle) * 6900);
-        const secondPlanet = new THREE.Mesh(new THREE.SphereGeometry(420, 28, 20), new THREE.MeshStandardMaterial({
-          map: secondTexture || null, color: secondTexture ? 0xffffff : 0x9b7958, roughness: 1, metalness: 0.02, fog: false
-        }));
-        secondPlanet.position.copy(secondPosition);
-        this.fpsWorld.add(secondPlanet);
-        const secondAtmosphere = new THREE.Sprite(new THREE.SpriteMaterial({
-          map: this.fpsGlowTexture(secondStyle.accent), color: new THREE.Color(secondStyle.accent), transparent: true, opacity: 0.3,
-          blending: THREE.AdditiveBlending, depthWrite: false, fog: false
-        }));
-        secondAtmosphere.position.copy(secondPosition);
-        secondAtmosphere.scale.set(1700, 1700, 1);
-        this.fpsWorld.add(secondAtmosphere);
+        return body;
+      };
+      if (style.key === 'earth') {
+        const moonStyle = { ...style, type: 'rock', base: '#a4a8a4', dark: '#2a2c2c', accent: '#e1e4dc', clouds: false, rings: false };
+        const moonPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 6400, 2500, centerZ + Math.sin(planetAngle) * 6400);
+        addCompanion(moonStyle, 188, moonPosition, { atmosphere: 0.18, halo: 3.6, tilt: 0.1 });
+      } else if (style.type === 'blackhole') {
+        this.fpsBuildBlackHole(style, planetPosition, planetRadius);
+      } else if (style.key === 'moon') {
+        const earthStyle = {
+          key: 'earth-companion', type: 'earth', base: '#2f6f9f', dark: '#0c1a2a',
+          accent: '#8fd8ff', clouds: true, rings: false
+        };
+        const earthPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 5200, 1780, centerZ + Math.sin(planetAngle) * 5200);
+        addCompanion(earthStyle, 560, earthPosition, { atmosphere: 0.48, halo: 4.1, tilt: 0.24 });
+      } else if (style.key === 'europa') {
+        const jupiterStyle = {
+          key: 'jupiter-companion', type: 'gas', base: '#c9a87d', dark: '#4a3526',
+          accent: '#f0d5aa', clouds: true, rings: false
+        };
+        const jupiterPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 6000, 1850, centerZ + Math.sin(planetAngle) * 6000);
+        addCompanion(jupiterStyle, 860, jupiterPosition, { atmosphere: 0.42, halo: 3.8, tilt: 0.12 });
+      } else if (style.key === 'mars') {
+        const phobosStyle = { ...style, type: 'rock', base: '#8d8479', dark: '#2a2320', accent: '#d8cab6', clouds: false, rings: false };
+        const deimosStyle = { ...phobosStyle, base: '#77726a', dark: '#211e1c' };
+        const phobosPosition = new THREE.Vector3(centerX + Math.cos(planetAngle - 0.5) * 6800, 2350, centerZ + Math.sin(planetAngle - 0.5) * 6800);
+        const deimosPosition = new THREE.Vector3(centerX + Math.cos(planetAngle + 0.84) * 7200, 1850, centerZ + Math.sin(planetAngle + 0.84) * 7200);
+        addCompanion(phobosStyle, 42, phobosPosition, { atmosphere: 0.08, halo: 4.8, tilt: 0.4 });
+        addCompanion(deimosStyle, 27, deimosPosition, { atmosphere: 0.06, halo: 5.2, tilt: 0.2 });
+      } else if (['mercury', 'venus', 'nessus'].includes(style.key)) {
+        // These surfaces have no other large body close enough to dominate the sky.
+      } else {
+        const companionStyle = {
+          ...style, type: 'rock', base: style.key === 'dread' ? '#6b6577' : '#a7adae',
+          dark: '#262a2c', accent: style.accent, clouds: false, rings: false
+        };
+        const companionPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 6900, 2300, centerZ + Math.sin(planetAngle) * 6900);
+        addCompanion(companionStyle, 150 + (style.rings ? 40 : 0), companionPosition, {
+          atmosphere: 0.2 + (style.clouds ? 0.12 : 0), halo: 4.4, tilt: 0.16, rings: false
+        });
       }
       if (style.key !== 'earth') {
         const nebula = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -11539,11 +11601,12 @@
         building.rotation.y = -angle + Math.PI * 0.5;
         this.fpsWorld.add(building);
       }
-      for (let i = 0; i < 34; i += 1) {
-        const angle = (i / 34) * Math.PI * 2 + 0.18;
-        const distance = Math.min(this.w, this.h) * (0.46 + (i % 6) * 0.032);
+      for (let i = 0; i < 46; i += 1) {
+        const x = this.w * (-0.28 + Math.random() * 1.68);
+        const z = this.h * (-0.16 + Math.random() * 1.34);
+        if (Math.hypot(x - this.w * 0.5, z - this.h * 0.55) < Math.min(this.w, this.h) * 0.2) continue;
         const rubble = new THREE.Mesh(dodeca, i % 3 ? concrete : rusty);
-        rubble.position.set(this.w * 0.5 + Math.cos(angle) * distance, 2 + (i % 3) * 1.4, this.h * 0.5 + Math.sin(angle) * distance);
+        rubble.position.set(x, 2 + (i % 3) * 1.4, z);
         rubble.scale.set(6 + (i % 5) * 3.2, 2.5 + (i % 4) * 1.5, 5 + (i % 3) * 3.4);
         rubble.rotation.set(i * 0.31, i * 0.67, i * 0.2);
         this.fpsWorld.add(rubble);
@@ -11628,14 +11691,19 @@
         this.fpsWorld.add(group);
       });
       const rockGeometry = new THREE.DodecahedronGeometry(1, 0);
-      for (let i = 0; i < 26; i += 1) {
+      const openPve = this.fpView && !['range', 'crucible', 'gambit'].includes(this.currentMode);
+      for (let i = 0; i < (openPve ? 38 : 26); i += 1) {
         const angle = (i / 26) * Math.PI * 2 + (i % 3) * 0.12;
         const distance = Math.min(this.w, this.h) * (0.46 + (i % 7) * 0.03);
         const rock = new THREE.Mesh(rockGeometry, new THREE.MeshStandardMaterial({
           color: new THREE.Color(style.dark).offsetHSL(0, 0, 0.03),
           roughness: 0.96, metalness: 0.02
         }));
-        rock.position.set(this.w * 0.5 + Math.cos(angle) * distance, 3 + (i % 4) * 2, this.h * 0.5 + Math.sin(angle) * distance);
+        if (openPve) {
+          rock.position.set(this.w * (-0.28 + Math.random() * 1.62), 3 + (i % 4) * 2, this.h * (-0.16 + Math.random() * 1.3));
+        } else {
+          rock.position.set(this.w * 0.5 + Math.cos(angle) * distance, 3 + (i % 4) * 2, this.h * 0.5 + Math.sin(angle) * distance);
+        }
         rock.scale.set(10 + (i % 5) * 4, 4 + (i % 4) * 2.4, 8 + (i % 3) * 5);
         rock.rotation.set(i * 0.3, i * 0.7, i * 0.2);
         this.fpsWorld.add(rock);
@@ -11767,6 +11835,86 @@
       return texture;
     }
 
+    fpsBuildPlatforms(style) {
+      if (!this.fpPlatforms?.length || !window.THREE) return;
+      const THREE = window.THREE;
+      const city = this.isCitySurface();
+      const unitBox = new THREE.BoxGeometry(1, 1, 1);
+      const stone = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(city ? '#4b4842' : style.dark).offsetHSL(0, city ? 0.02 : 0.04, city ? 0.09 : 0.05),
+        roughness: 0.92, metalness: city ? 0.06 : 0.2
+      });
+      const slab = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(city ? '#686157' : style.base).offsetHSL(0, 0, 0.02),
+        roughness: 0.84, metalness: city ? 0.08 : 0.28
+      });
+      const trim = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(style.accent), transparent: true, opacity: 0.54,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const addBox = (material, x, y, z, sx, sy, sz) => {
+        const mesh = new THREE.Mesh(unitBox, material);
+        mesh.position.set(x, y, z);
+        mesh.scale.set(sx, sy, sz);
+        this.fpsWorld.add(mesh);
+        return mesh;
+      };
+      this.fpPlatforms.forEach((platform, index) => {
+        const width = platform.w * this.w;
+        const depth = platform.d * this.h;
+        const x = platform.x * this.w;
+        const z = platform.y * this.h;
+        addBox(stone, x, platform.top * 0.5, z, width, platform.top, depth);
+        addBox(slab, x, platform.top + 1.1, z, width * 0.985, 2.2, depth * 0.985);
+        addBox(trim, x, platform.top + 2.35, z + depth * 0.5, width * 0.78, 0.8, 1.2);
+        addBox(trim, x, platform.top + 2.35, z - depth * 0.5, width * 0.78, 0.8, 1.2);
+        addBox(trim, x + width * 0.5, platform.top + 2.35, z, 1.2, 0.8, depth * 0.68);
+        addBox(trim, x - width * 0.5, platform.top + 2.35, z, 1.2, 0.8, depth * 0.68);
+        if (index > 0) {
+          const stepGlow = new THREE.PointLight(new THREE.Color(style.accent), 0.18, Math.max(180, width), 2);
+          stepGlow.position.set(x, platform.top + 10, z);
+          this.fpsWorld.add(stepGlow);
+        }
+      });
+      const top = this.fpPlatforms[this.fpPlatforms.length - 1];
+      const altarX = top.x * this.w;
+      const altarZ = top.y * this.h;
+      const altarTop = this.fpAltar?.top || top.top;
+      const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(18, 25, 14, 8), slab);
+      pedestal.position.set(altarX, altarTop + 9, altarZ);
+      this.fpsWorld.add(pedestal);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(27, 2.2, 8, 48), trim);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(altarX, altarTop + 17.5, altarZ);
+      this.fpsWorld.add(ring);
+      const relic = new THREE.Mesh(new THREE.OctahedronGeometry(8, 0), new THREE.MeshStandardMaterial({
+        color: new THREE.Color(style.accent), emissive: new THREE.Color(style.accent),
+        emissiveIntensity: 1.2, metalness: 0.25, roughness: 0.28
+      }));
+      relic.position.set(altarX, altarTop + 42, altarZ);
+      relic.rotation.set(0.4, 0.2, 0.3);
+      relic.userData.baseY = altarTop + 42;
+      this.fpsWorld.add(relic);
+      this.fpAltarRelic = relic;
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: this.fpsGlowTexture(style.accent), color: new THREE.Color(style.accent),
+        transparent: true, opacity: 0.46, blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      glow.position.set(altarX, altarTop + 40, altarZ);
+      glow.scale.set(150, 150, 1);
+      this.fpsWorld.add(glow);
+      const beam = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: this.fpsGlowTexture(style.accent), color: new THREE.Color(style.accent),
+        transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      beam.position.set(altarX, altarTop + 120, altarZ);
+      beam.scale.set(45, 250, 1);
+      this.fpsWorld.add(beam);
+      const light = new THREE.PointLight(new THREE.Color(style.accent), 1.1, 520, 2);
+      light.position.set(altarX, altarTop + 55, altarZ);
+      this.fpsWorld.add(light);
+    }
+
     fpsBuildEnvironment(style) {
       const THREE = window.THREE;
       const biome = this.biomeConfig(this.mission);
@@ -11787,20 +11935,23 @@
       arena.position.set(this.w * 0.5, 0.6, this.h * 0.5);
       this.fpsWorld.add(arena);
       const citySurface = this.isCitySurface();
+      const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
+      arena.visible = arenaMode;
       const grid = new THREE.GridHelper(5200, 80, style.accent, style.dark);
       grid.position.set(this.w * 0.5, 0.8, this.h * 0.5);
       grid.material.transparent = true;
       grid.material.opacity = 0.18;
-      grid.visible = !citySurface;
+      grid.visible = arenaMode;
       this.fpsWorld.add(grid);
       const ring = new THREE.Mesh(new THREE.TorusGeometry(Math.min(this.w, this.h) * 0.47, 1.4, 6, 84), new THREE.MeshBasicMaterial({
         color: new THREE.Color(style.accent), transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false
       }));
       ring.rotation.x = Math.PI / 2;
       ring.position.set(this.w * 0.5, 1.3, this.h * 0.5);
-      ring.visible = !citySurface;
+      ring.visible = arenaMode;
       this.fpsWorld.add(ring);
       this.fpsBuildProps(style);
+      this.fpsBuildPlatforms(style);
       this.fpsWorld.add(new THREE.HemisphereLight(
         new THREE.Color(citySurface ? '#b7cbd4' : style.accent),
         new THREE.Color(citySurface ? '#5a4637' : (biome.ground || style.dark)),
@@ -12705,6 +12856,11 @@
         this.fpsSyncBeacons();
         this.fpsSyncPickups();
         this.fpsSyncProjectiles();
+        if (this.fpAltarRelic) {
+          this.fpAltarRelic.rotation.y = this.time * 0.72;
+          this.fpAltarRelic.rotation.z = 0.3 + Math.sin(this.time * 1.8) * 0.12;
+          this.fpAltarRelic.position.y = (this.fpAltarRelic.userData.baseY || 0) + Math.sin(this.time * 2.2) * 4;
+        }
         this.fpsRenderer.render(this.fpsScene, this.fpsCamera);
         this.fpsViewW = w;
         this.fpsViewH = h;
@@ -12719,6 +12875,49 @@
 
     firstPersonActive() {
       return Boolean(this.fpView && this.screen === 'play' && this.player);
+    }
+
+    fpBounds() {
+      const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
+      if (!this.fpView || arenaMode) {
+        return { minX: 0.04, maxX: 0.96, minY: this.fpView ? 0.075 : 0.26, maxY: 0.94 };
+      }
+      return { minX: -0.34, maxX: 1.36, minY: -0.22, maxY: 1.24 };
+    }
+
+    fpPlatformHeightAt(worldX, worldZ) {
+      let height = 0;
+      (this.fpPlatforms || []).forEach((platform) => {
+        const halfW = platform.w * this.w * 0.5;
+        const halfD = platform.d * this.h * 0.5;
+        if (Math.abs(worldX - platform.x * this.w) <= halfW && Math.abs(worldZ - platform.y * this.h) <= halfD) {
+          height = Math.max(height, platform.top);
+        }
+      });
+      return height;
+    }
+
+    fpPropBlocksAt(nx, ny) {
+      if (!this.fpView || ['range', 'crucible', 'gambit'].includes(this.currentMode)) return false;
+      const wx = nx * this.w;
+      const wz = ny * this.h;
+      const feet = this.fpJumpZ || 0;
+      return (this.fpProps || []).some((prop) => {
+        if (!['building', 'wreck', 'tower', 'spire', 'arch', 'obelisk'].includes(prop.kind)) return false;
+        if ((prop.height || 0) <= feet + 14) return false;
+        const halfW = (prop.width || 20) * 0.46;
+        const halfD = (prop.kind === 'building' || prop.kind === 'wreck') ? (prop.width || 20) * 0.34 : (prop.width || 20) * 0.5;
+        return Math.abs(wx - prop.x * this.w) <= halfW && Math.abs(wz - prop.y * this.h) <= halfD;
+      });
+    }
+
+    fpCanOccupy(nx, ny) {
+      if (!this.fpView) return true;
+      if (this.fpPropBlocksAt(nx, ny)) return false;
+      const floor = this.fpPlatformHeightAt(nx * this.w, ny * this.h);
+      const feet = this.fpJumpZ || 0;
+      const step = this.fpGrounded ? 16 : 2.5;
+      return floor <= feet + step + 0.01;
     }
 
     updateFirstPersonLook(dt) {
@@ -12766,19 +12965,63 @@
     }
 
     updateFirstPersonMotion(dt) {
-      if (!this.fpView) return;
-      if (!this.fpGrounded || this.fpJumpV !== 0 || this.fpJumpZ > 0) {
+      if (!this.fpView || !this.player) return;
+      const point = this.playerPoint();
+      const floor = this.fpPlatformHeightAt(point.x, point.y);
+      const feet = this.fpJumpZ || 0;
+      if (this.fpGrounded) {
+        if (floor > feet + 0.5) {
+          if (floor - feet <= 16) {
+            this.fpJumpZ = floor;
+            this.fpLandDip = Math.max(this.fpLandDip || 0, Math.min(2.4, (floor - feet) * 0.18));
+          }
+        } else if (floor < feet - 1.2) {
+          this.fpGrounded = false;
+          this.fpJumpV = 0;
+        } else {
+          this.fpJumpZ = floor;
+        }
+      }
+      if (!this.fpGrounded) {
         this.fpJumpV -= 760 * dt;
         this.fpJumpZ += this.fpJumpV * dt;
-        if (this.fpJumpZ <= 0) {
-          const impact = Math.min(9, Math.abs(this.fpJumpV) * 0.018);
-          this.fpJumpZ = 0;
+        if (this.fpJumpZ <= floor && this.fpJumpV <= 0) {
+          const impact = Math.min(10, Math.abs(this.fpJumpV) * 0.018);
+          this.fpJumpZ = floor;
           this.fpJumpV = 0;
           this.fpGrounded = true;
           this.fpLandDip = Math.max(this.fpLandDip || 0, impact);
         }
       }
       this.fpLandDip = (this.fpLandDip || 0) * Math.exp(-dt * 9);
+      this.fpAltarBuffCd = Math.max(0, (this.fpAltarBuffCd || 0) - dt);
+      const altar = this.fpAltar;
+      if (altar) {
+        const altarDistance = Math.hypot(point.x - altar.x * this.w, point.y - altar.y * this.h);
+        if (!this.fpAltarHintShown && altarDistance < this.w * 0.2) {
+          this.fpAltarHintShown = true;
+          this.toast('发现圣坛 · 沿台阶登顶可恢复超能与护盾');
+        }
+        const onTop = Math.abs((this.fpJumpZ || 0) - altar.top) < 2.4
+          && altarDistance < altar.radius * this.w;
+        this.fpAltarActive = onTop;
+        if (onTop) {
+          this.fpAltarStand = (this.fpAltarStand || 0) + dt;
+          if (this.fpAltarStand >= 1.1 && this.fpAltarBuffCd <= 0) {
+            this.fpAltarBuffCd = 18;
+            this.fpAltarStand = 0;
+            this.player.superCharge = Math.min(100, (this.player.superCharge || 0) + 24);
+            this.player.shield = Math.min(this.player.maxShield, this.player.shield + 32);
+            this.player.shieldTimer = Math.max(this.player.shieldTimer || 0, 3);
+            this.fx.ring(altar.x * this.w, altar.y * this.h, '#ffd58a', altar.radius * 1.8, 0.7, 3);
+            this.toast('圣坛祝福 · 超能 +24% · 护盾恢复');
+          }
+        } else {
+          this.fpAltarStand = 0;
+        }
+      } else {
+        this.fpAltarActive = false;
+      }
     }
 
     startFpCast(kind, color, label, max = 0.55, extra = {}) {
@@ -12827,41 +13070,106 @@
       const biome = this.biomeConfig(this.mission);
       this.fpSunAngle = -Math.PI / 2 + (next() - 0.5) * 1.7;
       this.fpProps = [];
-      const city = this.isCitySurface();
-      const count = city ? 46 : this.currentMode === 'raid' ? 42 : 32;
-      for (let index = 0; index < count; index += 1) {
-        const angle = (index / count) * Math.PI * 2 + (next() - 0.5) * 0.16;
-        if (city) {
-          const radius = 0.35 + next() * 0.46;
-          const roll = next();
-          const kind = roll < 0.6 ? 'building' : roll < 0.74 ? 'wreck' : roll < 0.88 ? 'lamp' : 'rubble';
-          const building = kind === 'building';
-          const wreck = kind === 'wreck';
+      this.fpPlatforms = [];
+      this.fpAltar = null;
+      const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
+      if (!arenaMode) {
+        const altarX = 0.5;
+        const altarY = 0.55;
+        const levels = [10, 20, 32, 46];
+        const widths = [0.34, 0.285, 0.23, 0.17];
+        const depths = [0.23, 0.185, 0.14, 0.095];
+        levels.forEach((top, index) => {
+          this.fpPlatforms.push({
+            x: altarX, y: altarY, w: widths[index], d: depths[index], top, kind: 'altar'
+          });
+        });
+        this.fpAltar = {
+          x: altarX, y: altarY, top: levels[levels.length - 1],
+          radius: widths[widths.length - 1] * 0.34, color: biome.accent
+        };
+      }
+      const nearAltar = (x, y, padding = 0.16) => Math.abs(x - 0.5) < 0.18 + padding && Math.abs(y - 0.55) < 0.16 + padding;
+      const nearSpawn = (x, y) => Math.hypot(x - 0.5, y - (this.currentMode === 'raid' ? 0.72 : 0.79)) < 0.2;
+      if (this.isCitySurface() && !arenaMode) {
+        const cols = [-0.32, -0.03, 0.26, 0.55, 0.84, 1.13, 1.42];
+        const rows = [-0.2, 0.08, 0.36, 0.64, 0.92, 1.2];
+        cols.forEach((col, columnIndex) => {
+          rows.forEach((row, rowIndex) => {
+            const x = col + (next() - 0.5) * 0.045;
+            const y = row + (next() - 0.5) * 0.04;
+            if (nearAltar(x, y, 0.02) || nearSpawn(x, y)) return;
+            const roll = next();
+            const kind = roll < 0.78 ? 'building' : roll < 0.86 ? 'wreck' : 'rubble';
+            const building = kind === 'building';
+            const wreck = kind === 'wreck';
+            this.fpProps.push({
+              x, y,
+              width: building ? 52 + next() * 96 : wreck ? 58 + next() * 48 : 14 + next() * 20,
+              height: building ? 150 + next() * 430 : wreck ? 46 + next() * 94 : 9 + next() * 17,
+              kind,
+              color: (columnIndex + rowIndex) % 6 === 0 ? '#d6a35f' : biome.accent2,
+              phase: (columnIndex * 1.71 + rowIndex * 0.93) % (Math.PI * 2),
+              alpha: 0.34 + next() * 0.36,
+              variant: (columnIndex + rowIndex) % 3
+            });
+          });
+        });
+        for (let index = 0; index < 26; index += 1) {
+          let x = -0.3 + next() * 1.7;
+          let y = -0.18 + next() * 1.38;
+          if (nearAltar(x, y, 0.02) || nearSpawn(x, y)) continue;
+          const lamp = index % 2 === 0;
+          this.fpProps.push({
+            x, y,
+            width: lamp ? 7 : 16 + next() * 22,
+            height: lamp ? 52 : 10 + next() * 16,
+            kind: lamp ? 'lamp' : 'rubble',
+            color: lamp ? '#ffd09a' : biome.accent2,
+            phase: next() * Math.PI * 2,
+            alpha: 0.3 + next() * 0.34,
+            variant: index % 3
+          });
+        }
+      } else if (!arenaMode) {
+        const count = this.currentMode === 'raid' ? 72 : 58;
+        for (let index = 0; index < count; index += 1) {
+          let x = 0.5;
+          let y = 0.5;
+          for (let tries = 0; tries < 20; tries += 1) {
+            x = -0.28 + next() * 1.56;
+            y = -0.16 + next() * 1.36;
+            if (Math.hypot(x - 0.5, y - 0.5) > 0.22 && !nearAltar(x, y, 0.02) && !nearSpawn(x, y)) break;
+          }
+          if (nearAltar(x, y, 0.02) || nearSpawn(x, y)) continue;
+          const kindRoll = next();
+          this.fpProps.push({
+            x, y,
+            width: 18 + next() * (this.currentMode === 'raid' ? 72 : 46),
+            height: 58 + next() * (this.currentMode === 'raid' ? 320 : 230),
+            kind: kindRoll < 0.2 ? 'arch' : kindRoll < 0.46 ? 'obelisk' : kindRoll < 0.74 ? 'tower' : 'spire',
+            color: index % 5 === 0 ? biome.accent2 : biome.accent,
+            phase: next() * Math.PI * 2,
+            alpha: 0.24 + next() * 0.4
+          });
+        }
+      } else {
+        const count = this.currentMode === 'raid' ? 42 : 32;
+        for (let index = 0; index < count; index += 1) {
+          const angle = (index / count) * Math.PI * 2 + (next() - 0.5) * 0.16;
+          const radius = 0.3 + next() * 0.32;
+          const kindRoll = next();
           this.fpProps.push({
             x: 0.5 + Math.cos(angle) * radius,
             y: 0.5 + Math.sin(angle) * radius,
-            width: building ? 46 + next() * 92 : wreck ? 52 + next() * 44 : kind === 'lamp' ? 7 : 18 + next() * 22,
-            height: building ? 150 + next() * 450 : wreck ? 46 + next() * 90 : kind === 'lamp' ? 52 : 10 + next() * 16,
-            kind,
-            color: index % 6 === 0 ? '#d6a35f' : biome.accent2,
+            width: 16 + next() * (this.currentMode === 'raid' ? 58 : 34),
+            height: 52 + next() * (this.currentMode === 'raid' ? 270 : 170),
+            kind: kindRoll < 0.18 ? 'arch' : kindRoll < 0.42 ? 'obelisk' : kindRoll < 0.72 ? 'tower' : 'spire',
+            color: index % 5 === 0 ? biome.accent2 : biome.accent,
             phase: next() * Math.PI * 2,
-            alpha: 0.32 + next() * 0.38,
-            variant: index % 3
+            alpha: 0.2 + next() * 0.42
           });
-          continue;
         }
-        const radius = 0.3 + next() * 0.32;
-        const kindRoll = next();
-        this.fpProps.push({
-          x: 0.5 + Math.cos(angle) * radius,
-          y: 0.5 + Math.sin(angle) * radius,
-          width: 16 + next() * (this.currentMode === 'raid' ? 58 : 34),
-          height: 52 + next() * (this.currentMode === 'raid' ? 270 : 170),
-          kind: kindRoll < 0.18 ? 'arch' : kindRoll < 0.42 ? 'obelisk' : kindRoll < 0.72 ? 'tower' : 'spire',
-          color: index % 5 === 0 ? biome.accent2 : biome.accent,
-          phase: next() * Math.PI * 2,
-          alpha: 0.2 + next() * 0.42
-        });
       }
       this.fpParticles = Array.from({ length: 48 }, () => ({
         x: next(),
@@ -12960,10 +13268,7 @@
       this.rifts = this.rifts.filter((rift) => rift.time > 0);
       this.barricades.forEach((barricade) => { barricade.time -= dt; });
       this.barricades = this.barricades.filter((barricade) => barricade.time > 0);
-      if (this.fpView) {
-        this.updateFirstPersonLook(dt);
-        this.updateFirstPersonMotion(dt);
-      }
+      if (this.fpView) this.updateFirstPersonLook(dt);
       this.updateFpCast(dt);
       player.flash = Math.max(0, player.flash - dt * 3.4);
       player.muzzle = Math.max(0, player.muzzle - dt);
@@ -13002,17 +13307,22 @@
         if (this.manager.keys.has('KeyD')) dx += 1;
       }
       this.fpMoving = Boolean(dx || dy) && player.dashTime <= 0;
-      const minY = this.fpView ? 0.075 : 0.26;
+      const bounds = this.fpBounds();
+      const movePlayer = (nx, ny) => {
+        const nextX = clamp(nx, bounds.minX, bounds.maxX);
+        if (this.fpCanOccupy(nextX, player.y)) player.x = nextX;
+        const nextY = clamp(ny, bounds.minY, bounds.maxY);
+        if (this.fpCanOccupy(player.x, nextY)) player.y = nextY;
+      };
       if (player.dashTime > 0) {
         player.dashTime -= dt;
-        player.x = clamp(player.x + player.dashX * 620 * dt / w, 0.04, 0.96);
-        player.y = clamp(player.y + player.dashY * 620 * dt / h, minY, 0.94);
+        movePlayer(player.x + player.dashX * 620 * dt / w, player.y + player.dashY * 620 * dt / h);
       } else if (dx || dy) {
         const length = Math.hypot(dx, dy) || 1;
-        player.x = clamp(player.x + (dx / length) * 235 * dt / w, 0.04, 0.96);
-        player.y = clamp(player.y + (dy / length) * 235 * dt / h, minY, 0.94);
+        movePlayer(player.x + (dx / length) * 235 * dt / w, player.y + (dy / length) * 235 * dt / h);
         if (this.fpView) this.fpBob += dt * (this.manager.keys.has('ShiftLeft') || this.manager.keys.has('ShiftRight') ? 8.4 : 6.2);
       }
+      if (this.fpView) this.updateFirstPersonMotion(dt);
       if (this.manager.mouse.down) this.fireWeapon();
     }
 
@@ -13083,7 +13393,12 @@
           this.explodeAt(bullet.x, bullet.y, bullet.explosionRadius, bullet.explosionDamage, bullet.color);
         }
       });
-      this.bullets = this.bullets.filter((bullet) => bullet.life > 0 && bullet.x > -30 && bullet.x < w + 30 && bullet.y > -30 && bullet.y < h + 30);
+      const cull = this.fpView ? this.fpBounds() : { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+      const cullMinX = cull.minX * w - 140;
+      const cullMaxX = cull.maxX * w + 140;
+      const cullMinY = cull.minY * h - 140;
+      const cullMaxY = cull.maxY * h + 140;
+      this.bullets = this.bullets.filter((bullet) => bullet.life > 0 && bullet.x > cullMinX && bullet.x < cullMaxX && bullet.y > cullMinY && bullet.y < cullMaxY);
 
       const point = this.playerPoint();
       this.enemyBullets.forEach((bullet) => {
@@ -13101,7 +13416,7 @@
           this.damagePlayer(bullet.damage);
         }
       });
-      this.enemyBullets = this.enemyBullets.filter((bullet) => bullet.life > 0 && bullet.x > -30 && bullet.x < w + 30 && bullet.y > -30 && bullet.y < h + 30);
+      this.enemyBullets = this.enemyBullets.filter((bullet) => bullet.life > 0 && bullet.x > cullMinX && bullet.x < cullMaxX && bullet.y > cullMinY && bullet.y < cullMaxY);
     }
 
     updateEnemies(dt, w, h) {
@@ -13127,10 +13442,16 @@
         if (distance > preferred) {
           const slowScale = enemy.slowTimer > 0 ? 0.42 : 1;
           const speed = ((melee || enemy.type === 'gladiator') && distance < 260 ? enemy.speed * 1.35 : enemy.speed) * slowScale;
-          enemy.x = clamp(enemy.x + Math.cos(angle) * speed * dt / w, 0.035, 0.965);
-          enemy.y = clamp(enemy.y + Math.sin(angle) * speed * dt / h, 0.08, 0.94);
+          const enemyBounds = this.fpView ? this.fpBounds() : { minX: 0.035, maxX: 0.965, minY: 0.08, maxY: 0.94 };
+          const nextEnemyX = clamp(enemy.x + Math.cos(angle) * speed * dt / w, enemyBounds.minX, enemyBounds.maxX);
+          const nextEnemyY = clamp(enemy.y + Math.sin(angle) * speed * dt / h, enemyBounds.minY, enemyBounds.maxY);
+          if (this.fpPlatformHeightAt(nextEnemyX * this.w, nextEnemyY * this.h) <= 8) {
+            enemy.x = nextEnemyX;
+            enemy.y = nextEnemyY;
+          }
         }
-        if (enemy.type === 'gladiator' || melee) {
+        const meleeVerticalReach = !this.fpView || (this.fpJumpZ || 0) <= 20;
+        if ((enemy.type === 'gladiator' || melee) && meleeVerticalReach) {
           if (distance < enemy.radius + 38 && enemy.meleeCd <= 0) {
             enemy.meleeCd = enemy.type === 'thrall' ? 0.72 : 1.05;
             this.damagePlayer(enemy.damage);
@@ -16223,6 +16544,7 @@
       const camera = this.firstPersonCamera(w, h);
       this.drawFpSky(ctx, w, h, camera);
       this.drawFpGround(ctx, w, h, camera);
+      this.drawFpPlatforms(ctx, w, h, camera);
       this.drawFpProps(ctx, w, h, camera);
       this.drawFpGroundEffects(ctx, w, h, camera);
       this.drawFpMechanics(ctx, w, h, camera);
@@ -16438,6 +16760,79 @@
         ctx.fill();
         ctx.restore();
       });
+    }
+
+    drawFpPlatforms(ctx, w, h, camera) {
+      const platforms = [...(this.fpPlatforms || [])].sort((a, b) => a.top - b.top);
+      if (!platforms.length) return;
+      platforms.forEach((platform) => {
+        const halfW = platform.w * this.w * 0.5;
+        const halfD = platform.d * this.h * 0.5;
+        const x = platform.x * this.w;
+        const z = platform.y * this.h;
+        const corners = [
+          [x - halfW, z - halfD], [x + halfW, z - halfD],
+          [x + halfW, z + halfD], [x - halfW, z + halfD]
+        ];
+        const topPoints = corners.map(([cx, cz]) => this.fpProject(cx, cz, platform.top + 2, camera));
+        const groundPoints = corners.map(([cx, cz]) => this.fpProject(cx, cz, 0, camera));
+        if (topPoints.some((point) => !point) || groundPoints.some((point) => !point)) return;
+        ctx.save();
+        for (let i = 0; i < 4; i += 1) {
+          const next = (i + 1) % 4;
+          const side = ctx.createLinearGradient(0, topPoints[i].y, 0, groundPoints[i].y);
+          side.addColorStop(0, 'rgba(83, 78, 68, .96)');
+          side.addColorStop(1, 'rgba(20, 22, 21, .98)');
+          ctx.fillStyle = side;
+          ctx.strokeStyle = 'rgba(200, 174, 130, .18)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(topPoints[i].x, topPoints[i].y);
+          ctx.lineTo(topPoints[next].x, topPoints[next].y);
+          ctx.lineTo(groundPoints[next].x, groundPoints[next].y);
+          ctx.lineTo(groundPoints[i].x, groundPoints[i].y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(91, 84, 71, .97)';
+        ctx.strokeStyle = this.fpRgba(this.fpAltar?.color || '#e9bd72', 0.55);
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        topPoints.forEach((point, index) => {
+          if (index === 0) ctx.moveTo(point.x, point.y);
+          else ctx.lineTo(point.x, point.y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+      const altar = this.fpAltar;
+      if (!altar) return;
+      const point = this.fpProject(altar.x * this.w, altar.y * this.h, altar.top + 42, camera);
+      if (!point) return;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const glow = ctx.createRadialGradient(point.x, point.y, 1, point.x, point.y, 46);
+      glow.addColorStop(0, 'rgba(255, 255, 242, .95)');
+      glow.addColorStop(0.25, this.fpRgba(altar.color || '#ffd58a', 0.72));
+      glow.addColorStop(1, this.fpRgba(altar.color || '#ffd58a', 0));
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 46, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.translate(point.x, point.y);
+      ctx.rotate(this.time * 0.8);
+      ctx.fillStyle = 'rgba(255, 247, 218, .96)';
+      ctx.beginPath();
+      ctx.moveTo(0, -9);
+      ctx.lineTo(6, 0);
+      ctx.lineTo(0, 9);
+      ctx.lineTo(-6, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     }
 
     drawFpGroundEffects(ctx, w, h, camera) {
@@ -17758,6 +18153,18 @@
       ctx.fillRect(0, 0, w, h);
 
       this.drawFpCastOverlay(ctx, w, h);
+
+      if (this.fpAltarActive && this.player) {
+        ctx.save();
+        ctx.globalAlpha = 0.82 + Math.sin(this.time * 3) * 0.1;
+        ctx.textAlign = 'center';
+        ctx.font = '600 9px "PingFang SC", "Segoe UI", sans-serif';
+        ctx.fillStyle = 'rgba(255, 239, 198, .96)';
+        ctx.shadowColor = 'rgba(255, 190, 96, .8)';
+        ctx.shadowBlur = 14;
+        ctx.fillText('圣坛庇护 · 光能恢复', w * 0.5, h * 0.62);
+        ctx.restore();
+      }
 
       const healthRatio = this.player ? (this.player.hp + this.player.shield) / (this.player.maxHp + this.player.maxShield) : 1;
       if (healthRatio < 0.34 || this.player?.flash > 0.02) {
