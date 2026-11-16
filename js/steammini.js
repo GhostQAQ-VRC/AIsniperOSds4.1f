@@ -7544,6 +7544,7 @@
       this.fpLandDip = 0;
       this.fpCast = null;
       this.fpPlatforms = [];
+      this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
       this.fpAltarBuffCd = 0;
@@ -7992,6 +7993,7 @@
       this.fpGrounded = true;
       this.fpLandDip = 0;
       this.fpPlatforms = [];
+      this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
       this.crucible = null;
@@ -8679,6 +8681,7 @@
       this.fpLandDip = 0;
       this.fpCast = null;
       this.fpPlatforms = [];
+      this.fpTerrain = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
       this.fpAltarBuffCd = 0;
@@ -9832,9 +9835,16 @@
       let px = x === null ? rand(bounds.minX + 0.14, bounds.maxX - 0.14) : clamp(x, bounds.minX, bounds.maxX);
       let py = y === null ? rand(bounds.minY + 0.18, bounds.maxY - 0.18) : clamp(y, bounds.minY, bounds.maxY);
       if (x === null) {
-        for (let tries = 0; tries < 16; tries += 1) {
-          px = rand(bounds.minX + 0.14, bounds.maxX - 0.14);
-          py = rand(bounds.minY + 0.18, bounds.maxY - 0.18);
+        for (let tries = 0; tries < 20; tries += 1) {
+          if (this.fpOpenWorld() && this.player) {
+            const angle = rand(0, Math.PI * 2);
+            const distance = rand(300, 760);
+            px = clamp(this.player.x + Math.cos(angle) * distance / this.w, bounds.minX + 0.14, bounds.maxX - 0.14);
+            py = clamp(this.player.y + Math.sin(angle) * distance / this.h, bounds.minY + 0.18, bounds.maxY - 0.18);
+          } else {
+            px = rand(bounds.minX + 0.14, bounds.maxX - 0.14);
+            py = rand(bounds.minY + 0.18, bounds.maxY - 0.18);
+          }
           if (this.fpPlatformHeightAt(px * this.w, py * this.h) <= 0 && !this.fpPropBlocksAt(px, py)) break;
         }
       }
@@ -10131,12 +10141,19 @@
         const bounds = this.fpView ? this.fpBounds() : { minX: 0.04, maxX: 0.96, minY: 0.07, maxY: 0.94 };
         const padX = (bounds.maxX - bounds.minX) * 0.045;
         const padY = (bounds.maxY - bounds.minY) * 0.045;
-        for (let tries = 0; tries < 24; tries += 1) {
-          const edge = Math.floor(Math.random() * 4);
-          if (edge === 0) { x = rand(bounds.minX + padX, bounds.maxX - padX); y = bounds.minY + padY; }
-          else if (edge === 1) { x = bounds.maxX - padX; y = rand(bounds.minY + padY, bounds.maxY - padY); }
-          else if (edge === 2) { x = rand(bounds.minX + padX, bounds.maxX - padX); y = bounds.maxY - padY; }
-          else { x = bounds.minX + padX; y = rand(bounds.minY + padY, bounds.maxY - padY); }
+        for (let tries = 0; tries < 28; tries += 1) {
+          if (this.fpOpenWorld()) {
+            const angle = rand(0, Math.PI * 2);
+            const distance = rand(380, 1120);
+            x = clamp(this.player.x + Math.cos(angle) * distance / this.w, bounds.minX + padX, bounds.maxX - padX);
+            y = clamp(this.player.y + Math.sin(angle) * distance / this.h, bounds.minY + padY, bounds.maxY - padY);
+          } else {
+            const edge = Math.floor(Math.random() * 4);
+            if (edge === 0) { x = rand(bounds.minX + padX, bounds.maxX - padX); y = bounds.minY + padY; }
+            else if (edge === 1) { x = bounds.maxX - padX; y = rand(bounds.minY + padY, bounds.maxY - padY); }
+            else if (edge === 2) { x = rand(bounds.minX + padX, bounds.maxX - padX); y = bounds.maxY - padY; }
+            else { x = bounds.minX + padX; y = rand(bounds.minY + padY, bounds.maxY - padY); }
+          }
           if (this.fpPropBlocksAt(x, y)) continue;
           if (this.fpPlatformHeightAt(x * this.w, y * this.h) > 0) continue;
           if (dist(x * this.w, y * this.h, this.player.x * this.w, this.player.y * this.h) > 210) break;
@@ -11335,28 +11352,29 @@
       const THREE = window.THREE;
       const skyTexture = this.fpsSkyTexture(style);
       if (skyTexture) {
-        const sky = new THREE.Mesh(new THREE.SphereGeometry(11000, 40, 24), new THREE.MeshBasicMaterial({
+        const sky = new THREE.Mesh(new THREE.SphereGeometry(30000, 40, 24), new THREE.MeshBasicMaterial({
           map: skyTexture || null, color: skyTexture ? 0xffffff : 0x05070e, side: THREE.BackSide, depthWrite: false, fog: false
         }));
+        sky.position.set(this.w * 0.5, 0, this.h * 0.5);
         this.fpsWorld.add(sky);
       }
       const sunAngle = this.fpSunAngle ?? (-Math.PI / 2 + 0.6);
       const centerX = this.w * 0.5;
       const centerZ = this.h * 0.5;
-      const sunPosition = new THREE.Vector3(centerX + Math.cos(sunAngle - 1.7) * 7200, 2600, centerZ + Math.sin(sunAngle - 1.7) * 7200);
+      const sunPosition = new THREE.Vector3(centerX + Math.cos(sunAngle - 1.7) * 22000, 5200, centerZ + Math.sin(sunAngle - 1.7) * 22000);
       const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({
         map: this.fpsGlowTexture(style.key === 'earth' ? '#ffd39b' : style.accent), color: style.key === 'earth' ? 0xffd6a2 : 0xffffff, transparent: true, opacity: 0.92,
         blending: THREE.AdditiveBlending, depthWrite: false, fog: false
       }));
       sunGlow.position.copy(sunPosition);
-      sunGlow.scale.set(1500, 1500, 1);
+      sunGlow.scale.set(3200, 3200, 1);
       this.fpsWorld.add(sunGlow);
       const sun = new THREE.DirectionalLight(new THREE.Color(style.key === 'earth' ? '#ffd2a1' : style.accent), style.key === 'earth' ? 1.32 : 1.15);
       sun.position.copy(sunPosition);
       this.fpsWorld.add(sun);
       const planetAngle = -Math.PI / 2 + 0.42;
-      const planetPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 5000, 1420, centerZ + Math.sin(planetAngle) * 5000);
-      const planetRadius = style.type === 'blackhole' ? 620 : 1120;
+      const planetPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 16000, 4200, centerZ + Math.sin(planetAngle) * 16000);
+      const planetRadius = style.type === 'blackhole' ? 950 : 1120;
       const addCompanion = (companionStyle, radius, position, options = {}) => {
         const texture = this.fpsPlanetTexture(companionStyle);
         const material = new THREE.MeshStandardMaterial({
@@ -11390,8 +11408,8 @@
       };
       if (style.key === 'earth') {
         const moonStyle = { ...style, type: 'rock', base: '#a4a8a4', dark: '#2a2c2c', accent: '#e1e4dc', clouds: false, rings: false };
-        const moonPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 6400, 2500, centerZ + Math.sin(planetAngle) * 6400);
-        addCompanion(moonStyle, 188, moonPosition, { atmosphere: 0.18, halo: 3.6, tilt: 0.1 });
+        const moonPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 18000, 4600, centerZ + Math.sin(planetAngle) * 18000);
+        addCompanion(moonStyle, 520, moonPosition, { atmosphere: 0.18, halo: 3.6, tilt: 0.1 });
       } else if (style.type === 'blackhole') {
         this.fpsBuildBlackHole(style, planetPosition, planetRadius);
       } else if (style.key === 'moon') {
@@ -11399,22 +11417,22 @@
           key: 'earth-companion', type: 'earth', base: '#2f6f9f', dark: '#0c1a2a',
           accent: '#8fd8ff', clouds: true, rings: false
         };
-        const earthPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 5200, 1780, centerZ + Math.sin(planetAngle) * 5200);
-        addCompanion(earthStyle, 560, earthPosition, { atmosphere: 0.48, halo: 4.1, tilt: 0.24 });
+        const earthPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 17500, 5000, centerZ + Math.sin(planetAngle) * 17500);
+        addCompanion(earthStyle, 1450, earthPosition, { atmosphere: 0.48, halo: 4.1, tilt: 0.24 });
       } else if (style.key === 'europa') {
         const jupiterStyle = {
           key: 'jupiter-companion', type: 'gas', base: '#c9a87d', dark: '#4a3526',
           accent: '#f0d5aa', clouds: true, rings: false
         };
-        const jupiterPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 6000, 1850, centerZ + Math.sin(planetAngle) * 6000);
-        addCompanion(jupiterStyle, 860, jupiterPosition, { atmosphere: 0.42, halo: 3.8, tilt: 0.12 });
+        const jupiterPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 18500, 5200, centerZ + Math.sin(planetAngle) * 18500);
+        addCompanion(jupiterStyle, 3100, jupiterPosition, { atmosphere: 0.42, halo: 3.8, tilt: 0.12 });
       } else if (style.key === 'mars') {
         const phobosStyle = { ...style, type: 'rock', base: '#8d8479', dark: '#2a2320', accent: '#d8cab6', clouds: false, rings: false };
         const deimosStyle = { ...phobosStyle, base: '#77726a', dark: '#211e1c' };
-        const phobosPosition = new THREE.Vector3(centerX + Math.cos(planetAngle - 0.5) * 6800, 2350, centerZ + Math.sin(planetAngle - 0.5) * 6800);
-        const deimosPosition = new THREE.Vector3(centerX + Math.cos(planetAngle + 0.84) * 7200, 1850, centerZ + Math.sin(planetAngle + 0.84) * 7200);
-        addCompanion(phobosStyle, 42, phobosPosition, { atmosphere: 0.08, halo: 4.8, tilt: 0.4 });
-        addCompanion(deimosStyle, 27, deimosPosition, { atmosphere: 0.06, halo: 5.2, tilt: 0.2 });
+        const phobosPosition = new THREE.Vector3(centerX + Math.cos(planetAngle - 0.5) * 15500, 4800, centerZ + Math.sin(planetAngle - 0.5) * 15500);
+        const deimosPosition = new THREE.Vector3(centerX + Math.cos(planetAngle + 0.84) * 19000, 3900, centerZ + Math.sin(planetAngle + 0.84) * 19000);
+        addCompanion(phobosStyle, 155, phobosPosition, { atmosphere: 0.08, halo: 4.8, tilt: 0.4 });
+        addCompanion(deimosStyle, 96, deimosPosition, { atmosphere: 0.06, halo: 5.2, tilt: 0.2 });
       } else if (['mercury', 'venus', 'nessus'].includes(style.key)) {
         // These surfaces have no other large body close enough to dominate the sky.
       } else {
@@ -11422,8 +11440,8 @@
           ...style, type: 'rock', base: style.key === 'dread' ? '#6b6577' : '#a7adae',
           dark: '#262a2c', accent: style.accent, clouds: false, rings: false
         };
-        const companionPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 6900, 2300, centerZ + Math.sin(planetAngle) * 6900);
-        addCompanion(companionStyle, 150 + (style.rings ? 40 : 0), companionPosition, {
+        const companionPosition = new THREE.Vector3(centerX + Math.cos(planetAngle) * 18000, 4600, centerZ + Math.sin(planetAngle) * 18000);
+        addCompanion(companionStyle, 420 + (style.rings ? 140 : 0), companionPosition, {
           atmosphere: 0.2 + (style.clouds ? 0.12 : 0), halo: 4.4, tilt: 0.16, rings: false
         });
       }
@@ -11432,8 +11450,8 @@
           map: this.fpsGlowTexture(style.base), color: new THREE.Color(style.base), transparent: true, opacity: 0.12,
           blending: THREE.AdditiveBlending, depthWrite: false, fog: false
         }));
-        nebula.position.set(centerX - 3600, 2100, centerZ - 5200);
-        nebula.scale.set(5200, 2600, 1);
+        nebula.position.set(centerX - 12000, 5000, centerZ - 16000);
+        nebula.scale.set(15000, 7600, 1);
         this.fpsWorld.add(nebula);
       }
     }
@@ -11536,7 +11554,7 @@
       };
       (this.fpProps || []).forEach((prop, index) => {
         const group = new THREE.Group();
-        group.position.set(prop.x * this.w, 0, prop.y * this.h);
+        group.position.set(prop.x * this.w, this.fpGroundHeightAt(prop.x * this.w, prop.y * this.h), prop.y * this.h);
         group.rotation.y = prop.phase || 0;
         const width = Math.max(5, prop.width);
         const height = Math.max(8, prop.height);
@@ -11589,33 +11607,39 @@
         }
         this.fpsWorld.add(group);
       });
-      for (let i = 0; i < 30; i += 1) {
-        const angle = (i / 30) * Math.PI * 2 + (i % 4) * 0.035;
-        const distance = 1650 + (i % 7) * 170;
-        const width = 150 + (i % 5) * 48;
-        const height = 260 + (i % 8) * 58;
+      const distantCount = 52;
+      for (let i = 0; i < distantCount; i += 1) {
+        const angle = (i / distantCount) * Math.PI * 2 + (i % 5) * 0.028;
+        const distance = 4300 + (i % 8) * 420;
+        const width = 190 + (i % 5) * 70;
+        const height = 300 + (i % 9) * 78;
         const material = facadeMaterials[i % facadeMaterials.length];
         const building = new THREE.Mesh(unitBox, material);
-        building.position.set(this.w * 0.5 + Math.cos(angle) * distance, height * 0.5 - 5, this.h * 0.5 + Math.sin(angle) * distance);
+        const x = this.w * 0.5 + Math.cos(angle) * distance;
+        const z = this.h * 0.5 + Math.sin(angle) * distance;
+        building.position.set(x, this.fpGroundHeightAt(x, z) + height * 0.5, z);
         building.scale.set(width, height, width * 0.7);
         building.rotation.y = -angle + Math.PI * 0.5;
         this.fpsWorld.add(building);
       }
-      for (let i = 0; i < 46; i += 1) {
-        const x = this.w * (-0.28 + Math.random() * 1.68);
-        const z = this.h * (-0.16 + Math.random() * 1.34);
-        if (Math.hypot(x - this.w * 0.5, z - this.h * 0.55) < Math.min(this.w, this.h) * 0.2) continue;
+      const rubbleBounds = this.fpBounds();
+      for (let i = 0; i < 120; i += 1) {
+        const x = this.w * (rubbleBounds.minX + 0.2 + Math.random() * (rubbleBounds.maxX - rubbleBounds.minX - 0.4));
+        const z = this.h * (rubbleBounds.minY + 0.2 + Math.random() * (rubbleBounds.maxY - rubbleBounds.minY - 0.4));
+        if (Math.hypot(x - this.w * 0.5, z - this.h * 0.55) < Math.min(this.w, this.h) * 0.18) continue;
         const rubble = new THREE.Mesh(dodeca, i % 3 ? concrete : rusty);
-        rubble.position.set(x, 2 + (i % 3) * 1.4, z);
+        rubble.position.set(x, this.fpGroundHeightAt(x, z) + 2 + (i % 3) * 1.4, z);
         rubble.scale.set(6 + (i % 5) * 3.2, 2.5 + (i % 4) * 1.5, 5 + (i % 3) * 3.4);
         rubble.rotation.set(i * 0.31, i * 0.67, i * 0.2);
         this.fpsWorld.add(rubble);
       }
-      for (let i = 0; i < 7; i += 1) {
-        const angle = (i / 7) * Math.PI * 2 + 0.4;
-        const distance = Math.min(this.w, this.h) * (0.22 + (i % 3) * 0.045);
+      for (let i = 0; i < 18; i += 1) {
+        const angle = (i / 18) * Math.PI * 2 + 0.4;
+        const distance = Math.min(this.w, this.h) * (0.2 + (i % 5) * 0.09);
+        const x = this.w * 0.5 + Math.cos(angle) * distance;
+        const z = this.h * 0.5 + Math.sin(angle) * distance;
         const wreck = new THREE.Group();
-        wreck.position.set(this.w * 0.5 + Math.cos(angle) * distance, 6, this.h * 0.5 + Math.sin(angle) * distance);
+        wreck.position.set(x, this.fpGroundHeightAt(x, z) + 6, z);
         wreck.rotation.y = angle + 0.7;
         addBox(wreck, rusty, 0, 0, 0, 26, 10, 12, 0, 0, (i % 2 ? 0.04 : -0.03));
         addBox(wreck, darkMetal, 9, 1, 0, 9, 6, 11, 0, 0, 0);
@@ -11629,7 +11653,9 @@
         }));
         const angle = (i / 5) * Math.PI * 2 + 0.7;
         const distance = 780 + (i % 3) * 220;
-        smoke.position.set(this.w * 0.5 + Math.cos(angle) * distance, 220 + i * 26, this.h * 0.5 + Math.sin(angle) * distance);
+        const smokeX = this.w * 0.5 + Math.cos(angle) * distance;
+        const smokeZ = this.h * 0.5 + Math.sin(angle) * distance;
+        smoke.position.set(smokeX, this.fpGroundHeightAt(smokeX, smokeZ) + 220 + i * 26, smokeZ);
         smoke.scale.set(520, 820, 1);
         this.fpsWorld.add(smoke);
       }
@@ -11659,7 +11685,7 @@
       };
       (this.fpProps || []).forEach((prop) => {
         const group = new THREE.Group();
-        group.position.set(prop.x * this.w, 0, prop.y * this.h);
+        group.position.set(prop.x * this.w, this.fpGroundHeightAt(prop.x * this.w, prop.y * this.h), prop.y * this.h);
         const material = new THREE.MeshStandardMaterial({
           color: dark, roughness: 0.84, metalness: 0.22,
           emissive: accent, emissiveIntensity: 0.035
@@ -11692,29 +11718,39 @@
       });
       const rockGeometry = new THREE.DodecahedronGeometry(1, 0);
       const openPve = this.fpView && !['range', 'crucible', 'gambit'].includes(this.currentMode);
-      for (let i = 0; i < (openPve ? 38 : 26); i += 1) {
+      const rockBounds = this.fpBounds();
+      for (let i = 0; i < (openPve ? 150 : 26); i += 1) {
         const angle = (i / 26) * Math.PI * 2 + (i % 3) * 0.12;
         const distance = Math.min(this.w, this.h) * (0.46 + (i % 7) * 0.03);
         const rock = new THREE.Mesh(rockGeometry, new THREE.MeshStandardMaterial({
           color: new THREE.Color(style.dark).offsetHSL(0, 0, 0.03),
           roughness: 0.96, metalness: 0.02
         }));
+        let x;
+        let z;
         if (openPve) {
-          rock.position.set(this.w * (-0.28 + Math.random() * 1.62), 3 + (i % 4) * 2, this.h * (-0.16 + Math.random() * 1.3));
+          x = this.w * (rockBounds.minX + 0.15 + Math.random() * (rockBounds.maxX - rockBounds.minX - 0.3));
+          z = this.h * (rockBounds.minY + 0.15 + Math.random() * (rockBounds.maxY - rockBounds.minY - 0.3));
         } else {
-          rock.position.set(this.w * 0.5 + Math.cos(angle) * distance, 3 + (i % 4) * 2, this.h * 0.5 + Math.sin(angle) * distance);
+          x = this.w * 0.5 + Math.cos(angle) * distance;
+          z = this.h * 0.5 + Math.sin(angle) * distance;
         }
+        const rockHeight = this.fpGroundHeightAt(x, z);
+        rock.position.set(x, rockHeight + 3 + (i % 4) * 2, z);
         rock.scale.set(10 + (i % 5) * 4, 4 + (i % 4) * 2.4, 8 + (i % 3) * 5);
         rock.rotation.set(i * 0.3, i * 0.7, i * 0.2);
         this.fpsWorld.add(rock);
       }
       const mountainMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(style.dark).offsetHSL(0, 0, -0.04), roughness: 1, metalness: 0 });
-      for (let i = 0; i < 16; i += 1) {
-        const angle = (i / 16) * Math.PI * 2 + 0.18;
-        const distance = 2200 + (i % 5) * 260;
-        const height = 260 + (i % 6) * 90;
+      const mountainCount = openPve ? 34 : 16;
+      for (let i = 0; i < mountainCount; i += 1) {
+        const angle = (i / mountainCount) * Math.PI * 2 + 0.18;
+        const distance = (openPve ? 4200 : 2200) + (i % 7) * (openPve ? 420 : 260);
+        const height = (openPve ? 420 : 260) + (i % 6) * (openPve ? 120 : 90);
         const mountain = new THREE.Mesh(new THREE.ConeGeometry(150 + (i % 4) * 60, height, 5), mountainMaterial);
-        mountain.position.set(this.w * 0.5 + Math.cos(angle) * distance, height * 0.5 - 8, this.h * 0.5 + Math.sin(angle) * distance);
+        const x = this.w * 0.5 + Math.cos(angle) * distance;
+        const z = this.h * 0.5 + Math.sin(angle) * distance;
+        mountain.position.set(x, this.fpGroundHeightAt(x, z) + height * 0.5 - 8, z);
         mountain.rotation.y = i * 0.4;
         this.fpsWorld.add(mountain);
       }
@@ -11915,27 +11951,85 @@
       this.fpsWorld.add(light);
     }
 
+    fpsBuildTerrain(style) {
+      if (!this.fpTerrain || !window.THREE) return null;
+      const THREE = window.THREE;
+      const bounds = this.fpBounds();
+      const margin = 0.28;
+      const minX = bounds.minX - margin;
+      const maxX = bounds.maxX + margin;
+      const minY = bounds.minY - margin;
+      const maxY = bounds.maxY + margin;
+      const width = (maxX - minX) * this.w;
+      const depth = (maxY - minY) * this.h;
+      const centerX = ((minX + maxX) * 0.5) * this.w;
+      const centerZ = ((minY + maxY) * 0.5) * this.h;
+      const cols = 220;
+      const rows = 156;
+      const geometry = new THREE.PlaneGeometry(width, depth, cols, rows);
+      geometry.rotateX(-Math.PI / 2);
+      geometry.translate(centerX, 0, centerZ);
+      const positions = geometry.attributes.position;
+      const colors = new Float32Array(positions.count * 3);
+      const city = this.isCitySurface();
+      const biome = this.biomeConfig(this.mission);
+      const lowColor = new THREE.Color(city ? '#171a1b' : style.dark);
+      const baseColor = new THREE.Color(city ? '#3a3d3d' : (biome.ground || style.dark));
+      const highColor = new THREE.Color(city ? '#66625b' : style.accent);
+      const color = new THREE.Color();
+      for (let index = 0; index < positions.count; index += 1) {
+        const x = positions.getX(index);
+        const z = positions.getZ(index);
+        const height = this.fpTerrainHeightAt(x, z);
+        positions.setY(index, height);
+        const high = clamp(height / (city ? 42 : 95), 0, 1);
+        color.copy(baseColor).lerp(highColor, high * 0.5);
+        if (height < 3) color.lerp(lowColor, 0.16);
+        color.offsetHSL(0, 0, Math.sin(x * 0.017 + z * 0.013) * 0.025);
+        color.toArray(colors, index * 3);
+      }
+      positions.needsUpdate = true;
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.computeVertexNormals();
+      const texture = city ? this.fpsCityGroundTexture(style) : this.fpsGroundTexture(style);
+      if (texture) texture.repeat.set(city ? 18 : 26, city ? 14 : 21);
+      const material = new THREE.MeshStandardMaterial({
+        map: texture || null,
+        color: 0xffffff,
+        vertexColors: true,
+        roughness: 0.97,
+        metalness: city ? 0.05 : 0.02
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.y = 0;
+      this.fpsWorld.add(mesh);
+      this.fpTerrainMesh = mesh;
+      return mesh;
+    }
+
     fpsBuildEnvironment(style) {
       const THREE = window.THREE;
       const biome = this.biomeConfig(this.mission);
+      const citySurface = this.isCitySurface();
+      const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
+      const openWorld = !arenaMode;
       const groundTexture = this.fpsGroundTexture(style);
       const groundMaterial = new THREE.MeshStandardMaterial({
         map: groundTexture || null,
         color: groundTexture ? 0xffffff : new THREE.Color(biome.ground || style.dark),
         roughness: 0.94, metalness: 0.04
       });
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000, 1, 1), groundMaterial);
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(openWorld ? 46000 : 9000, openWorld ? 46000 : 9000, 1, 1), groundMaterial);
       ground.rotation.x = -Math.PI / 2;
-      ground.position.set(this.w * 0.5, 0, this.h * 0.5);
+      ground.position.set(this.w * 0.5, openWorld ? -120 : 0, this.h * 0.5);
       this.fpsWorld.add(ground);
+      if (openWorld) this.fpsBuildTerrain(style);
       const arena = new THREE.Mesh(new THREE.CircleGeometry(Math.min(this.w, this.h) * 0.55, 64), new THREE.MeshBasicMaterial({
         color: new THREE.Color(style.dark), transparent: true, opacity: 0.16, depthWrite: false
       }));
       arena.rotation.x = -Math.PI / 2;
       arena.position.set(this.w * 0.5, 0.6, this.h * 0.5);
       this.fpsWorld.add(arena);
-      const citySurface = this.isCitySurface();
-      const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
       arena.visible = arenaMode;
       const grid = new THREE.GridHelper(5200, 80, style.accent, style.dark);
       grid.position.set(this.w * 0.5, 0.8, this.h * 0.5);
@@ -11961,7 +12055,12 @@
       const accentLight = new THREE.PointLight(new THREE.Color(citySurface ? '#ffc98f' : style.accent), 1.2, 1800, 2);
       accentLight.position.set(this.w * 0.5, 180, this.h * 0.5);
       this.fpsWorld.add(accentLight);
-      this.fpsScene.fog = new THREE.Fog(new THREE.Color(citySurface ? '#4c4038' : style.dark), (this.fpSettings?.viewDistance || 2600) * 0.35, this.fpSettings?.viewDistance || 2600);
+      const fogDistance = this.fpSettings?.viewDistance || 2600;
+      this.fpsScene.fog = new THREE.Fog(
+        new THREE.Color(citySurface ? '#4c4038' : style.dark),
+        openWorld ? Math.max(1300, fogDistance * 0.55) : fogDistance * 0.35,
+        openWorld ? Math.max(7200, fogDistance * 2.3) : fogDistance
+      );
       const dustCount = 220;
       const dustPositions = new Float32Array(dustCount * 3);
       for (let i = 0; i < dustCount; i += 1) {
@@ -11990,7 +12089,7 @@
           if ('outputEncoding' in this.fpsRenderer && window.THREE.sRGBEncoding !== undefined) this.fpsRenderer.outputEncoding = window.THREE.sRGBEncoding;
           this.fpsRenderer.setClearColor(0x03060a, 1);
           this.fpsScene = new window.THREE.Scene();
-          this.fpsCamera = new window.THREE.PerspectiveCamera(65, w / Math.max(1, h), 0.05, 26000);
+          this.fpsCamera = new window.THREE.PerspectiveCamera(65, w / Math.max(1, h), 0.05, 60000);
           this.fpsCamera.rotation.order = 'YXZ';
           this.fpsScene.add(this.fpsCamera);
         }
@@ -12267,9 +12366,10 @@
         }
         const x = enemy.x * this.w;
         const z = enemy.y * this.h;
+        const ground = this.fpGroundHeightAt(x, z);
         const u = group.userData;
         const moved = Math.hypot(x - u.lastX, z - u.lastZ) > 0.08;
-        group.position.set(x, 0, z);
+        group.position.set(x, ground, z);
         group.rotation.y = Math.atan2(player.x - x, player.y - z);
         const phase = enemy.phase || 0;
         const swing = Math.sin(this.time * (moved ? 7.6 : 2.2) + phase) * (moved ? 0.42 : 0.08);
@@ -12278,9 +12378,10 @@
         u.arms[0].rotation.x = -swing * 0.7;
         u.arms[1].rotation.x = swing * 0.7;
         u.head.rotation.y = Math.sin(this.time * 0.8 + phase) * 0.08;
-        group.position.y = u.look.faction === 'vex'
+        const bob = u.look.faction === 'vex'
           ? 1.3 + Math.sin(this.time * 1.8 + phase) * 0.45
           : (moved ? Math.abs(Math.sin(this.time * 7.6 + phase)) * 0.7 : 0);
+        group.position.y = ground + bob;
         u.bodyMaterial.emissiveIntensity = enemy.flash > 0 ? 0.5 : 0.045;
         u.accentMaterial.emissiveIntensity = enemy.flash > 0 ? 1.4 : 0.76;
         if (u.muzzle) u.muzzle.visible = Number(enemy.attackTimer) < 0.13 || Number(enemy.windup) > 0;
@@ -12289,7 +12390,7 @@
           u.aura.material.opacity = 0.26 + Math.sin(this.time * 2.6 + phase) * 0.08;
           u.aura.scale.setScalar(1 + Math.sin(this.time * 1.8 + phase) * 0.05);
         }
-        if (u.shadow) u.shadow.position.y = -group.position.y + 0.2;
+        if (u.shadow) u.shadow.position.y = -bob + 0.2;
         u.lastX = x;
         u.lastZ = z;
       });
@@ -12536,7 +12637,9 @@
           return;
         }
         beacon.group.visible = true;
-        beacon.group.position.set(marker.x * this.w, 0, marker.y * this.h);
+        const beaconX = marker.x * this.w;
+        const beaconZ = marker.y * this.h;
+        beacon.group.position.set(beaconX, this.fpGroundHeightAt(beaconX, beaconZ), beaconZ);
         const color = new window.THREE.Color(marker.color || '#f0d08a');
         beacon.ringMaterial.color.copy(color);
         beacon.beamMaterial.color.copy(color);
@@ -12555,7 +12658,9 @@
         if (ringIndex >= this.fpsHazardRings.length) return;
         const entry = this.fpsHazardRings[ringIndex++];
         entry.ring.visible = true;
-        entry.ring.position.set(x * this.w, 1.8, y * this.h);
+        const ringX = x * this.w;
+        const ringZ = y * this.h;
+        entry.ring.position.set(ringX, this.fpGroundHeightAt(ringX, ringZ) + 1.8, ringZ);
         entry.ring.scale.setScalar(Math.max(4, radius));
         entry.material.color.set(color || '#ff704f');
         entry.material.opacity = clamp(opacity, 0.08, 0.72);
@@ -12572,7 +12677,7 @@
           return;
         }
         barrier.visible = true;
-        barrier.position.set(barricade.x, 18, barricade.y);
+        barrier.position.set(barricade.x, this.fpGroundHeightAt(barricade.x, barricade.y) + 18, barricade.y);
         barrier.scale.set(barricade.radius * 0.8, 34, 4);
         barrier.rotation.y = Math.PI / 2 - barricade.angle;
         barrier.material.opacity = 0.2 + Math.sin(this.time * 3) * 0.05;
@@ -12648,11 +12753,11 @@
       };
       this.grenades.forEach((grenade) => {
         const visual = this.grenadeVisualPoint(grenade);
-        addOrb(visual.x, visual.z, visual.y, grenade.transcendent ? '#ffe0a6' : this.activeSubclass().color);
+        addOrb(visual.x, this.fpGroundHeightAt(visual.x, visual.y) + visual.z, visual.y, grenade.transcendent ? '#ffe0a6' : this.activeSubclass().color);
       });
       this.hammers.forEach((hammer) => {
         const visual = this.hammerVisualPoint(hammer);
-        addOrb(visual.x, visual.z, visual.y, hammer.profile?.color || this.activeSubclass().color);
+        addOrb(visual.x, this.fpGroundHeightAt(visual.x, visual.y) + visual.z, visual.y, hammer.profile?.color || this.activeSubclass().color);
       });
       this.fpsOrbPoints.geometry.attributes.position.needsUpdate = true;
       this.fpsOrbPoints.geometry.attributes.color.needsUpdate = true;
@@ -12686,7 +12791,9 @@
           this.fpsWorld.add(group);
           this.fpsPickupModels.set(id, group);
         }
-        group.position.set(x * this.w, 9 + Math.sin(this.time * 2 + x * 10) * 2, y * this.h);
+        const pickupX = x * this.w;
+        const pickupZ = y * this.h;
+        group.position.set(pickupX, this.fpGroundHeightAt(pickupX, pickupZ) + 9 + Math.sin(this.time * 2 + x * 10) * 2, pickupZ);
         group.rotation.y = this.time * 0.8;
       };
       this.lootDrops.forEach((drop) => updatePickup(drop.id, drop.x, drop.y, drop.item?.color || '#f3dca3', 'octa'));
@@ -12710,7 +12817,8 @@
         if (!enemy.alive) return;
         const model = this.fpsEnemyModels.get(enemy);
         const height = model?.userData?.height || enemy.radius * 2.8;
-        const point = this.fpsCameraProject(enemy.x * this.w, height + 7, enemy.y * this.h);
+        const enemyGround = this.fpGroundHeightAt(enemy.x * this.w, enemy.y * this.h);
+        const point = this.fpsCameraProject(enemy.x * this.w, enemyGround + height + 7, enemy.y * this.h);
         if (!point) return;
         if (enemy.hp < enemy.maxHp || enemy.elite || enemy.training) {
           const width = clamp(44 - point.depth * 10, 20, 48);
@@ -12731,7 +12839,8 @@
         if (!boss || boss.dead || boss.alive === false) return;
         const model = this.fpsEnemyModels.get(boss);
         const height = model?.userData?.height || boss.radius * 4;
-        const point = this.fpsCameraProject(boss.x * this.w, height + 18, boss.y * this.h);
+        const bossGround = this.fpGroundHeightAt(boss.x * this.w, boss.y * this.h);
+        const point = this.fpsCameraProject(boss.x * this.w, bossGround + height + 18, boss.y * this.h);
         if (!point) return;
         const width = clamp(120 - point.depth * 16, 58, 140);
         ctx.fillStyle = 'rgba(3, 8, 10, .86)';
@@ -12744,7 +12853,8 @@
         ctx.fillText(boss.name || this.raidConfig?.bossName || '首领', point.x, point.y - 11);
       });
       this.fpsMarkers.forEach((marker) => {
-        const point = this.fpsCameraProject(marker.x * this.w, marker.height, marker.y * this.h);
+        const markerGround = this.fpGroundHeightAt(marker.x * this.w, marker.y * this.h);
+        const point = this.fpsCameraProject(marker.x * this.w, markerGround + marker.height, marker.y * this.h);
         if (!point) return;
         ctx.textAlign = 'center';
         ctx.font = '600 9px "PingFang SC", sans-serif';
@@ -12771,7 +12881,7 @@
       this.drawFpProjectiles(ctx, w, h, overlayCamera);
       if (this.fx?.parts?.length) {
         this.fx.parts.forEach((particle) => {
-          const point = this.fpsCameraProject(particle.x, 28, particle.y);
+          const point = this.fpsCameraProject(particle.x, this.fpGroundHeightAt(particle.x, particle.y) + 28, particle.y);
           if (!point) return;
           const alpha = clamp(particle.life / particle.max, 0, 1);
           ctx.save();
@@ -12785,7 +12895,7 @@
       }
       if (this.fx?.rings?.length) {
         this.fx.rings.forEach((ring) => {
-          const point = this.fpsCameraProject(ring.x, 2, ring.y);
+          const point = this.fpsCameraProject(ring.x, this.fpGroundHeightAt(ring.x, ring.y) + 2, ring.y);
           if (!point) return;
           const progress = 1 - ring.life / ring.max;
           ctx.save();
@@ -12799,7 +12909,7 @@
         });
       }
       this.fx.floaters.forEach((floater) => {
-        const point = this.fpsCameraProject(floater.x, 48, floater.y);
+        const point = this.fpsCameraProject(floater.x, this.fpGroundHeightAt(floater.x, floater.y) + 48, floater.y);
         if (!point) return;
         const alpha = clamp(floater.life / floater.max, 0, 1);
         ctx.save();
@@ -12837,8 +12947,9 @@
       this.fpsCamera.rotation.z = (this.shake > 0 ? rand(-this.shake, this.shake) * 0.0007 : 0) + dodgeRoll;
       if (this.fpsScene?.fog) {
         const viewDistance = settings.viewDistance || 2600;
-        this.fpsScene.fog.near = viewDistance * 0.35;
-        this.fpsScene.fog.far = viewDistance;
+        const openWorld = !['range', 'crucible', 'gambit'].includes(this.currentMode);
+        this.fpsScene.fog.near = openWorld ? Math.max(1300, viewDistance * 0.55) : viewDistance * 0.35;
+        this.fpsScene.fog.far = openWorld ? Math.max(7200, viewDistance * 2.3) : viewDistance;
       }
     }
 
@@ -12882,7 +12993,52 @@
       if (!this.fpView || arenaMode) {
         return { minX: 0.04, maxX: 0.96, minY: this.fpView ? 0.075 : 0.26, maxY: 0.94 };
       }
-      return { minX: -0.34, maxX: 1.36, minY: -0.22, maxY: 1.24 };
+      return { minX: -4.2, maxX: 5.2, minY: -3.2, maxY: 4.2 };
+    }
+
+    fpOpenWorld() {
+      return this.fpView && !['range', 'crucible', 'gambit'].includes(this.currentMode);
+    }
+
+    fpZoneWeight(nx, ny, zone, offsetX = 0, offsetY = 0) {
+      const dx = Math.abs(nx - (zone.x + offsetX)) - zone.w * 0.5;
+      const dy = Math.abs(ny - (zone.y + offsetY)) - zone.d * 0.5;
+      if (dx <= 0 && dy <= 0) return 1;
+      const distance = Math.max(dx, dy);
+      const ramp = Math.max(0.001, zone.ramp || 0.2);
+      if (distance >= ramp) return 0;
+      const t = 1 - distance / ramp;
+      return t * t * (3 - 2 * t);
+    }
+
+    fpTerrainHeightAt(worldX, worldZ) {
+      const terrain = this.fpTerrain;
+      if (!terrain) return 0;
+      const nx = worldX / this.w;
+      const ny = worldZ / this.h;
+      const seed = terrain.seed || 0;
+      let height = (
+        Math.sin(nx * 1.63 + seed) * 0.52
+        + Math.cos(ny * 1.27 - seed * 1.3) * 0.42
+        + Math.sin((nx + ny) * 2.71 + seed * 0.4) * 0.24
+      ) * (terrain.amplitude || 0);
+      height += Math.sin(nx * 4.15 - seed * 0.7) * (terrain.detail || 0);
+      height += Math.cos(ny * 3.41 + seed * 1.7) * (terrain.detail || 0);
+      const stage = this.currentMode === 'raid' ? (this.raidState?.encounterIndex || 0) : 0;
+      (terrain.zones || []).forEach((zone) => {
+        const weight = this.fpZoneWeight(
+          nx, ny, zone,
+          (zone.driftX || 0) * stage,
+          (zone.driftY || 0) * stage
+        );
+        const target = zone.height + (zone.stageStep || 0) * stage;
+        if (weight > 0) height = height * (1 - weight) + target * weight;
+      });
+      return Math.max(0, height);
+    }
+
+    fpGroundHeightAt(worldX, worldZ) {
+      return Math.max(this.fpTerrainHeightAt(worldX, worldZ), this.fpPlatformHeightAt(worldX, worldZ));
     }
 
     fpPlatformHeightAt(worldX, worldZ) {
@@ -12914,7 +13070,7 @@
     fpCanOccupy(nx, ny) {
       if (!this.fpView) return true;
       if (this.fpPropBlocksAt(nx, ny)) return false;
-      const floor = this.fpPlatformHeightAt(nx * this.w, ny * this.h);
+      const floor = this.fpGroundHeightAt(nx * this.w, ny * this.h);
       const feet = this.fpJumpZ || 0;
       const step = this.fpGrounded ? 16 : 2.5;
       return floor <= feet + step + 0.01;
@@ -12967,7 +13123,7 @@
     updateFirstPersonMotion(dt) {
       if (!this.fpView || !this.player) return;
       const point = this.playerPoint();
-      const floor = this.fpPlatformHeightAt(point.x, point.y);
+      const floor = this.fpGroundHeightAt(point.x, point.y);
       const feet = this.fpJumpZ || 0;
       if (this.fpGrounded) {
         if (floor > feet + 0.5) {
@@ -12976,8 +13132,12 @@
             this.fpLandDip = Math.max(this.fpLandDip || 0, Math.min(2.4, (floor - feet) * 0.18));
           }
         } else if (floor < feet - 1.2) {
-          this.fpGrounded = false;
-          this.fpJumpV = 0;
+          if (feet - floor <= 20) {
+            this.fpJumpZ = floor;
+          } else {
+            this.fpGrounded = false;
+            this.fpJumpV = 0;
+          }
         } else {
           this.fpJumpZ = floor;
         }
@@ -13071,11 +13231,107 @@
       this.fpSunAngle = -Math.PI / 2 + (next() - 0.5) * 1.7;
       this.fpProps = [];
       this.fpPlatforms = [];
+      this.fpTerrain = null;
       this.fpAltar = null;
       const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
       if (!arenaMode) {
-        const altarX = 0.5;
-        const altarY = 0.55;
+        const stage = this.raidState?.encounterIndex || 0;
+        const city = this.isCitySurface();
+        const seedText = `${this.mission?.id || ''}:${this.raidConfig?.id || ''}:${this.currentMode}:${stage}`;
+        let terrainSeed = 0;
+        for (let index = 0; index < seedText.length; index += 1) terrainSeed = (terrainSeed * 31 + seedText.charCodeAt(index)) % 100000;
+        const zones = [];
+        const farMesas = [
+          { x: -3.15, y: -2.15, w: 2.7, d: 2.5 },
+          { x: 4.15, y: -1.85, w: 2.5, d: 3.0 },
+          { x: -3.45, y: 2.55, w: 2.5, d: 2.3 },
+          { x: 4.05, y: 2.9, w: 2.7, d: 2.1 },
+          { x: 0.5, y: -3.0, w: 3.2, d: 1.9 },
+          { x: 0.5, y: 4.0, w: 3.6, d: 1.9 },
+          { x: 2.55, y: 0.45, w: 1.5, d: 2.9 },
+          { x: -1.75, y: 0.2, w: 1.3, d: 2.4 }
+        ];
+        farMesas.forEach((zone, index) => {
+          const wave = Math.sin((index + 1) * 2.17 + terrainSeed * 0.01);
+          zones.push({
+            ...zone,
+            height: (city ? (this.currentMode === 'raid' ? 26 : 15) : 32)
+              + Math.abs(wave) * (city ? (this.currentMode === 'raid' ? 40 : 18) : 44),
+            stageStep: city ? (this.currentMode === 'raid' ? 4 : 2) : 7,
+            driftX: Math.sin(index * 1.7) * 0.09,
+            driftY: Math.cos(index * 1.3) * 0.07,
+            ramp: 0.34 + (index % 3) * 0.09,
+            kind: 'mesa'
+          });
+        });
+        if (this.currentMode === 'raid') {
+          const side = stage % 2 ? 1 : -1;
+          zones.push({ x: 0.5 + side * 2.25, y: 0.62, w: 1.55, d: 1.15, height: 28, stageStep: 9, driftX: side * 0.12, ramp: 0.3, kind: 'side-terrace' });
+          zones.push({ x: 0.5 - side * 1.5, y: -0.75, w: 1.35, d: 0.95, height: 34, stageStep: 8, driftY: -0.1, ramp: 0.26, kind: 'approach' });
+          const raidMotifs = {
+            scourge: [
+              { x: -1.6, y: 0.35, w: 2.1, d: 0.7, height: 24, stageStep: 5, ramp: 0.28 },
+              { x: 2.3, y: 0.9, w: 1.3, d: 1.5, height: 32, stageStep: 6, ramp: 0.32 }
+            ],
+            'last-wish': [
+              { x: -1.7, y: -0.3, w: 1.6, d: 1.2, height: 38, stageStep: 6, ramp: 0.3 },
+              { x: 1.9, y: -0.4, w: 1.4, d: 1.2, height: 54, stageStep: 7, ramp: 0.3 },
+              { x: 2.4, y: 1.3, w: 1.3, d: 1.0, height: 28, stageStep: 5, ramp: 0.28 }
+            ],
+            garden: [
+              { x: -1.8, y: 0.6, w: 1.7, d: 1.1, height: 32, stageStep: 7, ramp: 0.3 },
+              { x: 2.1, y: -0.45, w: 1.6, d: 1.2, height: 46, stageStep: 7, ramp: 0.3 },
+              { x: 2.2, y: 1.45, w: 1.3, d: 0.9, height: 22, stageStep: 6, ramp: 0.26 }
+            ],
+            'deep-stone': [
+              { x: -2.0, y: -0.4, w: 1.2, d: 2.5, height: 52, stageStep: 8, ramp: 0.28 },
+              { x: 2.0, y: 0.4, w: 1.1, d: 2.1, height: 44, stageStep: 8, ramp: 0.26 }
+            ],
+            vow: [
+              { x: -1.6, y: 0.1, w: 1.5, d: 1.5, height: 30, stageStep: 6, ramp: 0.34 },
+              { x: 2.0, y: -0.3, w: 1.5, d: 1.4, height: 48, stageStep: 8, ramp: 0.28 }
+            ],
+            root: [
+              { x: -1.5, y: -0.2, w: 1.4, d: 1.3, height: 28, stageStep: 8, ramp: 0.3 },
+              { x: 1.8, y: 0.15, w: 1.4, d: 1.3, height: 42, stageStep: 9, ramp: 0.3 },
+              { x: 2.2, y: 1.35, w: 1.3, d: 1.0, height: 20, stageStep: 7, ramp: 0.26 }
+            ],
+            'vault-of-glass': [
+              { x: -1.9, y: 0.4, w: 1.5, d: 1.5, height: 34, stageStep: 7, ramp: 0.3 },
+              { x: 2.2, y: 0.1, w: 1.5, d: 1.4, height: 48, stageStep: 8, ramp: 0.3 }
+            ],
+            'event-horizon': [
+              { x: -2.1, y: 0.2, w: 1.2, d: 2.2, height: 60, stageStep: 9, ramp: 0.24 },
+              { x: 2.2, y: -0.2, w: 1.2, d: 2.2, height: 52, stageStep: 9, ramp: 0.24 }
+            ],
+            salvation: [
+              { x: -1.8, y: 0.5, w: 1.4, d: 1.3, height: 40, stageStep: 8, ramp: 0.3 },
+              { x: 2.1, y: 0.3, w: 1.4, d: 1.2, height: 48, stageStep: 8, ramp: 0.3 }
+            ]
+          };
+          (raidMotifs[this.raidConfig?.id] || []).forEach((zone, index) => {
+            zones.push({
+              ...zone,
+              driftX: Math.sin(index * 1.9 + stage) * 0.08,
+              kind: 'raid-motif'
+            });
+          });
+        }
+        zones.push({ x: 0.5, y: 0.78, w: 1.35, d: 0.8, height: 0, ramp: 0.28, kind: 'plaza' });
+        zones.push({
+          x: 0.5, y: 0.12, w: 0.82, d: 0.42,
+          height: this.currentMode === 'raid' ? 34 : this.currentMode === 'strike' ? 20 : 14,
+          stageStep: this.currentMode === 'raid' ? 9 : 0,
+          ramp: 0.15, kind: 'boss-dais'
+        });
+        this.fpTerrain = {
+          seed: terrainSeed * 0.017,
+          amplitude: city ? 5 : 13,
+          detail: city ? 2 : 4.5,
+          zones
+        };
+        const altarX = 0.78;
+        const altarY = 0.6;
         const levels = [10, 20, 32, 46];
         const widths = [0.34, 0.285, 0.23, 0.17];
         const depths = [0.23, 0.185, 0.14, 0.095];
@@ -13089,24 +13345,28 @@
           radius: widths[widths.length - 1] * 0.34, color: biome.accent
         };
       }
-      const nearAltar = (x, y, padding = 0.16) => Math.abs(x - 0.5) < 0.18 + padding && Math.abs(y - 0.55) < 0.16 + padding;
+      const nearAltar = (x, y, padding = 0.16) => Math.abs(x - 0.78) < 0.18 + padding && Math.abs(y - 0.6) < 0.16 + padding;
+      const nearDais = (x, y) => Math.abs(x - 0.5) < 0.56 && Math.abs(y - 0.12) < 0.38;
       const nearSpawn = (x, y) => Math.hypot(x - 0.5, y - (this.currentMode === 'raid' ? 0.72 : 0.79)) < 0.2;
       if (this.isCitySurface() && !arenaMode) {
-        const cols = [-0.32, -0.03, 0.26, 0.55, 0.84, 1.13, 1.42];
-        const rows = [-0.2, 0.08, 0.36, 0.64, 0.92, 1.2];
+        const cols = [];
+        const rows = [];
+        for (let x = -4.0; x <= 5.0; x += 0.62) cols.push(x);
+        for (let y = -3.0; y <= 4.0; y += 0.62) rows.push(y);
         cols.forEach((col, columnIndex) => {
           rows.forEach((row, rowIndex) => {
-            const x = col + (next() - 0.5) * 0.045;
-            const y = row + (next() - 0.5) * 0.04;
-            if (nearAltar(x, y, 0.02) || nearSpawn(x, y)) return;
+            const x = col + (next() - 0.5) * 0.1;
+            const y = row + (next() - 0.5) * 0.1;
+            if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y)) return;
+            if (next() < 0.06) return;
             const roll = next();
-            const kind = roll < 0.78 ? 'building' : roll < 0.86 ? 'wreck' : 'rubble';
+            const kind = roll < 0.8 ? 'building' : roll < 0.87 ? 'wreck' : 'rubble';
             const building = kind === 'building';
             const wreck = kind === 'wreck';
             this.fpProps.push({
               x, y,
-              width: building ? 52 + next() * 96 : wreck ? 58 + next() * 48 : 14 + next() * 20,
-              height: building ? 150 + next() * 430 : wreck ? 46 + next() * 94 : 9 + next() * 17,
+              width: building ? 74 + next() * 122 : wreck ? 72 + next() * 58 : 18 + next() * 26,
+              height: building ? 180 + next() * 520 : wreck ? 54 + next() * 110 : 9 + next() * 20,
               kind,
               color: (columnIndex + rowIndex) % 6 === 0 ? '#d6a35f' : biome.accent2,
               phase: (columnIndex * 1.71 + rowIndex * 0.93) % (Math.PI * 2),
@@ -13115,15 +13375,16 @@
             });
           });
         });
-        for (let index = 0; index < 26; index += 1) {
-          let x = -0.3 + next() * 1.7;
-          let y = -0.18 + next() * 1.38;
-          if (nearAltar(x, y, 0.02) || nearSpawn(x, y)) continue;
+        const streetBounds = this.fpBounds();
+        for (let index = 0; index < 64; index += 1) {
+          let x = streetBounds.minX + 0.25 + next() * (streetBounds.maxX - streetBounds.minX - 0.5);
+          let y = streetBounds.minY + 0.22 + next() * (streetBounds.maxY - streetBounds.minY - 0.44);
+          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y)) continue;
           const lamp = index % 2 === 0;
           this.fpProps.push({
             x, y,
-            width: lamp ? 7 : 16 + next() * 22,
-            height: lamp ? 52 : 10 + next() * 16,
+            width: lamp ? 7 : 16 + next() * 26,
+            height: lamp ? 52 : 10 + next() * 18,
             kind: lamp ? 'lamp' : 'rubble',
             color: lamp ? '#ffd09a' : biome.accent2,
             phase: next() * Math.PI * 2,
@@ -13132,21 +13393,22 @@
           });
         }
       } else if (!arenaMode) {
-        const count = this.currentMode === 'raid' ? 72 : 58;
+        const count = this.currentMode === 'raid' ? 180 : 138;
+        const propBounds = this.fpBounds();
         for (let index = 0; index < count; index += 1) {
           let x = 0.5;
           let y = 0.5;
-          for (let tries = 0; tries < 20; tries += 1) {
-            x = -0.28 + next() * 1.56;
-            y = -0.16 + next() * 1.36;
-            if (Math.hypot(x - 0.5, y - 0.5) > 0.22 && !nearAltar(x, y, 0.02) && !nearSpawn(x, y)) break;
+          for (let tries = 0; tries < 24; tries += 1) {
+            x = propBounds.minX + 0.22 + next() * (propBounds.maxX - propBounds.minX - 0.44);
+            y = propBounds.minY + 0.2 + next() * (propBounds.maxY - propBounds.minY - 0.4);
+            if (Math.hypot(x - 0.5, y - 0.5) > 0.24 && !nearAltar(x, y, 0.02) && !nearSpawn(x, y) && !nearDais(x, y)) break;
           }
-          if (nearAltar(x, y, 0.02) || nearSpawn(x, y)) continue;
+          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y)) continue;
           const kindRoll = next();
           this.fpProps.push({
             x, y,
-            width: 18 + next() * (this.currentMode === 'raid' ? 72 : 46),
-            height: 58 + next() * (this.currentMode === 'raid' ? 320 : 230),
+            width: 18 + next() * (this.currentMode === 'raid' ? 92 : 66),
+            height: 58 + next() * (this.currentMode === 'raid' ? 380 : 300),
             kind: kindRoll < 0.2 ? 'arch' : kindRoll < 0.46 ? 'obelisk' : kindRoll < 0.74 ? 'tower' : 'spire',
             color: index % 5 === 0 ? biome.accent2 : biome.accent,
             phase: next() * Math.PI * 2,
@@ -14429,6 +14691,12 @@
       };
       this.toast(`${this.raidConfig.name} · 第 ${state.encounterIndex + 1} / ${state.encounters.length} 关 · ${config.name} · ${stageLabel}`);
       this.audio?.play('raidStage');
+      if (this.fpView && this.player) {
+        const point = this.playerPoint();
+        this.fpJumpZ = this.fpGroundHeightAt(point.x, point.y);
+        this.fpGrounded = true;
+        this.fpJumpV = 0;
+      }
     }
 
     raidScriptFor(raidId, index) {
@@ -17286,6 +17554,7 @@
 
     drawFpAbilityWorld(ctx, w, h, camera) {
       const project = (x, y, z) => this.fpProject(x, y, z, camera);
+      const groundAt = (x, y) => this.fpGroundHeightAt(x, y);
       const playerPoint = this.playerPoint();
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
@@ -17316,8 +17585,8 @@
       this.superBeams.forEach((beam) => {
         const golden = beam.kind === 'golden-gun';
         const meteor = beam.kind === 'meteor';
-        const a = project(beam.x1, beam.y1, meteor ? 260 : 36);
-        const b = project(beam.x2, beam.y2, meteor ? 26 : 30);
+        const a = project(beam.x1, beam.y1, groundAt(beam.x1, beam.y1) + (meteor ? 260 : 36));
+        const b = project(beam.x2, beam.y2, groundAt(beam.x2, beam.y2) + (meteor ? 26 : 30));
         if (!a || !b) return;
         const alpha = clamp((beam.time ?? beam.life ?? 0.5) / Math.max(0.01, beam.max || 0.5), 0, 1);
         const color = beam.color || '#ffcf78';
@@ -17367,8 +17636,8 @@
         ctx.restore();
       });
       this.chainBolts.forEach((bolt) => {
-        const a = project(bolt.x1, bolt.y1, 34);
-        const b = project(bolt.x2, bolt.y2, 30);
+        const a = project(bolt.x1, bolt.y1, groundAt(bolt.x1, bolt.y1) + 34);
+        const b = project(bolt.x2, bolt.y2, groundAt(bolt.x2, bolt.y2) + 30);
         if (!a || !b) return;
         const alpha = clamp((bolt.time ?? 0.2) / Math.max(0.01, bolt.max || 0.35), 0, 1);
         const midX = (a.x + b.x) * 0.5 + Math.sin(this.time * 26 + bolt.y1) * 22;
@@ -17391,7 +17660,7 @@
         ctx.restore();
       });
       this.rifts.forEach((rift) => {
-        const ground = project(rift.x, rift.y, 0);
+        const ground = project(rift.x, rift.y, groundAt(rift.x, rift.y));
         if (!ground) {
           if (dist(rift.x, rift.y, playerPoint.x, playerPoint.y) < rift.radius * 1.8) drawSelfAura(rift.color, 0.8);
           return;
@@ -17407,7 +17676,7 @@
         ctx.ellipse(ground.x, ground.y, rx, ry, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        const top = project(rift.x, rift.y, 170);
+        const top = project(rift.x, rift.y, groundAt(rift.x, rift.y) + 170);
         if (top) {
           const column = ctx.createLinearGradient(0, ground.y, 0, top.y);
           column.addColorStop(0, this.fpRgba(rift.color, 0.26));
@@ -17429,10 +17698,14 @@
         const cos = Math.cos(barricade.angle);
         const sin = Math.sin(barricade.angle);
         const half = barricade.radius * 0.8;
-        const a = project(barricade.x - cos * half, barricade.y - sin * half, 0);
-        const b = project(barricade.x + cos * half, barricade.y + sin * half, 0);
-        const at = project(barricade.x - cos * half, barricade.y - sin * half, barricade.radius * 1.35);
-        const bt = project(barricade.x + cos * half, barricade.y + sin * half, barricade.radius * 1.35);
+        const ax = barricade.x - cos * half;
+        const az = barricade.y - sin * half;
+        const bx = barricade.x + cos * half;
+        const bz = barricade.y + sin * half;
+        const a = project(ax, az, groundAt(ax, az));
+        const b = project(bx, bz, groundAt(bx, bz));
+        const at = project(ax, az, groundAt(ax, az) + barricade.radius * 1.35);
+        const bt = project(bx, bz, groundAt(bx, bz) + barricade.radius * 1.35);
         if (!a || !b || !at || !bt) return;
         ctx.save();
         const wall = ctx.createLinearGradient(0, Math.min(at.y, bt.y), 0, Math.max(a.y, b.y));
@@ -17462,7 +17735,7 @@
         ctx.restore();
       });
       this.vortexes.forEach((vortex) => {
-        const point = project(vortex.x, vortex.y, 26);
+        const point = project(vortex.x, vortex.y, groundAt(vortex.x, vortex.y) + 26);
         if (!point) return;
         const radius = clamp(vortex.radius * point.scale, 5, w * 0.45);
         const ratio = clamp(vortex.time / Math.max(0.01, vortex.max), 0, 1);
@@ -17485,7 +17758,7 @@
         ctx.restore();
       });
       this.superEffects.forEach((effect) => {
-        const point = project(effect.x, effect.y, 34);
+        const point = project(effect.x, effect.y, groundAt(effect.x, effect.y) + 34);
         const nearPlayer = effect.follow || dist(effect.x, effect.y, playerPoint.x, playerPoint.y) < 90;
         if (!point) {
           if (nearPlayer) drawSelfAura(effect.color, 0.8);
@@ -17507,7 +17780,7 @@
         ctx.ellipse(point.x, point.y, radius, Math.max(2, radius * 0.3), 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        const top = project(effect.x, effect.y, quiet ? 300 : 210);
+        const top = project(effect.x, effect.y, groundAt(effect.x, effect.y) + (quiet ? 300 : 210));
         if (top) {
           const column = ctx.createLinearGradient(0, point.y, 0, top.y);
           column.addColorStop(0, this.fpRgba(color, quiet ? 0.26 : 0.14));
@@ -17847,7 +18120,7 @@
         ctx.restore();
       });
       this.enemyBullets.forEach((bullet) => {
-        const z = 22;
+        const z = this.fpGroundHeightAt(bullet.x, bullet.y) + 22;
         const now = this.fpProject(bullet.x, bullet.y, z, camera);
         const prev = this.fpProject(bullet.x - bullet.vx * 0.05, bullet.y - bullet.vy * 0.05, z, camera);
         if (!now) return;
@@ -17879,7 +18152,7 @@
       });
       this.grenades.forEach((grenade) => {
         const visual = this.grenadeVisualPoint(grenade);
-        const point = this.fpProject(visual.x, visual.y, visual.z, camera);
+        const point = this.fpProject(visual.x, visual.y, this.fpGroundHeightAt(visual.x, visual.y) + visual.z, camera);
         if (!point) return;
         const color = grenade.transcendent ? '#ffe0a6' : (this.activeSubclass().color || '#e9bd72');
         const shadow = grenade.transcendent ? '#b58cff' : color;
@@ -17921,7 +18194,7 @@
       });
       this.hammers.forEach((hammer) => {
         const visual = this.hammerVisualPoint(hammer);
-        const point = this.fpProject(visual.x, visual.y, visual.z, camera);
+        const point = this.fpProject(visual.x, visual.y, this.fpGroundHeightAt(visual.x, visual.y) + visual.z, camera);
         if (!point) return;
         const color = hammer.profile?.color || this.activeSubclass().color;
         ctx.save();
