@@ -125,7 +125,7 @@
       tags: ['Director 星图', '13 个目的地', '10 DLC · 技能分支'],
       objective: '在 Director 星图点击星球，进入对应剧情线',
       description: '红色军团撕开了最后的城市的天际线。光能被夺走之后，一名守护者仍然可以向旗舰走去。',
-      controls: [['WASD', '移动'], ['左键', '射击'], ['1/2/3', '切换武器'], ['R', '换弹'], ['Q', '手雷'], ['C', '近战'], ['V', '职业技能'], ['F', '超能'], ['E', '拾取'], ['F1', '装备栏']],
+      controls: [['点击', '锁定鼠标'], ['WASD', '移动'], ['鼠标', '转向'], ['左键', '射击'], ['1/2/3', '切换武器'], ['R', '换弹'], ['Q', '手雷'], ['C', '近战'], ['V', '职业技能'], ['F', '超能'], ['E', '拾取'], ['F1', '装备栏']],
       scoreLabel: '击杀',
       startLabel: '进入 Director',
       chapters: ['归乡', '火花', '1AU', '选择', '猩红终局'],
@@ -828,6 +828,8 @@
       this.mode = 'menu';
       this.keys = new Set();
       this.mouse = { x: 0, y: 0, down: false };
+      this.pointerLocked = false;
+      this.pointerMoved = false;
       this.width = 960;
       this.height = 560;
       this.toastTimer = null;
@@ -979,6 +981,9 @@
       this.canvas.addEventListener('pointerdown', (event) => {
         if (event.button !== 0 || this.mode !== 'playing') return;
         event.preventDefault();
+        if (!this.pointerLocked && this.instance?.wantsPointerLock?.()) {
+          try { this.canvas.requestPointerLock?.(); } catch (error) { /* pointer lock unavailable */ }
+        }
         this.mouse.down = true;
         this.updatePointer(event);
         this.canvas.focus({ preventScroll: true });
@@ -989,6 +994,11 @@
         if (!this.mouse.down) return;
         this.mouse.down = false;
         this.instance?.pointerUp?.(this.mouse.x, this.mouse.y);
+      });
+      document.addEventListener('pointerlockchange', () => {
+        this.pointerLocked = document.pointerLockElement === this.canvas;
+        this.canvas.classList.toggle('is-pointer-locked', this.pointerLocked);
+        this.instance?.onPointerLockChange?.(this.pointerLocked);
       });
       document.addEventListener('keydown', (event) => this.onKeyDown(event));
       document.addEventListener('keyup', (event) => {
@@ -1048,6 +1058,7 @@
     }
 
     updatePointer(event) {
+      this.pointerMoved = true;
       const rect = this.canvas.getBoundingClientRect();
       this.mouse.x = event.clientX - rect.left;
       this.mouse.y = event.clientY - rect.top;
@@ -1055,7 +1066,9 @@
 
     onPointerMove(event) {
       this.updatePointer(event);
-      if (this.mode === 'playing') this.instance?.pointerMove?.(this.mouse.x, this.mouse.y);
+      if (this.mode !== 'playing') return;
+      this.instance?.pointerMove?.(this.mouse.x, this.mouse.y);
+      if (this.pointerLocked) this.instance?.lookMove?.(event.movementX || 0, event.movementY || 0);
     }
 
     open(gameId) {
@@ -1247,6 +1260,9 @@
       this.instance = createGame(this.activeId, this);
       this.instance.start();
       this.resize();
+      this.mouse.x = this.width / 2;
+      this.mouse.y = this.height / 2;
+      this.pointerMoved = false;
       this.toast(this.meta.startToast);
       this.canvas.focus({ preventScroll: true });
     }
@@ -1256,8 +1272,13 @@
       this.mode = 'paused';
       this.keys.clear();
       this.mouse.down = false;
+      if (document.pointerLockElement === this.canvas) document.exitPointerLock?.();
       this.pauseOverlay.hidden = false;
       this.instance?.onPause?.();
+    }
+
+    releasePointerLock() {
+      if (document.pointerLockElement === this.canvas) document.exitPointerLock?.();
     }
 
     resume() {
@@ -1271,6 +1292,7 @@
     }
 
     goMenu(show = true) {
+      if (document.pointerLockElement === this.canvas) document.exitPointerLock?.();
       if (this.loadingTimer) clearInterval(this.loadingTimer);
       if (this.loadingFinishTimer) clearTimeout(this.loadingFinishTimer);
       this.loadingTimer = null;
@@ -7377,6 +7399,18 @@
       this.directorStars = null;
       this.enemyAssets = null;
       this.playerAssets = null;
+      this.fpView = true;
+      this.fpYaw = -Math.PI / 2;
+      this.fpPitch = 0;
+      this.fpBob = 0;
+      this.fpRecoil = 0;
+      this.fpMoving = false;
+      this.fpShotPulse = 0;
+      this.fpHitMarker = 0;
+      this.fpHitKill = 0;
+      this.fpHintShown = false;
+      this.fpProps = [];
+      this.fpParticles = [];
       this.raidWorldScale = 1.65;
       this.viewW = 1080;
       this.viewH = 680;
@@ -8440,6 +8474,7 @@
     }
 
     startMission(index, options = {}) {
+      this.manager.releasePointerLock?.();
       this.screen = 'play';
       this.currentMode = options.mode || 'campaign';
       this.dlcConfig = options.dlc || null;
@@ -8459,6 +8494,15 @@
         classCd: 0, classCdMax: 5, shieldTimer: 0, muzzle: 0, meleeCd: 0, meleeCdMax: 3.2, hazardCd: 0
       };
       this.resetWeaponAmmo('primary');
+      this.fpYaw = -Math.PI / 2;
+      this.fpPitch = 0;
+      this.fpBob = 0;
+      this.fpRecoil = 0;
+      this.fpMoving = false;
+      this.fpShotPulse = 0;
+      this.fpHitMarker = 0;
+      this.fpHitKill = 0;
+      this.setupFirstPersonEnvironment();
       this.ammoDrops = [];
       this.ammoDropTimer = rand(6, 10);
       this.transcendenceTime = 0;
@@ -8565,6 +8609,10 @@
       };
       if (this.manager.hud) this.manager.hud.hidden = true;
       this.updateHUD();
+      if (!this.fpHintShown) {
+        this.fpHintShown = true;
+        this.toast('第一人称已启用 · 点击画面锁定鼠标，WASD 移动，Esc 释放鼠标');
+      }
     }
 
     factionName(faction) {
@@ -9277,6 +9325,13 @@
     }
 
     worldMouse() {
+      if (this.firstPersonActive()) {
+        const point = this.playerPoint();
+        return {
+          x: point.x + Math.cos(this.fpYaw) * 2200,
+          y: point.y + Math.sin(this.fpYaw) * 2200
+        };
+      }
       if (this.currentMode !== 'raid' || this.screen !== 'play') {
         return { x: this.manager.mouse.x, y: this.manager.mouse.y };
       }
@@ -9286,6 +9341,7 @@
 
     cursorAimTarget(mouse = this.manager.mouse, maxRange = 620) {
       if (!this.player) return null;
+      if (this.firstPersonActive()) return this.fpAimTarget(maxRange);
       const camera = this.currentMode === 'raid'
         ? this.raidCameraFor(this.viewW || this.manager.width, this.viewH || this.manager.height)
         : { x: 0, y: 0 };
@@ -9812,6 +9868,13 @@
 
     playerMuzzlePoint(angle = null) {
       const point = this.playerPoint();
+      if (this.firstPersonActive()) {
+        const aim = angle === null ? this.fpYaw : angle;
+        return {
+          x: point.x + Math.cos(aim) * 18,
+          y: point.y + Math.sin(aim) * 18
+        };
+      }
       const aim = angle === null
         ? Math.atan2(this.worldMouse().y - point.y, this.worldMouse().x - point.x)
         : angle;
@@ -9941,6 +10004,9 @@
       player.ammo -= 1;
       player.fireCd = spec.rate;
       player.muzzle = 0.07;
+      this.fpShotPulse = 1;
+      this.fpRecoil = Math.min(0.075, this.fpRecoil + 0.012 + (spec.slot === 'power' ? 0.016 : 0));
+      this.fpPitch = clamp(this.fpPitch + 0.0022, -0.62, 0.62);
       const point = this.playerPoint();
       const mouse = this.worldMouse();
       const assisted = spec.explosive
@@ -10373,6 +10439,10 @@
       const dealt = amount * markMultiplier;
       enemy.hp -= dealt;
       enemy.flash = 0.12;
+      if (this.firstPersonActive()) {
+        this.fpHitMarker = 0.18;
+        if (enemy.hp <= 0) this.fpHitKill = 0.34;
+      }
       const hitPan = this.player ? clamp((enemy.x - this.player.x) * 1.2, -0.7, 0.7) : 0;
       this.audio?.hit(Boolean(enemy.elite), hitPan);
       const x = enemy.x * this.w;
@@ -10461,6 +10531,10 @@
       const dealt = amount * markMultiplier;
       boss.hp -= dealt;
       boss.flash = 0.13;
+      if (this.firstPersonActive()) {
+        this.fpHitMarker = 0.18;
+        if (boss.hp <= 0) this.fpHitKill = 0.34;
+      }
       const bx = x || boss.x * this.w;
       const by = y || boss.y * this.h;
       this.fx.burst(bx, by, '#ffd186', 5, 90, 1.8);
@@ -10561,6 +10635,7 @@
         this.hammers = [];
         this.grenades = [];
         this.audio?.play('death');
+        this.manager.releasePointerLock?.();
         if (this.manager.hud) this.manager.hud.hidden = true;
       }
     }
@@ -10607,7 +10682,127 @@
       this.enemyBullets = [];
       this.bullets = [];
       this.telegraphs = [];
+      this.manager.releasePointerLock?.();
       if (this.manager.hud) this.manager.hud.hidden = true;
+    }
+
+    firstPersonActive() {
+      return Boolean(this.fpView && this.screen === 'play' && this.player);
+    }
+
+    updateFirstPersonLook(dt) {
+      const keys = this.manager.keys;
+      if (keys.has('ArrowLeft')) this.fpYaw -= 1.8 * dt;
+      if (keys.has('ArrowRight')) this.fpYaw += 1.8 * dt;
+      if (keys.has('ArrowUp')) this.fpPitch += 0.95 * dt;
+      if (keys.has('ArrowDown')) this.fpPitch -= 0.95 * dt;
+      if (!this.manager.pointerLocked && this.manager.pointerMoved) {
+        const mouse = this.manager.mouse || { x: (this.viewW || this.manager.width) / 2, y: (this.viewH || this.manager.height) / 2 };
+        const viewW = this.viewW || this.manager.width || 960;
+        const viewH = this.viewH || this.manager.height || 560;
+        const nx = (mouse.x - viewW / 2) / (viewW / 2);
+        const ny = (mouse.y - viewH / 2) / (viewH / 2);
+        if (Math.abs(nx) > 0.06) this.fpYaw += nx * 1.65 * dt;
+        if (Math.abs(ny) > 0.1) this.fpPitch -= ny * 0.82 * dt;
+      }
+      this.fpPitch = clamp(this.fpPitch, -0.62, 0.62);
+    }
+
+    lookMove(dx, dy) {
+      if (!this.firstPersonActive()) return;
+      const sensitivity = 0.00215;
+      this.fpYaw += dx * sensitivity;
+      this.fpPitch = clamp(this.fpPitch - dy * sensitivity, -0.62, 0.62);
+    }
+
+    wantsPointerLock() {
+      return this.firstPersonActive() && !this.inventoryOpen && !this.deathState && !this.transition && !this.intro;
+    }
+
+    onPointerLockChange(locked) {
+      this.fpMouseLocked = Boolean(locked);
+    }
+
+    setupFirstPersonEnvironment() {
+      let seed = ((this.missionIndex + 3) * 2654435761 + (this.mission?.title?.length || 7) * 97531 + (this.mission?.biome?.length || 5) * 131) >>> 0;
+      const next = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+      const biome = this.biomeConfig(this.mission);
+      this.fpSunAngle = -Math.PI / 2 + (next() - 0.5) * 1.7;
+      this.fpProps = [];
+      const count = this.currentMode === 'raid' ? 42 : 32;
+      for (let index = 0; index < count; index += 1) {
+        const angle = (index / count) * Math.PI * 2 + (next() - 0.5) * 0.16;
+        const radius = 0.3 + next() * 0.32;
+        const kindRoll = next();
+        this.fpProps.push({
+          x: 0.5 + Math.cos(angle) * radius,
+          y: 0.5 + Math.sin(angle) * radius,
+          width: 16 + next() * (this.currentMode === 'raid' ? 58 : 34),
+          height: 52 + next() * (this.currentMode === 'raid' ? 270 : 170),
+          kind: kindRoll < 0.18 ? 'arch' : kindRoll < 0.42 ? 'obelisk' : kindRoll < 0.72 ? 'tower' : 'spire',
+          color: index % 5 === 0 ? biome.accent2 : biome.accent,
+          phase: next() * Math.PI * 2,
+          alpha: 0.2 + next() * 0.42
+        });
+      }
+      this.fpParticles = Array.from({ length: 48 }, () => ({
+        x: next(),
+        y: next() * 0.72,
+        size: 0.5 + next() * 1.8,
+        speed: 0.008 + next() * 0.028,
+        phase: next() * Math.PI * 2,
+        drift: (next() - 0.5) * 0.018
+      }));
+      this.fpParticleKind = biome.particles || 'motes';
+    }
+
+    firstPersonCamera(w, h) {
+      const point = this.playerPoint();
+      const bob = Math.sin(this.fpBob) * 1.35;
+      const focal = h * 0.94;
+      return {
+        x: point.x,
+        y: point.y,
+        yaw: this.fpYaw,
+        pitch: this.fpPitch + this.fpRecoil * 0.028,
+        height: 36 + bob,
+        focal,
+        horizon: h * 0.47 + Math.tan(this.fpPitch) * focal + bob * 0.7,
+        w,
+        h
+      };
+    }
+
+    fpProject(x, y, z, camera) {
+      const dx = x - camera.x;
+      const dy = y - camera.y;
+      const cos = Math.cos(camera.yaw);
+      const sin = Math.sin(camera.yaw);
+      const forward = dx * cos + dy * sin;
+      if (forward < 18) return null;
+      const right = -dx * sin + dy * cos;
+      const scale = camera.focal / forward;
+      const sx = camera.w * 0.5 + right * scale;
+      const sy = camera.horizon + (camera.height - (z || 0)) * scale;
+      if (sx < -camera.w * 0.4 || sx > camera.w * 1.4 || sy < -camera.h * 0.8 || sy > camera.h * 1.5) return null;
+      return { x: sx, y: sy, scale, forward, depth: forward, alpha: clamp(1 - Math.max(0, forward - 720) / 1800, 0.12, 1) };
+    }
+
+    fpProjectNormalized(nx, ny, z, camera) {
+      return this.fpProject(nx * this.w, ny * this.h, z, camera);
+    }
+
+    fpAimTarget(maxRange = 760) {
+      if (!this.player) return null;
+      const point = this.playerPoint();
+      const direction = { x: Math.cos(this.fpYaw), y: Math.sin(this.fpYaw) };
+      const cone = 0.055 + this.aimAssistValue() * 0.00115;
+      const target = this.aimAssistTarget(point, direction, maxRange, cone);
+      if (!target) return null;
+      return { ...target, screenX: (this.viewW || this.w) * 0.5, screenY: (this.viewH || this.h) * 0.5, screenDistance: 0 };
     }
 
     updatePlayer(dt, w, h) {
@@ -10638,8 +10833,13 @@
       this.rifts = this.rifts.filter((rift) => rift.time > 0);
       this.barricades.forEach((barricade) => { barricade.time -= dt; });
       this.barricades = this.barricades.filter((barricade) => barricade.time > 0);
+      if (this.fpView) this.updateFirstPersonLook(dt);
       player.flash = Math.max(0, player.flash - dt * 3.4);
       player.muzzle = Math.max(0, player.muzzle - dt);
+      this.fpShotPulse = Math.max(0, this.fpShotPulse - dt * 4.8);
+      this.fpRecoil = Math.max(0, this.fpRecoil - dt * 3.2);
+      this.fpHitMarker = Math.max(0, this.fpHitMarker - dt * 4.8);
+      this.fpHitKill = Math.max(0, this.fpHitKill - dt * 1.6);
       player.shieldTimer = Math.max(0, player.shieldTimer - dt);
       if (player.reload > 0) {
         player.reload -= dt * this.exoticReloadMultiplier();
@@ -10657,18 +10857,30 @@
 
       let dx = 0;
       let dy = 0;
-      if (this.manager.keys.has('KeyW')) dy -= 1;
-      if (this.manager.keys.has('KeyS')) dy += 1;
-      if (this.manager.keys.has('KeyA')) dx -= 1;
-      if (this.manager.keys.has('KeyD')) dx += 1;
+      if (this.fpView) {
+        const forward = (this.manager.keys.has('KeyW') ? 1 : 0) - (this.manager.keys.has('KeyS') ? 1 : 0);
+        const strafe = (this.manager.keys.has('KeyD') ? 1 : 0) - (this.manager.keys.has('KeyA') ? 1 : 0);
+        const cos = Math.cos(this.fpYaw);
+        const sin = Math.sin(this.fpYaw);
+        dx = cos * forward - sin * strafe;
+        dy = sin * forward + cos * strafe;
+      } else {
+        if (this.manager.keys.has('KeyW')) dy -= 1;
+        if (this.manager.keys.has('KeyS')) dy += 1;
+        if (this.manager.keys.has('KeyA')) dx -= 1;
+        if (this.manager.keys.has('KeyD')) dx += 1;
+      }
+      this.fpMoving = Boolean(dx || dy) && player.dashTime <= 0;
+      const minY = this.fpView ? 0.075 : 0.26;
       if (player.dashTime > 0) {
         player.dashTime -= dt;
-        player.x = clamp(player.x + player.dashX * 620 * dt / w, 0.05, 0.95);
-        player.y = clamp(player.y + player.dashY * 620 * dt / h, 0.26, 0.94);
+        player.x = clamp(player.x + player.dashX * 620 * dt / w, 0.04, 0.96);
+        player.y = clamp(player.y + player.dashY * 620 * dt / h, minY, 0.94);
       } else if (dx || dy) {
         const length = Math.hypot(dx, dy) || 1;
-        player.x = clamp(player.x + (dx / length) * 235 * dt / w, 0.05, 0.95);
-        player.y = clamp(player.y + (dy / length) * 235 * dt / h, 0.26, 0.94);
+        player.x = clamp(player.x + (dx / length) * 235 * dt / w, 0.04, 0.96);
+        player.y = clamp(player.y + (dy / length) * 235 * dt / h, minY, 0.94);
+        if (this.fpView) this.fpBob += dt * (this.manager.keys.has('ShiftLeft') || this.manager.keys.has('ShiftRight') ? 8.4 : 6.2);
       }
       if (this.manager.mouse.down) this.fireWeapon();
     }
@@ -12378,7 +12590,10 @@
           this.manager.keys.clear();
           this.detailPinned = false;
           if (!this.inventoryOpen) this.manager.canvas?.classList.remove('is-inventory-open');
-          if (this.inventoryOpen && !this.selectedGearId) this.selectedGearId = this.equipment.primary?.id || null;
+          if (this.inventoryOpen) {
+            this.manager.releasePointerLock?.();
+            if (!this.selectedGearId) this.selectedGearId = this.equipment.primary?.id || null;
+          }
           return;
         }
         if (this.inventoryOpen && code === 'Escape') {
@@ -12417,7 +12632,10 @@
         this.inventoryOpen = !this.inventoryOpen;
         this.manager.keys.clear();
         this.detailPinned = false;
-        if (this.inventoryOpen && !this.selectedGearId) this.selectedGearId = this.equipment.primary?.id || null;
+        if (this.inventoryOpen) {
+          this.manager.releasePointerLock?.();
+          if (!this.selectedGearId) this.selectedGearId = this.equipment.primary?.id || null;
+        }
         return;
       }
       if (this.inventoryOpen) {
@@ -13781,6 +13999,9 @@
       const raidCamera = this.currentMode === 'raid' ? this.raidCameraFor(w, h) : null;
       ctx.save();
       if (this.shake > 0) ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
+      if (this.firstPersonActive()) {
+        this.drawFirstPersonWorld(ctx, w, h);
+      } else {
       if (raidCamera) {
         ctx.save();
         ctx.translate(-raidCamera.x, -raidCamera.y);
@@ -13815,6 +14036,7 @@
       this.fx.draw(ctx);
       this.drawTelegraphs(ctx, worldW, worldH);
       if (raidCamera) ctx.restore();
+      }
       if (this.inventoryOpen) {
         const savedWorldW = this.w;
         const savedWorldH = this.h;
@@ -13837,9 +14059,1037 @@
       ctx.restore();
     }
 
+    fpRgba(color, alpha = 1) {
+      if (!color || typeof color !== 'string') return `rgba(232, 240, 234, ${alpha})`;
+      if (color.startsWith('#')) {
+        let hex = color.slice(1);
+        if (hex.length === 3) hex = hex.split('').map((char) => char + char).join('');
+        if (hex.length >= 6) {
+          const value = parseInt(hex.slice(0, 6), 16);
+          if (Number.isFinite(value)) {
+            return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
+          }
+        }
+      }
+      return color;
+    }
+
+    drawFirstPersonWorld(ctx, w, h) {
+      const camera = this.firstPersonCamera(w, h);
+      this.drawFpSky(ctx, w, h, camera);
+      this.drawFpGround(ctx, w, h, camera);
+      this.drawFpProps(ctx, w, h, camera);
+      this.drawFpGroundEffects(ctx, w, h, camera);
+      this.drawFpMechanics(ctx, w, h, camera);
+      this.drawFpPickups(ctx, w, h, camera);
+      this.drawFpEnemies(ctx, w, h, camera);
+      this.drawFpProjectiles(ctx, w, h, camera);
+      this.drawFpFx(ctx, w, h, camera);
+      this.drawFpWeapon(ctx, w, h);
+      this.drawFpScreenFx(ctx, w, h, camera);
+    }
+
+    drawFpSky(ctx, w, h, camera) {
+      const biome = this.biomeConfig(this.mission);
+      const horizon = camera.horizon;
+      const sky = ctx.createLinearGradient(0, -h * 0.25, 0, Math.max(h * 0.1, horizon));
+      sky.addColorStop(0, this.fpRgba(biome.sky2, 1));
+      sky.addColorStop(0.48, this.fpRgba(biome.sky, 0.95));
+      sky.addColorStop(1, this.fpRgba(biome.sky, 0.36));
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, Math.max(0, horizon + 3));
+
+      const sunAngle = this.fpSunAngle ?? (-Math.PI / 2 + 0.6);
+      const diff = Math.atan2(Math.sin(sunAngle - camera.yaw), Math.cos(sunAngle - camera.yaw));
+      if (Math.abs(diff) < 1.3) {
+        const sunX = w * 0.5 + Math.tan(clamp(diff, -1.35, 1.35)) * camera.focal;
+        const sunY = horizon - h * 0.24;
+        if (biome.horizon === 'blackhole') {
+          ctx.save();
+          this.drawBlackHoleEffects(ctx, sunX, sunY, Math.min(w, h) * 0.145, { core: true, alpha: 0.9 });
+          ctx.restore();
+        } else {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          const glow = ctx.createRadialGradient(sunX, sunY, 2, sunX, sunY, h * 0.18);
+          glow.addColorStop(0, this.fpRgba(biome.accent, 0.95));
+          glow.addColorStop(0.2, this.fpRgba(biome.accent, 0.4));
+          glow.addColorStop(1, this.fpRgba(biome.accent, 0));
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(sunX, sunY, h * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = this.fpRgba(biome.accent2, 0.9);
+          ctx.beginPath();
+          ctx.arc(sunX, sunY, Math.max(7, h * 0.026), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      if (['blackhole', 'eventhorizon', 'kepler', 'kepler-singularity', 'dreaming', 'throne'].includes(biome.horizon) || ['blackhole', 'eventhorizon'].includes(this.mission?.biome)) {
+        ctx.save();
+        ctx.fillStyle = this.fpRgba(biome.accent2, 0.55);
+        for (let i = 0; i < 36; i += 1) {
+          const x = ((i * 113 + 19 - camera.yaw * 42) % (w + 40) + w + 40) % (w + 40) - 20;
+          const y = ((i * 61 + 7) % Math.max(28, horizon * 0.82));
+          const size = i % 7 === 0 ? 1.4 : 0.8;
+          ctx.globalAlpha = 0.25 + (i % 5) * 0.13;
+          ctx.fillRect(x, y, size, size);
+        }
+        ctx.restore();
+      }
+
+      const shift = (camera.yaw / (Math.PI * 2)) * w * 2.15;
+      ctx.save();
+      ctx.fillStyle = this.fpRgba(biome.sky2, 0.82);
+      ctx.beginPath();
+      ctx.moveTo(0, horizon + 2);
+      for (let i = -2; i < 12; i += 1) {
+        const x = ((i * w * 0.13 - shift) % (w * 1.56) + w * 1.56) % (w * 1.56) - w * 0.28;
+        const peak = h * (0.022 + ((i * 37 + 11) % 9) * 0.0075);
+        ctx.lineTo(x, horizon + 2);
+        ctx.lineTo(x + w * 0.045, horizon + 2 - peak);
+        ctx.lineTo(x + w * 0.09, horizon + 2);
+      }
+      ctx.lineTo(w, horizon + 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      const haze = ctx.createLinearGradient(0, horizon - h * 0.1, 0, horizon + h * 0.08);
+      haze.addColorStop(0, this.fpRgba(biome.accent2, 0));
+      haze.addColorStop(0.65, this.fpRgba(biome.accent2, 0.075));
+      haze.addColorStop(1, this.fpRgba(biome.accent2, 0));
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, horizon - h * 0.1, w, h * 0.18);
+    }
+
+    drawFpGround(ctx, w, h, camera) {
+      const biome = this.biomeConfig(this.mission);
+      const horizon = camera.horizon;
+      const ground = ctx.createLinearGradient(0, horizon, 0, h);
+      ground.addColorStop(0, this.fpRgba(biome.ground, 0.68));
+      ground.addColorStop(0.42, this.fpRgba(biome.ground, 0.92));
+      ground.addColorStop(1, 'rgba(3, 5, 8, 0.99)');
+      ctx.fillStyle = ground;
+      ctx.fillRect(0, Math.max(0, horizon), w, Math.max(0, h - horizon));
+
+      ctx.save();
+      ctx.strokeStyle = this.fpRgba(biome.accent, 0.12);
+      ctx.lineWidth = 1;
+      const distances = [48, 82, 138, 236, 410, 720, 1220];
+      distances.forEach((distance) => {
+        const y = horizon + camera.height * camera.focal / distance;
+        if (y < horizon || y > h + 20) return;
+        ctx.globalAlpha = clamp(1 - distance / 1500, 0.08, 0.3);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      });
+      const phase = camera.yaw / (Math.PI / 2);
+      ctx.globalAlpha = 0.16;
+      for (let i = -14; i <= 14; i += 1) {
+        const bottomX = w * 0.5 + (i + (phase % 1) - 0.5) * w * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5, horizon);
+        ctx.lineTo(bottomX, h * 1.14);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      const nearFog = ctx.createLinearGradient(0, horizon, 0, h * 0.82);
+      nearFog.addColorStop(0, this.fpRgba(biome.accent2, 0.11));
+      nearFog.addColorStop(0.32, this.fpRgba(biome.accent2, 0.025));
+      nearFog.addColorStop(1, this.fpRgba(biome.sky2, 0));
+      ctx.fillStyle = nearFog;
+      ctx.fillRect(0, Math.max(0, horizon), w, Math.max(0, h - horizon));
+    }
+
+    drawFpProps(ctx, w, h, camera) {
+      const props = this.fpProps || [];
+      const projected = [];
+      props.forEach((prop) => {
+        const ground = this.fpProjectNormalized(prop.x, prop.y, 0, camera);
+        const top = this.fpProjectNormalized(prop.x, prop.y, prop.height, camera);
+        if (!ground || !top || ground.forward < 72) return;
+        projected.push({ prop, ground, top, depth: ground.forward });
+      });
+      projected.sort((a, b) => b.depth - a.depth);
+      projected.forEach(({ prop, ground, top }) => {
+        const height = clamp(ground.y - top.y, 2, h * 1.3);
+        const width = clamp(prop.width * ground.scale, 2, w * 0.34);
+        if (width < 0.7 || height < 1) return;
+        const alpha = clamp(ground.alpha * (prop.alpha + 0.2), 0, 1);
+        const colorAlpha = clamp(alpha * 0.56, 0, 0.7);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = `rgba(4, 7, 9, ${clamp(alpha * 0.82, 0.15, 0.9)})`;
+        ctx.beginPath();
+        ctx.ellipse(ground.x, ground.y, width * 0.62, Math.max(1, width * 0.16), 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(prop.color, colorAlpha);
+        ctx.fillStyle = `rgba(6, 10, 12, ${clamp(alpha * 0.86, 0.2, 0.92)})`;
+        if (prop.kind === 'arch') {
+          const legW = width * 0.28;
+          ctx.fillRect(top.x - width * 0.5, top.y, legW, height);
+          ctx.fillRect(top.x + width * 0.5 - legW, top.y, legW, height);
+          ctx.fillRect(top.x - width * 0.56, top.y, width * 1.12, Math.max(3, height * 0.08));
+          ctx.strokeRect(top.x - width * 0.5, top.y, legW, height);
+          ctx.strokeRect(top.x + width * 0.5 - legW, top.y, legW, height);
+        } else if (prop.kind === 'obelisk') {
+          ctx.beginPath();
+          ctx.moveTo(top.x, top.y);
+          ctx.lineTo(top.x + width * 0.5, top.y + height * 0.12);
+          ctx.lineTo(top.x + width * 0.32, ground.y);
+          ctx.lineTo(top.x - width * 0.32, ground.y);
+          ctx.lineTo(top.x - width * 0.5, top.y + height * 0.12);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = this.fpRgba(prop.color, colorAlpha * 0.9);
+          ctx.fillRect(top.x - Math.max(1, width * 0.035), top.y + height * 0.18, Math.max(1, width * 0.07), height * 0.58);
+        } else if (prop.kind === 'spire') {
+          ctx.beginPath();
+          ctx.moveTo(top.x, top.y);
+          ctx.lineTo(top.x + width * 0.5, ground.y);
+          ctx.lineTo(top.x - width * 0.5, ground.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillRect(top.x - width * 0.5, top.y, width, height);
+          ctx.strokeRect(top.x - width * 0.5, top.y, width, height);
+          ctx.fillStyle = this.fpRgba(prop.color, colorAlpha * 0.72);
+          for (let row = 0; row < 3; row += 1) {
+            for (let column = 0; column < 2; column += 1) {
+              if ((row + column + Math.floor(prop.phase * 10)) % 3 === 0) continue;
+              ctx.fillRect(top.x - width * 0.26 + column * width * 0.38, top.y + height * (0.18 + row * 0.19), Math.max(1, width * 0.11), Math.max(1, height * 0.035));
+            }
+          }
+        }
+        ctx.fillStyle = this.fpRgba(prop.color, colorAlpha);
+        ctx.beginPath();
+        ctx.arc(top.x, top.y, Math.max(1.2, width * 0.055), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    drawFpGroundEffects(ctx, w, h, camera) {
+      const biome = this.biomeConfig(this.mission);
+      const drawGroundRing = (x, y, radius, color, alpha = 0.4, width = 1.4) => {
+        const point = this.fpProjectNormalized(x, y, 0, camera);
+        if (!point) return;
+        const rx = clamp(radius * point.scale, 3, w * 0.55);
+        const ry = Math.max(1, rx * 0.28);
+        ctx.save();
+        ctx.globalAlpha = clamp(alpha * point.alpha, 0.08, 0.95);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.ellipse(point.x, point.y, rx, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      this.rifts.forEach((rift) => {
+        drawGroundRing(rift.x / this.w, rift.y / this.h, rift.radius, this.fpRgba(rift.color, 0.6), 0.45 + Math.min(0.2, rift.time / 20), 1.6);
+      });
+      this.barricades.forEach((barricade) => {
+        const a = this.fpProject(barricade.x - Math.cos(barricade.angle) * barricade.radius * 0.5, barricade.y - Math.sin(barricade.angle) * barricade.radius * 0.5, 0, camera);
+        const b = this.fpProject(barricade.x + Math.cos(barricade.angle) * barricade.radius * 0.5, barricade.y + Math.sin(barricade.angle) * barricade.radius * 0.5, 0, camera);
+        if (!a || !b) return;
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = this.fpRgba(barricade.color, 0.8);
+        ctx.lineWidth = Math.max(2, 7 * a.scale);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.vortexes.forEach((vortex) => {
+        drawGroundRing(vortex.x / this.w, vortex.y / this.h, vortex.radius, this.fpRgba(vortex.color, 0.55), 0.35, 1.2);
+      });
+      this.telegraphs.forEach((telegraph) => {
+        const point = this.fpProjectNormalized(telegraph.x, telegraph.y, 0, camera);
+        if (!point) return;
+        const rx = clamp(telegraph.radius * point.scale, 5, w * 0.7);
+        const ry = Math.max(2, rx * 0.3);
+        const progress = 1 - telegraph.time / telegraph.max;
+        ctx.save();
+        ctx.globalAlpha = clamp(point.alpha * (0.22 + progress * 0.38), 0.05, 0.8);
+        ctx.fillStyle = 'rgba(240, 94, 62, .28)';
+        ctx.strokeStyle = 'rgba(255, 144, 98, .8)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.ellipse(point.x, point.y, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.globalAlpha = clamp(progress, 0, 0.9);
+        ctx.beginPath();
+        ctx.ellipse(point.x, point.y, rx * progress, ry * progress, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.hazards.forEach((hazard) => {
+        const length = Math.max(this.w, this.h) * hazard.length;
+        const a = this.fpProject(hazard.x * this.w - Math.cos(hazard.angle) * length * 0.5, hazard.y * this.h - Math.sin(hazard.angle) * length * 0.5, 24, camera);
+        const b = this.fpProject(hazard.x * this.w + Math.cos(hazard.angle) * length * 0.5, hazard.y * this.h + Math.sin(hazard.angle) * length * 0.5, 24, camera);
+        if (!a || !b) return;
+        const glowWidth = clamp(hazard.width * ((a.scale + b.scale) * 0.5) * 0.8, 3, 34);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(244, 110, 72, .18)';
+        ctx.lineWidth = glowWidth * 2.6;
+        ctx.shadowColor = '#f06a43';
+        ctx.shadowBlur = 22;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 168, 105, .85)';
+        ctx.lineWidth = Math.max(2, glowWidth * 0.45);
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.superEffects.forEach((effect) => {
+        if (!effect) return;
+        const nx = effect.x / this.w;
+        const ny = effect.y / this.h;
+        drawGroundRing(nx, ny, effect.radius || 80, this.fpRgba(effect.color, 0.65), 0.42, 2);
+        const point = this.fpProjectNormalized(nx, ny, 0, camera);
+        if (!point) return;
+        const rx = clamp((effect.radius || 80) * point.scale * 0.8, 5, w * 0.6);
+        ctx.save();
+        ctx.globalAlpha = 0.24;
+        const beam = ctx.createLinearGradient(0, point.y - h * 0.24, 0, point.y);
+        beam.addColorStop(0, this.fpRgba(effect.color, 0));
+        beam.addColorStop(1, this.fpRgba(effect.color, 0.45));
+        ctx.fillStyle = beam;
+        ctx.fillRect(point.x - rx * 0.42, point.y - h * 0.24, rx * 0.84, h * 0.24);
+        ctx.restore();
+      });
+      [...(this.superBeams || []), ...(this.chainBolts || [])].forEach((beam) => {
+        const a = this.fpProject(beam.x1, beam.y1, beam.kind === 'meteor' ? 190 : 38, camera);
+        const b = this.fpProject(beam.x2, beam.y2, 30, camera);
+        if (!a || !b) return;
+        const alpha = clamp((beam.life ?? beam.time ?? 1) / (beam.max ?? 1), 0, 1);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = this.fpRgba(beam.color || biome.accent2, 0.78);
+        ctx.lineWidth = Math.max(2, (beam.width || 8) * 0.65);
+        ctx.shadowColor = beam.color || biome.accent2;
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.restore();
+      });
+      (this.fx?.rings || []).forEach((ring) => {
+        const point = this.fpProject(ring.x, ring.y, 0, camera);
+        if (!point) return;
+        const progress = 1 - ring.life / ring.max;
+        const rx = clamp(ring.radius * (0.36 + progress * 0.9) * point.scale, 2, w * 0.6);
+        ctx.save();
+        ctx.globalAlpha = clamp((1 - progress) * 0.8, 0, 0.8);
+        ctx.strokeStyle = ring.color;
+        ctx.lineWidth = Math.max(1, ring.width * point.alpha);
+        ctx.beginPath();
+        ctx.ellipse(point.x, point.y, rx, Math.max(1, rx * 0.3), 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    drawFpWorldMarker(ctx, camera, x, y, options = {}) {
+      const ground = this.fpProjectNormalized(x, y, 0, camera);
+      if (!ground) return;
+      const height = options.height ?? 64;
+      const top = this.fpProjectNormalized(x, y, height, camera);
+      if (!top) return;
+      const color = options.color || '#f0cf8a';
+      const radius = clamp((options.radius || 24) * ground.scale, 3, camera.w * 0.42);
+      const alpha = clamp(ground.alpha * (options.alpha ?? 1), 0.15, 1);
+      const beamWidth = clamp(radius * 0.24, 2, 18);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = this.fpRgba(color, 0.08);
+      ctx.strokeStyle = this.fpRgba(color, 0.55);
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.ellipse(ground.x, ground.y, radius, Math.max(1, radius * 0.3), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      const beam = ctx.createLinearGradient(0, ground.y, 0, top.y);
+      beam.addColorStop(0, this.fpRgba(color, 0.18));
+      beam.addColorStop(1, this.fpRgba(color, 0.02));
+      ctx.fillStyle = beam;
+      ctx.fillRect(top.x - beamWidth * 0.5, top.y, beamWidth, Math.max(1, ground.y - top.y));
+      ctx.strokeStyle = this.fpRgba(color, 0.78);
+      ctx.fillStyle = this.fpRgba(color, 0.48);
+      const icon = Math.max(4, Math.min(11, radius * 0.32));
+      ctx.beginPath();
+      ctx.moveTo(top.x, top.y - icon);
+      ctx.lineTo(top.x + icon, top.y);
+      ctx.lineTo(top.x, top.y + icon);
+      ctx.lineTo(top.x - icon, top.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      const labelSize = clamp(8.5 + Math.sqrt(Math.max(1, ground.scale)) * 3.1, 9, 15);
+      ctx.textAlign = 'center';
+      ctx.font = `600 ${labelSize}px "PingFang SC", "Segoe UI", sans-serif`;
+      ctx.fillStyle = 'rgba(246, 247, 239, .94)';
+      ctx.shadowColor = 'rgba(0,0,0,.7)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(options.label || '', top.x, top.y - icon - 12);
+      if (options.sub) {
+        ctx.font = `500 ${Math.max(7, labelSize * 0.68)}px "SFMono-Regular", Consolas, monospace`;
+        ctx.fillStyle = this.fpRgba(color, 0.9);
+        ctx.fillText(options.sub, top.x, top.y + icon + labelSize + 5);
+      }
+      if (Number.isFinite(options.progress)) {
+        const barW = clamp(radius * 1.4, 32, 110);
+        const barY = top.y + icon + labelSize + 12;
+        ctx.fillStyle = 'rgba(3, 7, 9, .75)';
+        ctx.fillRect(top.x - barW / 2, barY, barW, 3);
+        ctx.fillStyle = this.fpRgba(color, 0.9);
+        ctx.fillRect(top.x - barW / 2, barY, barW * clamp(options.progress, 0, 1), 3);
+      }
+      ctx.restore();
+    }
+
+    drawFpMechanics(ctx, w, h, camera) {
+      const state = this.raidState;
+      if (state?.phase === 'mechanic' && state.objects?.length) {
+        if (state.mechanicType === 'tether' && state.objects.length > 1) {
+          const a = this.fpProjectNormalized(state.objects[0].x, state.objects[0].y, 42, camera);
+          const b = this.fpProjectNormalized(state.objects[1].x, state.objects[1].y, 42, camera);
+          if (a && b) {
+            ctx.save();
+            ctx.globalAlpha = 0.48;
+            ctx.strokeStyle = 'rgba(158, 225, 255, .72)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 7]);
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+        state.objects.forEach((object, index) => {
+          if (object.collected || object.alive === false) return;
+          const labels = { stand: '共鸣节点', sequence: '方尖碑', tether: '连接节点', lightdark: index === 0 ? '光' : '暗', weakpoints: '弱点', shoot: '机制目标' };
+          this.drawFpWorldMarker(ctx, camera, object.x, object.y, {
+            height: state.mechanicType === 'weakpoints' ? 86 : 62,
+            radius: object.radius || 24,
+            color: object.color || '#f0cf8a',
+            label: labels[state.mechanicType] || '机制目标',
+            sub: object.active ? '已完成' : object.progress ? `${Math.round((object.progress || 0) * 100)}%` : `节点 ${index + 1}`,
+            progress: object.progress,
+            alpha: object.active ? 1 : 0.82
+          });
+        });
+      }
+      if (state?.bank) this.drawFpWorldMarker(ctx, camera, state.bank.x, state.bank.y, { height: 74, radius: 34, color: '#9ee6ff', label: '机制银行', sub: `${state.banked || 0} / ${state.target || 0}`, progress: (state.banked || 0) / Math.max(1, state.target || 1) });
+      if (this.encounter && !this.encounter.done) {
+        this.encounter.objects.forEach((crystal) => {
+          if (!crystal.alive) return;
+          this.drawFpWorldMarker(ctx, camera, crystal.x, crystal.y, { height: 52, radius: 22, color: '#9bd8ff', label: '压制水晶', sub: `${Math.ceil(crystal.hp)} / ${crystal.maxHp}`, progress: crystal.hp / crystal.maxHp });
+        });
+      }
+      if (this.fieldObjective && !this.fieldObjective.done) {
+        const field = this.fieldObjective;
+        if (field.type === 'hunt' && field.huntTarget?.alive) {
+          this.drawFpWorldMarker(ctx, camera, field.huntTarget.x, field.huntTarget.y, { height: 78, radius: 30, color: field.accent, label: field.label, sub: '猎杀目标' });
+        } else if (field.type === 'relay' && field.bank) {
+          this.drawFpWorldMarker(ctx, camera, field.bank.x, field.bank.y, { height: 62, radius: 30, color: field.accent, label: '中继银行', sub: `${field.deposited || 0} / ${field.target || 0}`, progress: (field.deposited || 0) / Math.max(1, field.target || 1) });
+        }
+        field.objects.forEach((object) => {
+          if (object.collected || object.active) return;
+          const label = field.type === 'scan' ? '扫描点' : field.type === 'defend' ? '防守目标' : field.type === 'relay' ? '中继核心' : '占领点';
+          this.drawFpWorldMarker(ctx, camera, object.x, object.y, { height: 56, radius: object.radius || 26, color: field.accent, label: field.label, sub: `${label} · ${Math.round((object.progress || 0) * 100)}%`, progress: object.progress });
+        });
+      }
+      if (this.gambit?.bank) this.drawFpWorldMarker(ctx, camera, this.gambit.bank.x, this.gambit.bank.y, { height: 70, radius: 34, color: '#7ce4ae', label: '荧光银行', sub: `${this.gambit.banked || 0} / ${this.gambit.target || 0}`, progress: (this.gambit.banked || 0) / Math.max(1, this.gambit.target || 1) });
+      if (this.extraction) this.drawFpWorldMarker(ctx, camera, this.extraction.x, this.extraction.y, { height: 74, radius: 30, color: '#ffe09a', label: '撤离点', sub: 'EXTRACTION' });
+      if (this.shard) this.drawFpWorldMarker(ctx, camera, this.shard.x, this.shard.y, { height: 64, radius: 34, color: '#9affdf', label: '光能碎片', sub: `${Math.floor(this.shard.charge)}%`, progress: this.shard.charge / 100 });
+      this.conduits.forEach((conduit) => {
+        if (!conduit.alive) return;
+        this.drawFpWorldMarker(ctx, camera, conduit.x, conduit.y, { height: 58, radius: 24, color: '#f0bf76', label: '太阳导流器', sub: `${Math.ceil(conduit.hp)} / ${conduit.maxHp}`, progress: conduit.hp / conduit.maxHp });
+      });
+      this.generators.forEach((generator) => {
+        if (!generator.alive) return;
+        this.drawFpWorldMarker(ctx, camera, generator.x, generator.y, { height: 58, radius: 24, color: '#f0bf76', label: '发电机', sub: `${Math.ceil(generator.hp)} / ${generator.maxHp}`, progress: generator.hp / generator.maxHp });
+      });
+    }
+
+    drawFpPickups(ctx, w, h, camera) {
+      this.lootDrops.forEach((drop) => {
+        const point = this.fpProjectNormalized(drop.x, drop.y, 10, camera);
+        if (!point) return;
+        const size = clamp(8 * point.scale, 3, 18);
+        const color = drop.item?.color || '#f3dca3';
+        ctx.save();
+        ctx.globalAlpha = clamp(point.alpha, 0.3, 1);
+        ctx.translate(point.x, point.y);
+        ctx.rotate(this.time * 0.7 + (drop.phase || 0));
+        ctx.fillStyle = this.fpRgba(color, 0.7);
+        ctx.strokeStyle = this.fpRgba(color, 0.9);
+        ctx.beginPath();
+        ctx.moveTo(0, -size);
+        ctx.lineTo(size * 0.68, 0);
+        ctx.lineTo(0, size);
+        ctx.lineTo(-size * 0.68, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+      this.ammoDrops.forEach((drop) => {
+        const point = this.fpProjectNormalized(drop.x, drop.y, 8, camera);
+        if (!point) return;
+        const size = clamp(10 * point.scale, 3, 20);
+        const color = drop.kind === 'power' ? '#c9a6ef' : drop.kind === 'energy' ? '#8be3b0' : drop.kind === 'all' ? '#f2d481' : '#dfe8d9';
+        ctx.save();
+        ctx.globalAlpha = clamp(point.alpha, 0.3, 1);
+        ctx.fillStyle = 'rgba(4, 9, 12, .86)';
+        ctx.strokeStyle = this.fpRgba(color, 0.82);
+        ctx.lineWidth = 1.2;
+        ctx.fillRect(point.x - size * 0.65, point.y - size * 0.45, size * 1.3, size * 0.9);
+        ctx.strokeRect(point.x - size * 0.65, point.y - size * 0.45, size * 1.3, size * 0.9);
+        ctx.fillStyle = this.fpRgba(color, 0.82);
+        ctx.fillRect(point.x - size * 0.34, point.y - size * 0.12, size * 0.68, Math.max(1, size * 0.22));
+        ctx.restore();
+      });
+    }
+
+    drawFpEnemies(ctx, w, h, camera) {
+      const billboards = [];
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive || enemy === this.raidBoss) return;
+        const point = this.fpProjectNormalized(enemy.x, enemy.y, 0, camera);
+        if (point) billboards.push({ kind: 'enemy', entity: enemy, point, depth: point.forward });
+      });
+      const seenBosses = new Set();
+      [this.boss, this.raidBoss, this.dlcBoss].forEach((boss) => {
+        if (!boss || boss.dead || boss.alive === false || seenBosses.has(boss)) return;
+        seenBosses.add(boss);
+        const point = this.fpProjectNormalized(boss.x, boss.y, 0, camera);
+        if (point) billboards.push({ kind: 'boss', entity: boss, point, depth: point.forward });
+      });
+      billboards.sort((a, b) => b.depth - a.depth);
+      billboards.forEach((entry) => {
+        if (entry.kind === 'boss') this.drawFpBoss(ctx, camera, entry.entity, entry.point);
+        else this.drawFpEnemy(ctx, camera, entry.entity, entry.point);
+      });
+    }
+
+    drawFpEnemy(ctx, camera, enemy, point) {
+      const height = clamp(enemy.radius * 2.55 * point.scale, 7, camera.h * 0.85);
+      const width = height * 0.78;
+      const baseY = point.y;
+      const flash = enemy.flash > 0;
+      const alpha = clamp(point.alpha, 0.18, 1);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(0,0,0,.42)';
+      ctx.beginPath();
+      ctx.ellipse(point.x, baseY, width * 0.46, Math.max(1, height * 0.08), 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (enemy.elite) {
+        ctx.strokeStyle = 'rgba(246, 196, 102, .8)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.ellipse(point.x, baseY, width * 0.7, Math.max(2, height * 0.12), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      const asset = this.enemyAssetFor(enemy);
+      if (asset && asset.complete && asset.naturalWidth) {
+        if (flash) {
+          ctx.shadowColor = '#fff0d1';
+          ctx.shadowBlur = Math.min(26, height * 0.24);
+        }
+        ctx.drawImage(asset, point.x - width / 2, baseY - height, width, height);
+      } else {
+        const body = ctx.createLinearGradient(point.x, baseY - height, point.x, baseY);
+        body.addColorStop(0, flash ? '#fff1d5' : enemy.color);
+        body.addColorStop(1, 'rgba(6, 10, 12, .92)');
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.moveTo(point.x, baseY - height * 0.92);
+        ctx.lineTo(point.x + width * 0.38, baseY - height * 0.28);
+        ctx.lineTo(point.x + width * 0.24, baseY);
+        ctx.lineTo(point.x - width * 0.24, baseY);
+        ctx.lineTo(point.x - width * 0.38, baseY - height * 0.28);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(enemy.barColor || enemy.color, 0.8);
+        ctx.stroke();
+        ctx.fillStyle = this.fpRgba(enemy.color, 0.9);
+        ctx.beginPath();
+        ctx.arc(point.x, baseY - height * 0.7, Math.max(1.4, width * 0.12), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (enemy.elite || enemy.hp < enemy.maxHp) {
+        const barW = clamp(width * 0.82, 14, 96);
+        const barY = baseY - height - clamp(height * 0.06, 3, 9);
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.fillStyle = 'rgba(4, 8, 10, .82)';
+        ctx.fillRect(point.x - barW / 2, barY, barW, 2.4);
+        ctx.fillStyle = this.fpRgba(enemy.barColor || enemy.color, 0.95);
+        ctx.fillRect(point.x - barW / 2, barY, barW * clamp(enemy.hp / enemy.maxHp, 0, 1), 2.4);
+      }
+      if (enemy.elite || enemy.training) {
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.fillStyle = 'rgba(246, 240, 224, .9)';
+        ctx.font = `600 ${clamp(6 + point.scale * 1.2, 7, 10)}px "PingFang SC", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(enemy.name || DESTINY_ENEMY_LABELS[enemy.type] || enemy.type, point.x, baseY - height - 10);
+      }
+      ctx.restore();
+    }
+
+    drawFpBoss(ctx, camera, boss, point) {
+      const isRaid = boss === this.raidBoss;
+      const radius = boss.radius || 40;
+      const height = clamp(radius * 4.1 * point.scale, 24, camera.h * 1.15);
+      const width = height * 0.74;
+      const baseY = point.y;
+      const accent = isRaid ? (this.raidConfig?.accent || '#f0d08a') : (boss.color || '#f0b56e');
+      const shielded = (isRaid && this.raidState?.phase === 'mechanic') || (boss === this.dlcBoss && this.fieldObjective && !this.fieldObjective.done);
+      ctx.save();
+      ctx.globalAlpha = clamp(point.alpha, 0.2, 1);
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.beginPath();
+      ctx.ellipse(point.x, baseY, width * 0.55, Math.max(3, height * 0.08), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'lighter';
+      const aura = ctx.createRadialGradient(point.x, baseY - height * 0.45, 2, point.x, baseY - height * 0.45, width * 0.95);
+      aura.addColorStop(0, this.fpRgba(accent, shielded ? 0.3 : 0.18));
+      aura.addColorStop(1, this.fpRgba(accent, 0));
+      ctx.fillStyle = aura;
+      ctx.fillRect(point.x - width, baseY - height * 1.25, width * 2, height * 1.3);
+      ctx.globalCompositeOperation = 'source-over';
+      const asset = this.bossAssetFor(boss);
+      if (asset && asset.complete && asset.naturalWidth) {
+        if (boss.flash > 0) {
+          ctx.shadowColor = '#ffe8bd';
+          ctx.shadowBlur = 28;
+        }
+        ctx.drawImage(asset, point.x - width / 2, baseY - height, width, height);
+      } else {
+        const body = ctx.createLinearGradient(0, baseY - height, 0, baseY);
+        body.addColorStop(0, this.fpRgba(accent, 0.9));
+        body.addColorStop(1, 'rgba(7, 9, 12, .96)');
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.moveTo(point.x, baseY - height * 1.03);
+        ctx.lineTo(point.x + width * 0.46, baseY - height * 0.62);
+        ctx.lineTo(point.x + width * 0.32, baseY);
+        ctx.lineTo(point.x - width * 0.32, baseY);
+        ctx.lineTo(point.x - width * 0.46, baseY - height * 0.62);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(accent, 0.9);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      if (shielded) {
+        ctx.strokeStyle = 'rgba(167, 229, 255, .48)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 10]);
+        ctx.beginPath();
+        ctx.ellipse(point.x, baseY - height * 0.2, width * 0.72, height * 0.42, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      const barW = clamp(width * 0.92, 48, 260);
+      const barY = baseY - height - 16;
+      ctx.fillStyle = 'rgba(4, 8, 10, .85)';
+      ctx.fillRect(point.x - barW / 2, barY, barW, 4);
+      ctx.fillStyle = this.fpRgba(accent, 0.96);
+      ctx.fillRect(point.x - barW / 2, barY, barW * clamp(boss.hp / boss.maxHp, 0, 1), 4);
+      ctx.fillStyle = 'rgba(245, 238, 222, .9)';
+      ctx.font = `600 ${clamp(8 + point.scale * 1.2, 8, 12)}px "PingFang SC", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(boss.name || (isRaid ? this.raidConfig?.bossName : '首领') || '首领', point.x, barY - 7);
+      ctx.restore();
+    }
+
+    drawFpProjectiles(ctx, w, h, camera) {
+      this.bullets.forEach((bullet) => {
+        const prev = this.fpProject(bullet.x - bullet.vx * 0.018, bullet.y - bullet.vy * 0.018, 24, camera);
+        const now = this.fpProject(bullet.x, bullet.y, 24, camera);
+        if (!now) return;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = bullet.color || '#ffe5a6';
+        ctx.lineWidth = clamp((bullet.width || 1.4) * 0.8, 1, 4);
+        ctx.shadowColor = bullet.color || '#ffe5a6';
+        ctx.shadowBlur = 9;
+        ctx.beginPath();
+        if (prev) ctx.moveTo(prev.x, prev.y);
+        else ctx.moveTo(now.x, now.y);
+        ctx.lineTo(now.x, now.y);
+        ctx.stroke();
+        if (bullet.explosive || bullet.melee) {
+          ctx.fillStyle = this.fpRgba(bullet.color || '#ffe5a6', 0.72);
+          ctx.beginPath();
+          ctx.arc(now.x, now.y, clamp(now.scale * 2.2, 2, 12), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+      this.enemyBullets.forEach((bullet) => {
+        const now = this.fpProject(bullet.x, bullet.y, 20, camera);
+        if (!now) return;
+        const size = clamp(now.scale * (bullet.radius || 2.6), 1.5, 12);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = bullet.color || '#f07158';
+        ctx.shadowColor = bullet.color || '#f07158';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(now.x, now.y, size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      this.grenades.forEach((grenade) => {
+        const progress = 1 - grenade.time / grenade.max;
+        const x = grenade.x + (grenade.tx - grenade.x) * progress;
+        const y = grenade.y + (grenade.ty - grenade.y) * progress;
+        const z = 16 + Math.sin(progress * Math.PI) * 74;
+        const point = this.fpProject(x, y, z, camera);
+        if (!point) return;
+        const color = this.activeSubclass().color;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = this.fpRgba(color, 0.82);
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, clamp(point.scale * 3.6, 2, 14), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      this.hammers.forEach((hammer) => {
+        const progress = 1 - hammer.time / hammer.max;
+        const x = hammer.x + (hammer.tx - hammer.x) * progress;
+        const y = hammer.y + (hammer.ty - hammer.y) * progress;
+        const z = 32 + Math.sin(progress * Math.PI) * 54;
+        const point = this.fpProject(x, y, z, camera);
+        if (!point) return;
+        const color = hammer.profile?.color || this.activeSubclass().color;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.translate(point.x, point.y);
+        ctx.rotate(this.time * 6 + (hammer.spin || 0));
+        ctx.strokeStyle = color;
+        ctx.lineWidth = clamp(point.scale * 1.2, 1.5, 5);
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(-9, 0);
+        ctx.lineTo(0, -6);
+        ctx.lineTo(9, 0);
+        ctx.lineTo(0, 6);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    drawFpFx(ctx, w, h, camera) {
+      if (!this.fx) return;
+      this.fx.parts.forEach((particle) => {
+        const point = this.fpProject(particle.x, particle.y, 28, camera);
+        if (!point) return;
+        const alpha = clamp(particle.life / particle.max, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.85;
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, clamp(particle.size * point.scale * 0.42, 0.8, 4.5), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      this.fx.floaters.forEach((floater) => {
+        const point = this.fpProject(floater.x, floater.y, 46, camera);
+        if (!point) return;
+        const alpha = clamp(floater.life / floater.max, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = floater.color;
+        ctx.textAlign = 'center';
+        ctx.font = `600 ${clamp(floater.size * 1.08 * Math.sqrt(Math.max(0.5, point.scale)), 9, 20)}px "Segoe UI", "PingFang SC", sans-serif`;
+        ctx.shadowColor = 'rgba(0,0,0,.7)';
+        ctx.shadowBlur = 6;
+        ctx.fillText(floater.text, point.x, point.y);
+        ctx.restore();
+      });
+    }
+
+    drawFpWeapon(ctx, w, h) {
+      if (!this.player || this.deathState || this.inventoryOpen) return;
+      const spec = this.activeWeaponSpec();
+      const energy = spec.elementColor || '#f2c57e';
+      const subclass = this.activeSubclass().color;
+      const reloadProgress = this.player.reload > 0 ? 1 - this.player.reload / Math.max(0.2, 1.45 / this.exoticReloadMultiplier()) : 0;
+      const reloadDrop = this.player.reload > 0 ? Math.sin(clamp(reloadProgress, 0, 1) * Math.PI) * 74 : 0;
+      const bobX = Math.sin(this.fpBob * 0.55) * (this.fpMoving ? 7 : 2.2);
+      const bobY = Math.abs(Math.cos(this.fpBob * 0.55)) * (this.fpMoving ? 5.5 : 2);
+      const sway = this.manager.pointerLocked ? 0 : clamp((this.manager.mouse.x / Math.max(1, w) - 0.5) * 18, -16, 16);
+      const recoil = this.fpShotPulse * 18 + this.fpRecoil * 160;
+      const scale = clamp(h / 500, 1.05, 1.9);
+      const baseX = w * 0.67 + bobX + sway;
+      const baseY = h + 20 + bobY + reloadDrop + recoil * 0.18;
+      ctx.save();
+      ctx.translate(baseX, baseY);
+      ctx.rotate(-0.065 + sway * 0.0015 + (this.player.reload > 0 ? 0.24 : 0));
+      ctx.scale(scale, scale);
+      const metal = ctx.createLinearGradient(-180, -150, 20, 10);
+      metal.addColorStop(0, '#20262c');
+      metal.addColorStop(0.48, '#0a0d10');
+      metal.addColorStop(1, '#2b3137');
+      const drawRifle = () => {
+        ctx.fillStyle = metal;
+        ctx.strokeStyle = 'rgba(206, 219, 214, .2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-196, -116);
+        ctx.lineTo(-142, -126);
+        ctx.lineTo(-30, -78);
+        ctx.lineTo(24, -24);
+        ctx.lineTo(18, 16);
+        ctx.lineTo(-34, 2);
+        ctx.lineTo(-92, -61);
+        ctx.lineTo(-156, -89);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#05080a';
+        ctx.fillRect(-207, -128, 58, 10);
+        ctx.fillStyle = this.fpRgba(energy, 0.7);
+        ctx.fillRect(-202, -126, 44, 2);
+        ctx.fillStyle = '#1a2025';
+        ctx.fillRect(-104, -116, 32, 74);
+        ctx.fillStyle = this.fpRgba(energy, 0.42);
+        ctx.fillRect(-100, -108, 4, 42);
+        ctx.fillStyle = '#151b20';
+        roundRect(ctx, -66, -48, 78, 30, 6);
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(subclass, 0.5);
+        ctx.stroke();
+        ctx.fillStyle = this.fpRgba(energy, 0.9);
+        ctx.fillRect(-60, -42, 38, 3);
+        ctx.fillStyle = '#11171c';
+        ctx.fillRect(-31, -30, 20, 50);
+        ctx.fillStyle = this.fpRgba(subclass, 0.28);
+        ctx.fillRect(-27, -24, 5, 30);
+        ctx.fillStyle = 'rgba(8, 12, 15, .96)';
+        roundRect(ctx, -18, -16, 44, 58, 10);
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(energy, 0.35);
+        ctx.stroke();
+      };
+      if (spec.id === 'bow') {
+        ctx.strokeStyle = this.fpRgba(energy, 0.9);
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.arc(-54, -92, 92, -1.05, 1.05);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(225, 234, 227, .55)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-8, -174);
+        ctx.lineTo(12, -22);
+        ctx.stroke();
+      } else if (spec.id === 'rocket' || spec.slot === 'power') {
+        ctx.fillStyle = metal;
+        roundRect(ctx, -218, -125, 230, 58, 22);
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(energy, 0.4);
+        ctx.stroke();
+        ctx.fillStyle = this.fpRgba(energy, 0.72);
+        ctx.fillRect(-202, -110, 64, 5);
+        ctx.fillStyle = '#070a0c';
+        ctx.beginPath();
+        ctx.arc(-210, -96, 27, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(subclass, 0.65);
+        ctx.stroke();
+      } else if (spec.id === 'handcannon' || spec.id === 'sidearm') {
+        ctx.fillStyle = metal;
+        ctx.beginPath();
+        ctx.moveTo(-138, -116);
+        ctx.lineTo(-78, -125);
+        ctx.lineTo(-12, -74);
+        ctx.lineTo(-4, -20);
+        ctx.lineTo(-74, -42);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(energy, 0.55);
+        ctx.stroke();
+        ctx.fillStyle = '#090c0e';
+        ctx.fillRect(-86, -58, 34, 74);
+        ctx.fillStyle = this.fpRgba(energy, 0.8);
+        ctx.fillRect(-132, -116, 38, 3);
+      } else {
+        drawRifle();
+      }
+      if (spec.id === 'fusion' || spec.projectileType === 'grenade') {
+        ctx.strokeStyle = this.fpRgba(energy, 0.72);
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.arc(-152 + i * 12, -86, 16, Math.PI * 0.2, Math.PI * 0.8);
+          ctx.stroke();
+        }
+      }
+      const muzzleX = spec.id === 'bow' ? -70 : spec.id === 'rocket' || spec.slot === 'power' ? -214 : -207;
+      const muzzleY = spec.id === 'bow' ? -92 : -102;
+      if (this.player.muzzle > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const flash = ctx.createRadialGradient(muzzleX - 20, muzzleY, 1, muzzleX - 20, muzzleY, 46);
+        flash.addColorStop(0, 'rgba(255, 249, 219, .96)');
+        flash.addColorStop(0.25, this.fpRgba(energy, 0.8));
+        flash.addColorStop(1, this.fpRgba(energy, 0));
+        ctx.fillStyle = flash;
+        ctx.beginPath();
+        ctx.arc(muzzleX - 20, muzzleY, 46, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = this.fpRgba(energy, 0.9);
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 5; i += 1) {
+          const angle = (i / 5) * Math.PI * 2 + this.time * 3;
+          ctx.beginPath();
+          ctx.moveTo(muzzleX - 20, muzzleY);
+          ctx.lineTo(muzzleX - 20 + Math.cos(angle) * 34, muzzleY + Math.sin(angle) * 34);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      ctx.fillStyle = 'rgba(7, 11, 14, .98)';
+      roundRect(ctx, 8, 16, 58, 84, 15);
+      ctx.fill();
+      ctx.strokeStyle = this.fpRgba(subclass, 0.28);
+      ctx.stroke();
+      ctx.fillStyle = this.fpRgba(subclass, 0.45);
+      ctx.fillRect(20, 38, 7, 42);
+      ctx.restore();
+    }
+
+    drawFpScreenFx(ctx, w, h, camera) {
+      const biome = this.biomeConfig(this.mission);
+      const particleColor = this.fpParticleKind === 'snow' ? '#dff4ff' : this.fpParticleKind === 'embers' ? '#f0ad6a' : this.fpParticleKind === 'spores' ? '#a8e8b7' : this.fpParticleKind === 'neon' ? '#f0a9df' : biome.accent2;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      (this.fpParticles || []).forEach((particle, index) => {
+        const x = ((particle.x + Math.sin(this.time * 0.18 + particle.phase) * 0.025 + particle.drift * this.time) % 1 + 1) % 1 * w;
+        const y = ((particle.y + this.time * particle.speed) % 0.82 + 0.04) * h;
+        ctx.globalAlpha = 0.18 + (index % 5) * 0.07;
+        ctx.fillStyle = particleColor;
+        ctx.beginPath();
+        ctx.arc(x, y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+
+      const vignette = ctx.createRadialGradient(w * 0.5, h * 0.52, Math.min(w, h) * 0.24, w * 0.5, h * 0.52, Math.max(w, h) * 0.72);
+      vignette.addColorStop(0, 'rgba(0,0,0,0)');
+      vignette.addColorStop(0.66, 'rgba(0,0,0,.08)');
+      vignette.addColorStop(1, 'rgba(0,0,0,.48)');
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, w, h);
+
+      const healthRatio = this.player ? (this.player.hp + this.player.shield) / (this.player.maxHp + this.player.maxShield) : 1;
+      if (healthRatio < 0.34 || this.player?.flash > 0.02) {
+        const pulse = 0.08 + Math.sin(this.time * 4.5) * 0.035 + (1 - healthRatio) * 0.16;
+        ctx.save();
+        const danger = ctx.createRadialGradient(w / 2, h / 2, h * 0.25, w / 2, h / 2, w * 0.66);
+        danger.addColorStop(0, 'rgba(154, 26, 20, 0)');
+        danger.addColorStop(1, `rgba(154, 26, 20, ${clamp(pulse + (this.player?.flash || 0) * 0.35, 0, 0.55)})`);
+        ctx.fillStyle = danger;
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      }
+
+      if (!this.manager.pointerLocked && !this.intro && !this.transition && !this.deathState) {
+        ctx.save();
+        ctx.globalAlpha = 0.46;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(235, 242, 233, .9)';
+        ctx.font = '500 8px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('点击画面锁定鼠标 · ESC 暂停', w * 0.5, h * 0.59);
+        ctx.restore();
+      }
+
+      if (this.fpHitMarker > 0) {
+        const cx = w * 0.5;
+        const cy = h * 0.5;
+        const alpha = clamp(this.fpHitMarker / 0.18, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = this.fpHitKill > 0 ? '#ffd27d' : 'rgba(255, 239, 206, .96)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(cx - 10, cy - 10);
+        ctx.lineTo(cx - 4, cy - 4);
+        ctx.moveTo(cx + 10, cy - 10);
+        ctx.lineTo(cx + 4, cy - 4);
+        ctx.moveTo(cx - 10, cy + 10);
+        ctx.lineTo(cx - 4, cy + 4);
+        ctx.moveTo(cx + 10, cy + 10);
+        ctx.lineTo(cx + 4, cy + 4);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     drawDestinyCrosshair(ctx, w, h) {
       const mouse = this.manager.mouse;
       if (!mouse) return;
+      if (this.firstPersonActive()) {
+        const target = this.fpAimTarget(760);
+        const cx = w * 0.5;
+        const cy = h * 0.5;
+        const color = target ? 'rgba(255, 220, 142, .98)' : 'rgba(232, 242, 234, .7)';
+        const spread = 9 + (this.fpMoving ? 3 : 0) + this.fpShotPulse * 7 + this.fpRecoil * 80;
+        drawCrosshair(ctx, cx, cy, color, spread, Boolean(this.player?.reload > 0));
+        if (target) {
+          ctx.save();
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = 0.8;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(cx, cy, spread + 7 + Math.sin(this.time * 5) * 1.4, 0, Math.PI * 2);
+          ctx.stroke();
+          for (let i = 0; i < 4; i += 1) {
+            const angle = i * Math.PI / 2 + Math.PI / 4;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(angle) * (spread + 11), cy + Math.sin(angle) * (spread + 11));
+            ctx.lineTo(cx + Math.cos(angle) * (spread + 17), cy + Math.sin(angle) * (spread + 17));
+            ctx.stroke();
+          }
+          ctx.fillStyle = color;
+          ctx.textAlign = 'center';
+          ctx.font = '600 5.2px "SFMono-Regular", Consolas, monospace';
+          ctx.fillText('AA', cx, cy - spread - 22);
+          ctx.restore();
+        }
+        return;
+      }
       const target = this.cursorAimTarget(mouse, 760);
       const color = target ? 'rgba(255, 220, 142, .96)' : 'rgba(232, 242, 234, .62)';
       drawCrosshair(ctx, mouse.x, mouse.y, color, target ? 15 : 10, false);
