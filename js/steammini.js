@@ -12667,16 +12667,16 @@
         color: 0xb8ffd9, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false
       });
       const centerX = this.w * 0.5;
-      const centerZ = this.h * 1.62;
-      for (let level = 0; level < 7; level += 1) {
+      const centerZ = this.h * 1.25;
+      for (let level = 0; level < 9; level += 1) {
         const y = 46 + level * 58;
         [-1, 1].forEach((side) => {
-          addBox(silo, centerX + side * this.w * 0.335, y, centerZ, 7, 54, this.h * 2.85);
-          addBox(rib, centerX + side * this.w * 0.315, y, centerZ, 2.4, 50, this.h * 2.7);
+          addBox(silo, centerX + side * this.w * 0.335, y, centerZ, 7, 54, this.h * 3.8);
+          addBox(rib, centerX + side * this.w * 0.315, y, centerZ, 2.4, 50, this.h * 3.62);
           addBox(hazard, centerX + side * this.w * 0.322, y + 18, centerZ - this.h * 0.32, 10, 1.4, 3);
         });
-        addBox(rib, centerX, y, centerZ + this.h * 1.38, this.w * 0.64, 3.2, 4);
-        addBox(rib, centerX, y, centerZ - this.h * 1.32, this.w * 0.64, 3.2, 4);
+        addBox(rib, centerX, y, centerZ + this.h * 1.8, this.w * 0.64, 3.2, 4);
+        addBox(rib, centerX, y, centerZ - this.h * 1.76, this.w * 0.64, 3.2, 4);
       }
       [-1, 1].forEach((side) => {
         const towerX = centerX + side * this.w * 0.4;
@@ -14789,11 +14789,11 @@
       course.push(start);
       checkpoints.push({ x: start.x, y: start.y, top: start.top, index: 0 });
       let final = null;
-      for (let index = 1; index <= 24; index += 1) {
+      for (let index = 1; index <= 36; index += 1) {
         const x = 0.5 + Math.sin(index * 1.35) * 0.07;
         const y = 2.7 - index * 0.09;
         const top = 55 + index * 12;
-        const isFinal = index === 24;
+        const isFinal = index === 36;
         const platform = {
           x, y,
           w: isFinal ? 0.3 : 0.095,
@@ -14805,7 +14805,7 @@
         course.push(platform);
         if (isFinal) final = platform;
         if (index % 6 === 0 || isFinal) checkpoints.push({ x, y, top, index });
-        if ([5, 11, 17].includes(index)) {
+        if ([5, 14, 23].includes(index)) {
           const side = index % 2 ? 1 : -1;
           const shardX = x + side * 0.14;
           const shardY = y + 0.03;
@@ -14813,7 +14813,7 @@
           course.push({ x: shardX, y: shardY, w: 0.075, d: 0.055, top: shardTop, kind: 'parkour-shard' });
           shards.push({ x: shardX, y: shardY, top: shardTop, index: shards.length, collected: false });
         }
-        if ([7, 13, 19].includes(index)) {
+        if ([8, 17, 26].includes(index)) {
           traps.push({ x, y: y - 0.045, w: 0.18, d: 0.026, top, period: 3.2 + (index % 3) * 0.55, phase: index * 0.7, active: true });
         }
       }
