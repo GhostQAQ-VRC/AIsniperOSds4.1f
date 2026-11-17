@@ -43,6 +43,187 @@
     return sprite;
   }
 
+
+  /* ==========================================================================
+     Counter-Strike 2 — map layouts
+     Coordinates are metres on a top-down radar grid. The layouts are built from
+     the same callout/route vocabulary as the classic maps: T spawn, CT spawn,
+     A/B sites, mid, long, tunnels, apartments and connector routes.
+     ========================================================================== */
+
+  const CS2_MAP_LAYOUTS = {
+    dust2: {
+      name: 'de_dust2', label: '炙热沙城 II', desc: '沙色长道、中央大门与经典 A/B 双包点。',
+      palette: { bg: 0x2a2118, fog: 0x9b7e5c, floor: 0x9b7b55, wall: 0x8b6a45, trim: 0xd1a05c, crate: 0x6b4b2a, sun: 0xffd9a0, fill: 0x7fb2d6 },
+      bounds: { minX: -38, maxX: 38, minZ: -36, maxZ: 36 },
+      spawn: { x: -2, z: -32, yaw: Math.PI }, tSpawn: { x: 20, z: 30 },
+      sites: [{ id: 'A', x: 26, z: -22 }, { id: 'B', x: -27, z: -22 }],
+      walls: [
+        [10, 18, 26, 18, 'sand'], [15, -1, 14, 10, 'sand'], [-26, 20, 10, 14, 'sand'],
+        [-27, 0, 10, 9, 'sand'], [-8, 8, 8, 10, 'sand'], [6, 8, 8, 10, 'sand'],
+        [-4, -14, 26, 6, 'plaster'], [-30, -8, 8, 8, 'sand'], [8, -22, 10, 8, 'sand'],
+        [30, -30, 14, 6, 'plaster'], [-20, -30, 18, 6, 'plaster']
+      ],
+      crates: [
+        [26, -20, 2.4, 2.4, 1.6, 'wood'], [30, -24, 3, 2.2, 1.8, 'wood'], [22, -25, 2.2, 2.2, 1.4, 'wood'],
+        [-27, -22, 3, 2.4, 1.7, 'wood'], [-31, -18, 2.2, 2.2, 1.5, 'wood'], [-22, -26, 2.6, 2.6, 1.4, 'wood'],
+        [0, 2, 2.6, 2.6, 1.5, 'wood'], [0, -2, 2.4, 2.4, 1.4, 'wood'], [24, 8, 3.2, 2.2, 1.6, 'metal']
+      ],
+      arches: [],
+      callouts: [
+        { x: 26, z: -22, text: 'A 点', color: '#ffbe72' }, { x: -27, z: -22, text: 'B 点', color: '#8fd8ff' },
+        { x: 0, z: 4, text: 'MID', color: '#e4d6bb' }, { x: 30, z: 14, text: 'LONG', color: '#e4d6bb' },
+        { x: -18, z: 8, text: 'B 通道', color: '#e4d6bb' }, { x: 0, z: 30, text: 'T 出生点', color: '#e0a35c' }
+      ],
+      botPaths: [
+        [[20, 30], [30, 22], [31, 6], [28, -8], [26, -19]],
+        [[20, 30], [10, 30], [-4, 30], [-15, 24], [-18, 12], [-18, -6], [-26, -18]],
+        [[20, 30], [28, 26], [28, 4], [28, -10], [20, -18], [-2, -24]]
+      ]
+    },
+    mirage: {
+      name: 'de_mirage', label: '荒漠迷城', desc: '中路窗户、宫殿、公寓与开阔双包点。',
+      palette: { bg: 0x1b1711, fog: 0xa58a68, floor: 0xa88a64, wall: 0x9c7e58, trim: 0xe0b36a, crate: 0x6f5131, sun: 0xffd9a0, fill: 0x83b8d9 },
+      bounds: { minX: -38, maxX: 38, minZ: -36, maxZ: 36 },
+      spawn: { x: -2, z: -32, yaw: Math.PI }, tSpawn: { x: 0, z: 32 },
+      sites: [{ id: 'A', x: 26, z: -22 }, { id: 'B', x: -26, z: -22 }],
+      walls: [
+        [8, 18, 10, 24, 'plaster'], [-16, 18, 10, 24, 'plaster'], [28, 8, 14, 14, 'plaster'],
+        [16, 8, 10, 14, 'sand'], [-28, 12, 16, 16, 'plaster'], [-28, -4, 12, 10, 'sand'],
+        [-8, -14, 20, 6, 'plaster'], [16, -6, 8, 8, 'sand'], [-4, 4, 6, 4, 'sand'],
+        [30, -30, 14, 6, 'plaster'], [-20, -30, 18, 6, 'plaster']
+      ],
+      crates: [
+        [26, -21, 2.6, 2.6, 1.6, 'wood'], [30, -25, 2.4, 2.4, 1.5, 'wood'], [22, -26, 2.2, 2.2, 1.4, 'wood'],
+        [-26, -22, 3, 2.4, 1.7, 'wood'], [-30, -18, 2.2, 2.2, 1.4, 'wood'], [-22, -26, 2.4, 2.4, 1.3, 'wood'],
+        [0, 0, 2.4, 2.4, 1.5, 'wood'], [2, 12, 2.8, 2.2, 1.4, 'metal'], [-18, 2, 2.4, 2.4, 1.4, 'wood']
+      ],
+      arches: [],
+      callouts: [
+        { x: 26, z: -22, text: 'A 点', color: '#ffbe72' }, { x: -26, z: -22, text: 'B 点', color: '#8fd8ff' },
+        { x: 0, z: 4, text: 'MID', color: '#e4d6bb' }, { x: 26, z: 8, text: 'PALACE', color: '#e4d6bb' },
+        { x: -26, z: 12, text: '公寓', color: '#e4d6bb' }, { x: 0, z: 32, text: 'T 出生点', color: '#e0a35c' }
+      ],
+      botPaths: [
+        [[0, 32], [0, 20], [0, 10], [0, 0], [8, -6], [16, -12], [24, -18]],
+        [[0, 32], [-8, 30], [-10, 20], [-10, 10], [-10, 0], [-10, -10], [-18, -18], [-26, -18]],
+        [[0, 32], [0, 20], [0, 8], [0, -6], [-4, -8], [-2, -20]]
+      ]
+    },
+    inferno: {
+      name: 'de_inferno', label: '炼狱小镇', desc: '香蕉道、公寓与狭窄巷道的近距离战场。',
+      palette: { bg: 0x1b0e0b, fog: 0x8f5c45, floor: 0x7f5544, wall: 0x7a4f3d, trim: 0xd07850, crate: 0x5e3a29, sun: 0xffbd91, fill: 0xcf8061 },
+      bounds: { minX: -38, maxX: 38, minZ: -36, maxZ: 36 },
+      spawn: { x: 0, z: -32, yaw: Math.PI }, tSpawn: { x: 0, z: 32 },
+      sites: [{ id: 'A', x: 24, z: -22 }, { id: 'B', x: -26, z: -23 }],
+      walls: [
+        [-20, 14, 12, 24, 'brick'], [10, 14, 12, 24, 'brick'], [-30, 10, 8, 20, 'plaster'],
+        [-4, -10, 12, 6, 'plaster'], [16, -4, 10, 10, 'brick'], [-30, -8, 8, 8, 'plaster'],
+        [4, -24, 12, 6, 'plaster'], [28, -30, 16, 6, 'brick'], [-20, -30, 16, 6, 'brick']
+      ],
+      crates: [
+        [24, -21, 2.4, 2.4, 1.6, 'wood'], [28, -24, 2.4, 2.4, 1.4, 'wood'], [20, -25, 2.2, 2.2, 1.3, 'wood'],
+        [-26, -22, 3, 2.4, 1.7, 'wood'], [-30, -18, 2.2, 2.2, 1.4, 'wood'], [-22, -26, 2.4, 2.4, 1.3, 'wood'],
+        [-24, 6, 2.6, 2.6, 1.4, 'wood'], [0, 4, 2.4, 2.4, 1.5, 'wood'], [12, 0, 2.2, 2.2, 1.4, 'metal']
+      ],
+      arches: [],
+      callouts: [
+        { x: 24, z: -22, text: 'A 点', color: '#ffb27b' }, { x: -26, z: -23, text: 'B 点', color: '#8fd8ff' },
+        { x: 0, z: 2, text: 'MID', color: '#efd5be' }, { x: -26, z: 12, text: '香蕉道', color: '#efd5be' },
+        { x: -16, z: 12, text: '公寓', color: '#efd5be' }, { x: 0, z: 32, text: 'T 出生点', color: '#e0a35c' }
+      ],
+      botPaths: [
+        [[0, 32], [0, 16], [0, 6], [8, -2], [22, -4], [24, -18]],
+        [[0, 32], [-10, 30], [-12, 20], [-12, 8], [-12, 0], [-12, -10], [-20, -18], [-26, -18]],
+        [[0, 32], [0, 16], [0, 4], [-6, -4], [-12, -14], [-6, -22]]
+      ]
+    },
+    ancient: {
+      name: 'de_ancient', label: '远古遗迹', desc: '藤蔓石墙、洞穴与围绕中路的遗迹包点。',
+      palette: { bg: 0x0d1712, fog: 0x5f7a62, floor: 0x5b6d55, wall: 0x5a6b51, trim: 0x9bc47a, crate: 0x3e5138, sun: 0xd5e8b6, fill: 0x6ac8a6 },
+      bounds: { minX: -36, maxX: 36, minZ: -34, maxZ: 34 },
+      spawn: { x: 0, z: -30, yaw: Math.PI }, tSpawn: { x: 0, z: 30 },
+      sites: [{ id: 'A', x: 24, z: -20 }, { id: 'B', x: -24, z: -20 }],
+      walls: [
+        [-14, 14, 12, 20, 'stone'], [10, 14, 12, 20, 'stone'], [-28, 4, 10, 12, 'stone'],
+        [-10, -12, 14, 6, 'stone'], [12, -4, 10, 10, 'stone'], [16, -24, 10, 6, 'stone'],
+        [28, -28, 16, 6, 'stone'], [-24, -28, 16, 6, 'stone']
+      ],
+      crates: [
+        [24, -19, 2.6, 2.6, 1.6, 'wood'], [28, -23, 2.4, 2.4, 1.4, 'wood'], [20, -24, 2.2, 2.2, 1.3, 'wood'],
+        [-24, -19, 2.6, 2.6, 1.6, 'wood'], [-28, -23, 2.4, 2.4, 1.4, 'wood'], [-20, -24, 2.2, 2.2, 1.3, 'wood'],
+        [0, 2, 2.4, 2.4, 1.5, 'wood'], [12, -8, 2.2, 2.2, 1.4, 'stone'], [-12, -4, 2.2, 2.2, 1.4, 'stone']
+      ],
+      arches: [],
+      callouts: [
+        { x: 24, z: -20, text: 'A 点', color: '#b8e59c' }, { x: -24, z: -20, text: 'B 点', color: '#8fd8ff' },
+        { x: 0, z: 2, text: 'MID', color: '#d7e6c8' }, { x: -24, z: 10, text: '洞穴', color: '#d7e6c8' },
+        { x: 14, z: -8, text: 'DONUT', color: '#d7e6c8' }, { x: 0, z: 30, text: 'T 出生点', color: '#e0a35c' }
+      ],
+      botPaths: [
+        [[0, 30], [0, 16], [0, 6], [6, 0], [6, -8], [18, -12], [24, -16]],
+        [[0, 30], [-21, 26], [-21, 16], [-21, 8], [-21, 0], [-22, -10], [-24, -16]],
+        [[0, 30], [0, 12], [0, 2], [-6, -6], [-8, -18]]
+      ]
+    },
+    anubis: {
+      name: 'de_anubis', label: '阿努比斯', desc: '运河、桥洞与神庙街区组成的中距离地图。',
+      palette: { bg: 0x1b140d, fog: 0xb2936b, floor: 0xa1825c, wall: 0x947757, trim: 0xd9b46e, crate: 0x6a4f30, sun: 0xffe0ae, fill: 0x79bed8 },
+      bounds: { minX: -38, maxX: 38, minZ: -36, maxZ: 36 },
+      spawn: { x: -4, z: -32, yaw: Math.PI }, tSpawn: { x: 0, z: 32 },
+      sites: [{ id: 'A', x: 24, z: -22 }, { id: 'B', x: -24, z: -22 }],
+      walls: [
+        [10, 16, 12, 24, 'sand'], [-14, 16, 12, 24, 'sand'], [-28, 4, 10, 14, 'plaster'],
+        [14, 0, 10, 12, 'plaster'], [-6, -12, 16, 6, 'plaster'], [26, -28, 16, 6, 'sand'],
+        [-24, -28, 16, 6, 'sand'], [-4, 6, 6, 6, 'stone']
+      ],
+      crates: [
+        [24, -21, 2.4, 2.4, 1.5, 'wood'], [28, -24, 2.6, 2.6, 1.6, 'wood'], [20, -25, 2.2, 2.2, 1.3, 'wood'],
+        [-24, -21, 2.4, 2.4, 1.5, 'wood'], [-28, -24, 2.6, 2.6, 1.6, 'wood'], [-20, -25, 2.2, 2.2, 1.3, 'wood'],
+        [0, 2, 2.4, 2.4, 1.4, 'wood'], [0, 14, 3.2, 2.2, 1.5, 'metal'], [12, -8, 2.2, 2.2, 1.4, 'wood']
+      ],
+      arches: [],
+      callouts: [
+        { x: 24, z: -22, text: 'A 点', color: '#ffdc9a' }, { x: -24, z: -22, text: 'B 点', color: '#8fd8ff' },
+        { x: 0, z: 2, text: 'MID', color: '#efe1c8' }, { x: 0, z: 14, text: '运河', color: '#efe1c8' },
+        { x: -24, z: 6, text: 'B 桥', color: '#efe1c8' }, { x: 0, z: 32, text: 'T 出生点', color: '#e0a35c' }
+      ],
+      botPaths: [
+        [[0, 32], [0, 18], [0, 8], [2, -2], [8, -8], [18, -14], [24, -18]],
+        [[0, 32], [-22, 28], [-22, 18], [-22, 8], [-22, 0], [-22, -8], [-24, -16]],
+        [[0, 32], [0, 18], [0, 10], [0, 0], [-2, -8], [-4, -16]]
+      ]
+    },
+    vertigo: {
+      name: 'de_vertigo', label: '殒命大厦', desc: '高楼屋顶、通风井与施工平台的垂直战场。',
+      palette: { bg: 0x0e161d, fog: 0x62798a, floor: 0x64717a, wall: 0x5b6870, trim: 0x84b4d2, crate: 0x3f4c55, sun: 0xcbe3f4, fill: 0x5e95bd },
+      bounds: { minX: -34, maxX: 34, minZ: -34, maxZ: 34 },
+      spawn: { x: -16, z: -28, yaw: Math.PI * 0.5 }, tSpawn: { x: 22, z: 29 },
+      sites: [{ id: 'A', x: 10, z: -22 }, { id: 'B', x: -24, z: -16 }],
+      walls: [
+        [-6, 10, 14, 12, 'metal'], [14, 8, 12, 10, 'metal'], [-24, 6, 10, 12, 'metal'],
+        [8, -8, 10, 8, 'metal'], [-12, -6, 8, 8, 'metal'], [24, -24, 12, 6, 'metal'],
+        [-26, -26, 12, 6, 'metal'], [-4, 24, 14, 6, 'metal'], [20, 22, 12, 6, 'metal']
+      ],
+      crates: [
+        [10, -21, 2.6, 2.6, 1.4, 'metal'], [14, -24, 2.4, 2.4, 1.5, 'wood'], [6, -24, 2.2, 2.2, 1.3, 'wood'],
+        [-24, -15, 2.6, 2.6, 1.4, 'metal'], [-28, -19, 2.2, 2.2, 1.3, 'wood'], [-20, -19, 2.2, 2.2, 1.3, 'wood'],
+        [0, 2, 2.4, 2.4, 1.4, 'metal'], [16, 2, 2.2, 2.2, 1.3, 'wood'], [-18, 20, 2.2, 2.2, 1.3, 'metal']
+      ],
+      arches: [],
+      callouts: [
+        { x: 10, z: -22, text: 'A 点', color: '#a9dbff' }, { x: -24, z: -16, text: 'B 点', color: '#8fd8ff' },
+        { x: 0, z: 2, text: 'MID', color: '#dce9f3' }, { x: 22, z: 24, text: '施工区', color: '#dce9f3' },
+        { x: -20, z: -28, text: 'CT 出生点', color: '#8fd8ff' }
+      ],
+      botPaths: [
+        [[22, 29], [18, 18], [22, 8], [22, -2], [10, -14], [10, -20]],
+        [[22, 29], [8, 24], [0, 20], [-8, 17], [-16, 10], [-16, 2], [-24, -12]],
+        [[22, 29], [20, 8], [12, 0], [0, -8], [-16, -18]]
+      ]
+    }
+  };
+
   /* ==========================================================================
      Counter-Strike 2 — low-poly training match
      ========================================================================== */
@@ -85,14 +266,28 @@
       this.matchTimer = null;
       this.selectedMap = 'mirage';
       this.lastMap = 'mirage';
-      this.mapData = {
-        mirage: { name: 'de_mirage', label: '荒漠迷城', desc: '沙色中路与开阔包点。适合第一场热身。', fog: 0x16120e, bg: 0x0c1118, floor: 0x3a2e22, wall: 0x2b2925, trim: 0xd89a4b, crate: 0x4a3c2b, sun: 0xffd59b, fill: 0x7ab6dc },
-        inferno: { name: 'de_inferno', label: '炼狱小镇', desc: '暖色石墙、狭窄巷道与近距离交火。', fog: 0x1b0f0d, bg: 0x170c0b, floor: 0x3d2820, wall: 0x33201a, trim: 0xd6673c, crate: 0x56372a, sun: 0xffb17d, fill: 0xe08052 },
-        ancient: { name: 'de_ancient', label: '远古遗迹', desc: '藤蔓、石阶和湿润的绿色遗迹。', fog: 0x0b1713, bg: 0x07110e, floor: 0x26362b, wall: 0x1c2b24, trim: 0x76b35b, crate: 0x354a35, sun: 0xcbe6a6, fill: 0x4fbd9e },
-        vertigo: { name: 'de_vertigo', label: '殒命大厦', desc: '高处风声、冷色混凝土与垂直空间。', fog: 0x0c1620, bg: 0x081018, floor: 0x2e4050, wall: 0x243342, trim: 0x6c9fca, crate: 0x3c5364, sun: 0xb8dcf6, fill: 0x4c8fc8 }
-      };
+      this.mapData = {};
+      Object.entries(CS2_MAP_LAYOUTS).forEach(([key, layout]) => {
+        this.mapData[key] = { ...layout, ...layout.palette, key };
+      });
+      this.colliders = [];
+      this.mapGroup = null;
+      this.mapLayout = null;
+      this.currentCallout = '';
+      this.roundsWon = 0;
+      this.roundsLost = 0;
       this.buildUI();
       this.bindUI();
+      this.selectMap(this.selectedMap);
+    }
+
+    mapCardsMarkup() {
+      return Object.entries(this.mapData).map(([key, map], index) => `
+        <button class="cs2-map-card${key === this.selectedMap ? ' is-active' : ''}" data-cs2-map="${key}" type="button">
+          <span class="cs2-map-art">${this.mapPreview(key)}</span>
+          <span class="cs2-map-card-copy"><b>${escapeHTML(map.name)}</b><small>${escapeHTML(map.label)}</small></span>
+          <em class="cs2-map-card-tag">${String(index + 1).padStart(2, '0')}</em>
+        </button>`).join('');
     }
 
     buildUI() {
@@ -117,11 +312,12 @@
             <div class="cs2-hud-top">
               <div class="cs2-team-card"><span class="cs2-team-mark">CT</span><div><b>反恐精英</b><small>训练服务器 · de_mirage</small></div></div>
               <div class="cs2-round-info"><span>比赛用时</span><b class="cs2-timer">00:00</b></div>
-              <div class="cs2-wave-card"><span>波次</span><b class="cs2-wave">01</b><small>训练目标</small></div>
+              <div class="cs2-wave-card"><span>回合</span><b class="cs2-wave">01</b><small class="cs2-round-score">CT 0 · T 0</small></div>
             </div>
             <div class="cs2-crosshair"><i></i><i></i><i></i><i></i><b></b></div>
             <div class="cs2-hitmarker" hidden><i></i><i></i><i></i><i></i></div>
             <div class="cs2-killfeed"></div>
+            <div class="cs2-location-chip"><i></i><span class="cs2-location">CT 出生点</span><small>128 TICK</small></div>
             <div class="cs2-hud-bottom">
               <div class="cs2-health-block"><div class="cs2-hud-label"><span>生命</span><b class="cs2-health-value">100</b></div><div class="cs2-health-track"><i class="cs2-health-fill"></i></div></div>
               <div class="cs2-ammo-block"><b class="cs2-ammo-value">30</b><span>/ <em class="cs2-ammo-reserve">90</em></span><small>7.62 × 39</small></div>
@@ -130,38 +326,94 @@
             <div class="cs2-hint-line"><span>WASD 移动</span><span>鼠标瞄准</span><span>左键射击</span><span>R 装填</span><span>Esc 释放鼠标</span></div>
           </div>
           <div class="cs2-overlay cs2-lobby-panel">
-            <div class="cs2-lobby-head">
-              <div class="cs2-lobby-brand"><span class="cs2-lobby-mark">2</span><div><b>COUNTER-STRIKE <i>2</i></b><small>AISNIPER 竞技服务器</small></div></div>
-              <div class="cs2-lobby-status"><span><i></i>已连接</span><b>竞技大厅</b><small>延迟 8ms · 128 tick</small></div>
+            <div class="cs2-lobby-backdrop" aria-hidden="true">
+              <div class="cs2-lobby-gridlines"></div>
+              <div class="cs2-lobby-mapmark mapmark-a">A</div>
+              <div class="cs2-lobby-mapmark mapmark-b">B</div>
+              <div class="cs2-lobby-haze"></div>
             </div>
-            <div class="cs2-lobby-grid">
-              <section class="cs2-lobby-side">
-                <span class="cs2-eyebrow">PREMIER LOBBY</span>
-                <h2>先选地图，<br>再进入战场。</h2>
-                <p>热身赛由本地低模 BOT 填充。挑选一张地图，准备好后再开始比赛。</p>
-                <div class="cs2-lobby-teamline"><span class="cs2-lobby-team ct">CT</span><b>反恐精英</b><i>5</i><span class="cs2-lobby-team t">T</span><b class="cs2-lobby-enemy">恐怖分子</b><i>5</i></div>
-                <div class="cs2-lobby-squad">
-                  <div><span>S</span><b>Sniper</b><small>队长 · 你</small></div>
-                  <div><span>K</span><b>Kai</b><small>BOT</small></div>
-                  <div><span>N</span><b>Nova</b><small>BOT</small></div>
-                  <div><span>P</span><b>Pixel</b><small>BOT</small></div>
-                  <div><span class="is-empty">+</span><b>等待加入</b><small>开放槽位</small></div>
+            <header class="cs2-mainnav">
+              <div class="cs2-mainnav-left">
+                <span class="cs2-lobby-mark">2</span>
+                <div><b>COUNTER-STRIKE <i>2</i></b><small>AISNIPER · PREMIER</small></div>
+              </div>
+              <nav class="cs2-mainnav-tabs" aria-label="CS2 主导航">
+                <button class="is-active" type="button"><span>开始游戏</span><small>PLAY</small></button>
+                <button type="button"><span>观战</span><small>WATCH</small></button>
+                <button type="button"><span>军械库</span><small>ARMORY</small></button>
+                <button type="button"><span>商店</span><small>STORE</small></button>
+                <button type="button"><span>个人资料</span><small>PROFILE</small></button>
+              </nav>
+              <div class="cs2-mainnav-right">
+                <span class="cs2-mainnav-chip"><i></i>8 ms</span>
+                <span class="cs2-mainnav-level">LVL <b>42</b></span>
+                <span class="cs2-mainnav-name">SNIPER</span>
+              </div>
+            </header>
+            <div class="cs2-lobby-content">
+              <section class="cs2-play-stack">
+                <div class="cs2-play-card">
+                  <div class="cs2-play-card-top">
+                    <span class="cs2-play-kicker"><i></i>优先匹配 · 本地服务器</span>
+                    <span class="cs2-play-season">第 4 赛季 · 黄金 3</span>
+                  </div>
+                  <div class="cs2-play-hero">
+                    <div>
+                      <h2>竞技匹配</h2>
+                      <p>5v5 竞技 · 128 tick · 本地 BOT 填充</p>
+                    </div>
+                    <div class="cs2-play-score"><span>CT</span><b>0</b><em>:</em><b>0</b><span class="t">T</span></div>
+                  </div>
+                  <div class="cs2-play-maprow">
+                    <div class="cs2-play-mapthumb"><span class="cs2-play-mapletter">A</span><small>SELECTED</small></div>
+                    <div class="cs2-play-mapcopy">
+                      <span>当前地图</span>
+                      <b class="cs2-map-label">荒漠迷城</b>
+                      <small class="cs2-map-desc">沙色长道、中央大门与经典 A/B 双包点。</small>
+                      <em class="cs2-selected-map-name">de_mirage</em>
+                    </div>
+                    <div class="cs2-play-mapstats"><span>地图池</span><b>6</b><small>ACTIVE DUTY</small></div>
+                  </div>
+                  <div class="cs2-play-actions">
+                    <button class="cs2-primary-btn cs2-start-btn"><span>开始比赛</span><svg viewBox="0 0 24 24"><use href="#i-play"></use></svg></button>
+                    <button class="cs2-secondary-btn cs2-matchmaking-btn"><span>寻找竞技比赛</span><svg viewBox="0 0 24 24"><use href="#i-search"></use></svg></button>
+                    <span class="cs2-play-note">本地 BOT · 无真实联网</span>
+                  </div>
                 </div>
-                <div class="cs2-lobby-note"><span class="cs2-lobby-live"><i></i>服务器在线</span><span>本地训练赛 · 无真实联网</span></div>
-              </section>
-              <section class="cs2-map-picker">
-                <div class="cs2-map-picker-head"><div><span>选择地图</span><b>地图池</b></div><small class="cs2-selected-map-name">de_mirage</small></div>
-                <div class="cs2-map-grid">
-                  <button class="cs2-map-card is-active" data-cs2-map="mirage"><span class="cs2-map-art map-mirage"><i></i></span><b>de_mirage</b><small>荒漠迷城 · 开阔中路</small></button>
-                  <button class="cs2-map-card" data-cs2-map="inferno"><span class="cs2-map-art map-inferno"><i></i></span><b>de_inferno</b><small>炼狱小镇 · 近距离</small></button>
-                  <button class="cs2-map-card" data-cs2-map="ancient"><span class="cs2-map-art map-ancient"><i></i></span><b>de_ancient</b><small>远古遗迹 · 石墙藤蔓</small></button>
-                  <button class="cs2-map-card" data-cs2-map="vertigo"><span class="cs2-map-art map-vertigo"><i></i></span><b>de_vertigo</b><small>殒命大厦 · 高层冷色</small></button>
+                <div class="cs2-map-picker">
+                  <div class="cs2-map-picker-head">
+                    <div><span>地图池</span><b>选择地图</b></div>
+                    <small><i></i>6 张现役地图 · 本地布局</small>
+                  </div>
+                  <div class="cs2-map-grid">${this.mapCardsMarkup()}</div>
+                  <div class="cs2-map-picker-foot"><span><i></i>经典雷达布局 · 本地低模重构</span><em>BOT 会按 A / B 路线进攻</em></div>
                 </div>
-                <div class="cs2-map-info"><span>当前选择</span><b class="cs2-map-label">荒漠迷城</b><small class="cs2-map-desc">沙色中路与开阔包点。适合第一场热身。</small></div>
-                <div class="cs2-lobby-actions"><button class="cs2-primary-btn cs2-start-btn"><span>开始比赛</span><svg viewBox="0 0 24 24"><use href="#i-play"></use></svg></button><button class="cs2-secondary-btn cs2-matchmaking-btn"><span>寻找竞技比赛</span><svg viewBox="0 0 24 24"><use href="#i-search"></use></svg></button><span>本地 BOT · 假匹配</span></div>
-                <small class="cs2-fallback-note">WASD 移动 · 左键射击 · R 装填 · Esc 释放鼠标。鼠标锁定失败时，可用 Q/E 转向、方向键瞄准、空格射击。</small>
               </section>
+              <aside class="cs2-lobby-side">
+                <div class="cs2-party-card">
+                  <div class="cs2-party-head"><span>你的队伍</span><b>1 / 5</b></div>
+                  <div class="cs2-party-list">
+                    <div class="cs2-party-row"><span class="cs2-party-avatar me">S</span><div><b>Sniper</b><small>队长 · 你</small></div><em>READY</em></div>
+                    <div class="cs2-party-row"><span class="cs2-party-avatar">K</span><div><b>Kai</b><small>本地 BOT</small></div><em>BOT</em></div>
+                    <div class="cs2-party-row"><span class="cs2-party-avatar">N</span><div><b>Nova</b><small>本地 BOT</small></div><em>BOT</em></div>
+                    <div class="cs2-party-row is-empty"><span class="cs2-party-avatar">+</span><div><b>开放槽位</b><small>等待好友加入</small></div><em>+</em></div>
+                  </div>
+                  <button class="cs2-party-invite" type="button">邀请好友</button>
+                </div>
+                <div class="cs2-news-card">
+                  <span class="cs2-news-kicker">本周轮换</span>
+                  <b>优先匹配 · 第 4 赛季</b>
+                  <p>完成回合、赢下拆包战，提升你的竞技评分。所有对局均在本地运行。</p>
+                  <div class="cs2-news-tags"><span>DUST II</span><span>MIRAGE</span><span>INFERNO</span></div>
+                </div>
+                <div class="cs2-server-card"><span><i></i>服务器在线</span><b>128 tick</b><small>延迟 8 ms · 本地实例</small></div>
+              </aside>
             </div>
+            <footer class="cs2-lobby-footer">
+              <span class="cs2-footer-status"><i></i>已连接 AISNIPER 竞技服务器</span>
+              <span>训练赛 · 本地 BOT · 无真实联网</span>
+              <span class="cs2-footer-hint">WASD 移动 · 左键射击 · R 装填 · Esc 释放鼠标</span>
+            </footer>
           </div>
           <div class="cs2-overlay cs2-match-panel" hidden>
             <div class="cs2-match-shell">
@@ -191,12 +443,12 @@
             <button class="cs2-text-btn cs2-abandon-btn" type="button">返回大厅</button>
           </div>
           <div class="cs2-overlay cs2-over-panel" hidden>
-            <span class="cs2-eyebrow">行动结束</span>
-            <h2>舰体完整度归零。</h2>
+            <span class="cs2-eyebrow">比赛结束</span>
+            <h2>反恐精英落败。</h2>
             <div class="cs2-result-grid">
               <div><span>淘汰</span><b class="cs2-final-kills">0</b></div>
               <div><span>命中率</span><b class="cs2-final-accuracy">0%</b></div>
-              <div><span>波次</span><b class="cs2-final-wave">1</b></div>
+              <div><span>回合</span><b class="cs2-final-wave">1</b></div>
               <div><span>得分</span><b class="cs2-final-score">0</b></div>
             </div>
             <div class="cs2-over-actions"><button class="cs2-primary-btn cs2-retry-btn"><span>再来一局</span><svg viewBox="0 0 24 24"><use href="#i-reload"></use></svg></button><button class="cs2-text-btn cs2-back-lobby-btn" type="button">返回大厅</button></div>
@@ -218,6 +470,8 @@
         wave: $('.cs2-wave', this.root),
         timer: $('.cs2-timer', this.root),
         killfeed: $('.cs2-killfeed', this.root),
+        location: $('.cs2-location', this.root),
+        roundScore: $('.cs2-round-score', this.root),
         hitmarker: $('.cs2-hitmarker', this.root),
         damage: $('.cs2-damage', this.root),
         startBtn: $('.cs2-start-btn', this.root),
@@ -231,6 +485,7 @@
         loadingStage: $('.cs2-load-stage', this.root),
         loadingSkip: $('.cs2-load-skip', this.root),
         selectedMapName: $('.cs2-selected-map-name', this.root),
+        playMapThumb: $('.cs2-play-mapthumb', this.root),
         mapLabel: $('.cs2-map-label', this.root),
         mapDesc: $('.cs2-map-desc', this.root),
         hudMapLabel: $('.cs2-team-card small', this.root),
@@ -263,6 +518,17 @@
       this.refs.matchAccept?.addEventListener('click', () => this.acceptMatch());
       $$('[data-cs2-map]', this.root).forEach((button) => {
         button.addEventListener('click', () => this.selectMap(button.dataset.cs2Map));
+      });
+      $$('.cs2-mainnav-tabs button', this.root).forEach((button) => {
+        button.addEventListener('click', () => {
+          $$('.cs2-mainnav-tabs button', this.root).forEach((entry) => entry.classList.toggle('is-active', entry === button));
+          const label = button.querySelector('span')?.textContent || '';
+          if (label === '开始游戏') return;
+          this.host?.showToast?.({ title: `CS2 · ${label}`, message: '当前版本开放优先匹配、地图池与本地训练赛。', icon: 'app-steam' });
+        });
+      });
+      $('.cs2-party-invite', this.root)?.addEventListener('click', () => {
+        this.host?.showToast?.({ title: '邀请已复制', message: '好友邀请链接已复制到剪贴板（本地模拟）。', icon: 'app-steam' });
       });
       this.refs.canvas?.addEventListener('pointerdown', (event) => {
         if (event.button !== 0 || !this.running || this.over) return;
@@ -375,45 +641,319 @@
       fill.position.set(-8, 4, -5);
       this.scene.add(fill);
       this.fillLight = fill;
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x192430, roughness: 0.92, metalness: 0.08 });
+      this.ambientLight = new THREE.AmbientLight(0x6c8099, 0.46);
+      this.scene.add(this.ambientLight);
+      this.scene.fog = new THREE.FogExp2(0x9b7e5c, 0.0068);
+      this.buildMapGeometry(this.selectedMap, { lobby: true });
+    }
+
+    cs2GroundTexture(palette, kind = 'sand') {
+      if (typeof document === 'undefined') return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      let seed = 0x2f6e2b1;
+      const random = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+      const base = new THREE.Color(palette.floor);
+      ctx.fillStyle = `#${base.getHexString()}`;
+      ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 2400; i += 1) {
+        const alpha = 0.025 + random() * 0.09;
+        ctx.fillStyle = random() > 0.5 ? `rgba(255,255,255,${alpha})` : `rgba(0,0,0,${alpha * 1.4})`;
+        const size = 1 + Math.floor(random() * 8);
+        ctx.fillRect(random() * 512, random() * 512, size, size);
+      }
+      ctx.strokeStyle = 'rgba(24,20,14,.2)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i <= 512; i += 64) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, 512);
+        ctx.moveTo(0, i);
+        ctx.lineTo(512, i);
+        ctx.stroke();
+      }
+      if (kind === 'sand') {
+        for (let i = 0; i < 34; i += 1) {
+          ctx.strokeStyle = `rgba(255,238,196,${0.03 + random() * 0.05})`;
+          ctx.beginPath();
+          const y = random() * 512;
+          ctx.moveTo(0, y);
+          ctx.bezierCurveTo(150, y + 24, 320, y - 20, 512, y + 8);
+          ctx.stroke();
+        }
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(14, 14);
+      return texture;
+    }
+
+    makeSiteTexture(letter, color = '#ffb45f') {
+      if (typeof document === 'undefined') return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.clearRect(0, 0, 256, 256);
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.64;
+      ctx.lineWidth = 7;
+      ctx.strokeRect(22, 22, 212, 212);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = color;
+      ctx.font = '800 152px "Arial Narrow", "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(letter, 128, 140);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      return texture;
+    }
+
+    mapPreview(key) {
+      const layout = this.mapData[key] || this.mapData.mirage;
+      const b = layout.bounds;
+      const W = 160;
+      const H = 96;
+      const pad = 8;
+      const sx = (W - pad * 2) / Math.max(1, b.maxX - b.minX);
+      const sz = (H - pad * 2) / Math.max(1, b.maxZ - b.minZ);
+      const tx = (x) => pad + (x - b.minX) * sx;
+      const tz = (z) => pad + (z - b.minZ) * sz;
+      const wallColor = `#${new THREE.Color(layout.palette.wall).offsetHSL(0, 0, 0.18).getHexString()}`;
+      const floorColor = `#${new THREE.Color(layout.palette.floor).offsetHSL(0, 0, -0.08).getHexString()}`;
+      const accent = `#${new THREE.Color(layout.palette.trim).getHexString()}`;
+      const walls = layout.walls.map(([x, z, w, d]) => (
+        `<rect x="${(tx(x - w / 2)).toFixed(1)}" y="${(tz(z - d / 2)).toFixed(1)}" width="${Math.max(1, w * sx).toFixed(1)}" height="${Math.max(1, d * sz).toFixed(1)}" fill="${wallColor}" stroke="rgba(255,255,255,.14)" stroke-width=".5"/>`
+      )).join('');
+      const crates = layout.crates.map(([x, z, w, d]) => (
+        `<rect x="${(tx(x - w / 2)).toFixed(1)}" y="${(tz(z - d / 2)).toFixed(1)}" width="${Math.max(1, w * sx).toFixed(1)}" height="${Math.max(1, d * sz).toFixed(1)}" fill="${accent}" opacity=".52"/>`
+      )).join('');
+      const sites = layout.sites.map((site) => (
+        `<circle cx="${tx(site.x).toFixed(1)}" cy="${tz(site.z).toFixed(1)}" r="5.2" fill="${site.id === 'A' ? '#f0a050' : '#69bde0'}" opacity=".88"/><text x="${tx(site.x).toFixed(1)}" y="${(tz(site.z) + 2.4).toFixed(1)}" fill="#0b1115" font-size="5.8" font-weight="800" text-anchor="middle">${site.id}</text>`
+      )).join('');
+      const paths = layout.botPaths.map((path) => (
+        `<polyline points="${path.map(([x, z]) => `${tx(x).toFixed(1)},${tz(z).toFixed(1)}`).join(' ')}" fill="none" stroke="${accent}" stroke-width=".8" stroke-dasharray="2 3" opacity=".42"/>`
+      )).join('');
+      return `<svg class="cs2-map-blueprint" viewBox="0 0 ${W} ${H}" aria-hidden="true"><rect x="0" y="0" width="${W}" height="${H}" fill="${floorColor}"/><rect x="${pad}" y="${pad}" width="${W - pad * 2}" height="${H - pad * 2}" fill="rgba(0,0,0,.16)" stroke="rgba(255,255,255,.18)" stroke-width=".7"/>${paths}${walls}${crates}${sites}</svg>`;
+    }
+
+    buildMapGeometry(key = this.selectedMap, options = {}) {
+      const layout = this.mapData[key] || this.mapData.mirage;
+      this.mapLayout = layout;
+      this.currentMapKey = key;
+      if (this.mapGroup) {
+        this.scene.remove(this.mapGroup);
+        this.mapGroup.traverse((child) => {
+          if (child.geometry) child.geometry.dispose?.();
+          if (child.material) {
+            if (Array.isArray(child.material)) child.material.forEach((material) => material.dispose?.());
+            else child.material.dispose?.();
+          }
+        });
+      }
+      const group = new THREE.Group();
+      this.mapGroup = group;
+      this.scene.add(group);
+      this.obstacles = [];
+      this.colliders = [];
+      const palette = layout.palette;
+      const bounds = layout.bounds;
+      const width = bounds.maxX - bounds.minX;
+      const depth = bounds.maxZ - bounds.minZ;
+      const centerX = (bounds.minX + bounds.maxX) * 0.5;
+      const centerZ = (bounds.minZ + bounds.maxZ) * 0.5;
+      this.mapCenter = new THREE.Vector3(centerX, 0, centerZ);
+      this.scene.background = new THREE.Color(palette.bg);
+      if (this.scene.fog) {
+        this.scene.fog.color.setHex(palette.fog);
+        this.scene.fog.density = 0.0068;
+      }
+      this.sunLight.color.setHex(palette.sun);
+      this.hemiLight.color.setHex(palette.sun);
+      this.fillLight.color.setHex(palette.fill);
+
+      const groundTexture = this.cs2GroundTexture(palette, key === 'dust2' || key === 'anubis' ? 'sand' : 'stone');
+      const floorMat = new THREE.MeshStandardMaterial({
+        map: groundTexture || null, color: groundTexture ? 0xffffff : palette.floor,
+        roughness: 0.95, metalness: 0.03
+      });
       this.floorMaterial = floorMat;
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(56, 56), floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      this.scene.add(floor);
-      const grid = new THREE.GridHelper(56, 56, 0x38546d, 0x1c2a38);
-      grid.position.y = 0.012;
-      this.scene.add(grid);
-      this.arenaGrid = grid;
-      const wallMat = new THREE.MeshStandardMaterial({ color: 0x1b2732, roughness: 0.8, metalness: 0.18 });
+      const outerFloor = new THREE.Mesh(new THREE.PlaneGeometry(width + 140, depth + 140), floorMat);
+      outerFloor.rotation.x = -Math.PI / 2;
+      outerFloor.position.set(centerX, -0.05, centerZ);
+      group.add(outerFloor);
+      const playFloor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), new THREE.MeshStandardMaterial({
+        map: groundTexture || null, color: groundTexture ? 0xf2e6d4 : palette.floor,
+        roughness: 0.94, metalness: 0.02
+      }));
+      playFloor.rotation.x = -Math.PI / 2;
+      playFloor.position.set(centerX, 0.01, centerZ);
+      playFloor.receiveShadow = true;
+      group.add(playFloor);
+
+      const wallColor = new THREE.Color(palette.wall);
+      const plasterColor = wallColor.clone().offsetHSL(0, 0, 0.1);
+      const brickColor = wallColor.clone().offsetHSL(-0.01, 0.05, -0.08);
+      const stoneColor = wallColor.clone().offsetHSL(0, -0.03, -0.03);
+      const metalColor = new THREE.Color(palette.crate).offsetHSL(0, -0.03, 0.12);
+      const materialFor = (kind) => new THREE.MeshStandardMaterial({
+        color: kind === 'plaster' ? plasterColor : kind === 'brick' ? brickColor : kind === 'stone' ? stoneColor : kind === 'metal' ? metalColor : wallColor,
+        roughness: kind === 'metal' ? 0.58 : 0.94,
+        metalness: kind === 'metal' ? 0.45 : 0.04
+      });
+      const wallMat = materialFor('sand');
+      const trimMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(palette.trim), emissive: new THREE.Color(palette.trim),
+        emissiveIntensity: 0.06, roughness: 0.72
+      });
+      const crateMat = new THREE.MeshStandardMaterial({ color: palette.crate, roughness: 0.84, metalness: 0.08 });
       this.wallMaterial = wallMat;
-      const trimMat = new THREE.MeshStandardMaterial({ color: 0xd78a39, emissive: 0x3a1b06, roughness: 0.55 });
       this.trimMaterial = trimMat;
-      const addBox = (w, h, d, x, y, z, mat = wallMat, obstacle = true) => {
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      this.crateMaterial = crateMat;
+
+      const addBox = (w, h, d, x, y, z, material, collidable = true, rotate = 0) => {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
         mesh.position.set(x, y, z);
-        this.scene.add(mesh);
-        if (obstacle) this.obstacles.push(mesh);
+        mesh.rotation.y = rotate;
+        group.add(mesh);
+        if (collidable && h > 0.6) {
+          this.obstacles.push(mesh);
+          this.colliders.push({ minX: x - w * 0.5, maxX: x + w * 0.5, minZ: z - d * 0.5, maxZ: z + d * 0.5, height: h });
+        }
         return mesh;
       };
-      addBox(56, 5, 1, 0, 2.5, -28);
-      addBox(56, 5, 1, 0, 2.5, 28);
-      addBox(1, 5, 56, -28, 2.5, 0);
-      addBox(1, 5, 56, 28, 2.5, 0);
-      addBox(12, 0.08, 0.3, 0, 0.09, 1.5, trimMat, false);
-      addBox(0.3, 0.08, 16, -9, 0.09, -8, trimMat, false);
-      addBox(0.3, 0.08, 16, 9, 0.09, -8, trimMat, false);
-      const crateMat = new THREE.MeshStandardMaterial({ color: 0x334553, roughness: 0.82, metalness: 0.12 });
-      this.crateMaterial = crateMat;
-      const crateTrim = new THREE.MeshStandardMaterial({ color: 0xc2823e, roughness: 0.64 });
-      [
-        [-7, 0.8, 1, 2.4, 1.6, 2.4], [7, 0.8, -3, 2.2, 1.6, 2.2], [-13, 1.1, -9, 3.2, 2.2, 2], [12, 0.7, 8, 1.8, 1.4, 3.4], [2, 0.55, -14, 4.4, 1.1, 1.8], [-3, 0.65, 15, 2.2, 1.3, 2.2]
-      ].forEach(([x, y, z, w, h, d]) => {
-        addBox(w, h, d, x, y, z, crateMat);
-        addBox(w + 0.04, 0.08, d + 0.04, x, y + h / 2 - 0.06, z, crateTrim, false);
+      const addWall = (x, z, w, d, kind = 'sand', height = 5) => {
+        const material = materialFor(kind);
+        const mesh = addBox(w, height, d, x, height * 0.5, z, material);
+        const cap = addBox(w + 0.22, 0.24, d + 0.22, x, height + 0.12, z, trimMat, false);
+        cap.material = trimMat;
+        if (w > 5.5 && d > 3) {
+          const paneMat = new THREE.MeshStandardMaterial({
+            color: 0x1a2329, emissive: new THREE.Color(palette.fill), emissiveIntensity: 0.16,
+            roughness: 0.28, metalness: 0.35
+          });
+          const count = Math.min(4, Math.max(1, Math.floor(w / 6)));
+          for (let i = 0; i < count; i += 1) {
+            const px = x - w * 0.5 + (i + 0.5) * (w / count);
+            addBox(w / count * 0.42, 0.68, 0.06, px, height * 0.62, z + d * 0.5 + 0.015, paneMat, false);
+          }
+        }
+        return mesh;
+      };
+
+      const boundaryHeight = 7;
+      addWall(centerX, bounds.minZ - 0.5, width + 2, 1.2, 'stone', boundaryHeight);
+      addWall(centerX, bounds.maxZ + 0.5, width + 2, 1.2, 'stone', boundaryHeight);
+      addWall(bounds.minX - 0.5, centerZ, 1.2, depth + 2, 'stone', boundaryHeight);
+      addWall(bounds.maxX + 0.5, centerZ, 1.2, depth + 2, 'stone', boundaryHeight);
+
+      layout.walls.forEach(([x, z, w, d, kind]) => addWall(x, z, w, d, kind || 'sand', 4.6));
+      layout.crates.forEach(([x, z, w, d, h, kind]) => {
+        const mat = kind === 'metal' ? materialFor('metal') : crateMat;
+        addBox(w, h, d, x, h * 0.5, z, mat);
+        addBox(w + 0.12, 0.12, d + 0.12, x, h + 0.06, z, trimMat, false);
       });
-      addBox(0.22, 4.2, 0.22, -18, 2.1, -18, crateTrim, false);
-      addBox(0.22, 4.2, 0.22, 18, 2.1, -18, crateTrim, false);
-      this.scene.add(new THREE.AmbientLight(0x6c8099, 0.46));
+      (layout.arches || []).forEach(([x, z, w, d, h]) => {
+        const pillar = 1.2;
+        addWall(x - w * 0.5 + pillar * 0.5, z, pillar, d, 'stone', h);
+        addWall(x + w * 0.5 - pillar * 0.5, z, pillar, d, 'stone', h);
+        addBox(w, 1.1, d, x, h - 0.55, z, materialFor('stone'), false);
+      });
+
+      const accentA = new THREE.Color('#ffb15f');
+      const accentB = new THREE.Color('#6cc6e8');
+      layout.sites.forEach((site) => {
+        const color = site.id === 'A' ? accentA : accentB;
+        const padMat = new THREE.MeshStandardMaterial({
+          color: color.clone().multiplyScalar(0.28), emissive: color, emissiveIntensity: 0.12,
+          roughness: 0.9, metalness: 0.02, transparent: true, opacity: 0.92
+        });
+        addBox(9.5, 0.08, 9.5, site.x, 0.05, site.z, padMat, false);
+        const texture = this.makeSiteTexture(site.id, site.id === 'A' ? '#ffbd75' : '#86dcff');
+        if (texture) {
+          const plane = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 6.4), new THREE.MeshBasicMaterial({
+            map: texture, transparent: true, depthWrite: false, opacity: 0.9
+          }));
+          plane.rotation.x = -Math.PI / 2;
+          plane.position.set(site.x, 0.12, site.z);
+          group.add(plane);
+        }
+        const glow = new THREE.PointLight(color, 0.65, 18, 2);
+        glow.position.set(site.x, 3, site.z);
+        group.add(glow);
+      });
+
+      const spawnPad = (x, z, color) => {
+        const pad = new THREE.Mesh(new THREE.CircleGeometry(4.4, 28), new THREE.MeshBasicMaterial({
+          color, transparent: true, opacity: 0.16, depthWrite: false
+        }));
+        pad.rotation.x = -Math.PI / 2;
+        pad.position.set(x, 0.06, z);
+        group.add(pad);
+        const ring = new THREE.Mesh(new THREE.RingGeometry(4.1, 4.5, 28), new THREE.MeshBasicMaterial({
+          color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false
+        }));
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(x, 0.08, z);
+        group.add(ring);
+      };
+      spawnPad(layout.spawn.x, layout.spawn.z, 0x6cc6e8);
+      spawnPad(layout.tSpawn.x, layout.tSpawn.z, 0xe09a4e);
+
+      (layout.callouts || []).forEach((callout) => {
+        if (callout.text === 'T 出生点' || callout.text === 'CT 出生点') return;
+        const label = makeLabel(callout.text, callout.color || '#e9ddc7');
+        label.position.set(callout.x, 2.35, callout.z);
+        label.scale.set(2.9, 0.58, 1);
+        group.add(label);
+      });
+
+      const skylineColor = new THREE.Color(palette.wall).offsetHSL(0, -0.06, -0.12);
+      const skylineMat = new THREE.MeshStandardMaterial({ color: skylineColor, roughness: 0.96, metalness: 0.02 });
+      const randomSeed = (name) => {
+        let value = 0;
+        for (let i = 0; i < name.length; i += 1) value = (value * 31 + name.charCodeAt(i)) >>> 0;
+        return () => {
+          value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
+          return value / 4294967296;
+        };
+      };
+      const random = randomSeed(key);
+      for (let i = 0; i < 26; i += 1) {
+        const angle = (i / 26) * Math.PI * 2 + random() * 0.12;
+        const radius = Math.max(width, depth) * (0.72 + random() * 0.42);
+        const x = centerX + Math.cos(angle) * radius;
+        const z = centerZ + Math.sin(angle) * radius;
+        const h = 7 + random() * (key === 'vertigo' ? 34 : 22);
+        addBox(5 + random() * 9, h, 5 + random() * 9, x, h * 0.5 - 0.2, z, skylineMat, false, random() * 0.5);
+      }
+      for (let i = 0; i < 18; i += 1) {
+        const x = bounds.minX + 1 + random() * (width - 2);
+        const z = bounds.minZ + 1 + random() * (depth - 2);
+        if (Math.hypot(x - layout.spawn.x, z - layout.spawn.z) < 5) continue;
+        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 1.05, 8), new THREE.MeshStandardMaterial({
+          color: i % 3 ? 0x4c3b28 : 0x40545b, roughness: 0.8, metalness: 0.22
+        }));
+        barrel.position.set(x, 0.53, z);
+        group.add(barrel);
+      }
+
+      this.buildNavGrid();
+      this.applyMapTheme(key);
+      if (!options.lobby) {
+        this.player.set(layout.spawn.x, 1.7, layout.spawn.z);
+        this.yaw = layout.spawn.yaw || 0;
+        this.pitch = 0;
+      }
+      return layout;
     }
 
     buildGun() {
@@ -439,6 +979,136 @@
       this.gunRecoil = 0;
     }
 
+    buildNavGrid() {
+      const layout = this.mapLayout;
+      if (!layout) return null;
+      const bounds = layout.bounds;
+      const step = 1.25;
+      const cols = Math.max(4, Math.floor((bounds.maxX - bounds.minX) / step));
+      const rows = Math.max(4, Math.floor((bounds.maxZ - bounds.minZ) / step));
+      const blocked = new Uint8Array(cols * rows);
+      for (let row = 0; row < rows; row += 1) {
+        for (let col = 0; col < cols; col += 1) {
+          const x = bounds.minX + (col + 0.5) * step;
+          const z = bounds.minZ + (row + 0.5) * step;
+          let hit = false;
+          for (const box of this.colliders) {
+            if (x + 0.45 > box.minX && x - 0.45 < box.maxX && z + 0.45 > box.minZ && z - 0.45 < box.maxZ) {
+              hit = true;
+              break;
+            }
+          }
+          if (hit) blocked[row * cols + col] = 1;
+        }
+      }
+      this.navGrid = { bounds, step, cols, rows, blocked };
+      return this.navGrid;
+    }
+
+    navCell(x, z) {
+      const grid = this.navGrid;
+      if (!grid) return null;
+      const col = clamp(Math.floor((x - grid.bounds.minX) / grid.step), 0, grid.cols - 1);
+      const row = clamp(Math.floor((z - grid.bounds.minZ) / grid.step), 0, grid.rows - 1);
+      return { col, row };
+    }
+
+    nearestFreeNavCell(cell) {
+      const grid = this.navGrid;
+      if (!grid || !cell) return null;
+      const isFree = (col, row) => col >= 0 && row >= 0 && col < grid.cols && row < grid.rows
+        && !grid.blocked[row * grid.cols + col];
+      if (isFree(cell.col, cell.row)) return cell;
+      for (let radius = 1; radius <= 8; radius += 1) {
+        for (let dr = -radius; dr <= radius; dr += 1) {
+          for (let dc = -radius; dc <= radius; dc += 1) {
+            if (Math.abs(dr) !== radius && Math.abs(dc) !== radius) continue;
+            const col = cell.col + dc;
+            const row = cell.row + dr;
+            if (isFree(col, row)) return { col, row };
+          }
+        }
+      }
+      return null;
+    }
+
+    findNavPath(start, goal) {
+      const grid = this.navGrid;
+      if (!grid) return [[goal.x, goal.z]];
+      const startCell = this.nearestFreeNavCell(this.navCell(start.x, start.z));
+      const goalCell = this.nearestFreeNavCell(this.navCell(goal.x, goal.z));
+      if (!startCell || !goalCell) return [[goal.x, goal.z]];
+      const size = grid.cols * grid.rows;
+      const startIndex = startCell.row * grid.cols + startCell.col;
+      const goalIndex = goalCell.row * grid.cols + goalCell.col;
+      const gScore = new Float32Array(size);
+      gScore.fill(Infinity);
+      const fScore = new Float32Array(size);
+      fScore.fill(Infinity);
+      const cameFrom = new Int32Array(size);
+      cameFrom.fill(-1);
+      const closed = new Uint8Array(size);
+      const open = [startIndex];
+      const inOpen = new Uint8Array(size);
+      inOpen[startIndex] = 1;
+      const heuristic = (index) => {
+        const col = index % grid.cols;
+        const row = (index / grid.cols) | 0;
+        return Math.hypot(col - goalCell.col, row - goalCell.row);
+      };
+      gScore[startIndex] = 0;
+      fScore[startIndex] = heuristic(startIndex);
+      let found = false;
+      while (open.length) {
+        let bestAt = 0;
+        for (let i = 1; i < open.length; i += 1) {
+          if (fScore[open[i]] < fScore[open[bestAt]]) bestAt = i;
+        }
+        const current = open.splice(bestAt, 1)[0];
+        inOpen[current] = 0;
+        if (current === goalIndex) { found = true; break; }
+        closed[current] = 1;
+        const col = current % grid.cols;
+        const row = (current / grid.cols) | 0;
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            if (!dc && !dr) continue;
+            const nc = col + dc;
+            const nr = row + dr;
+            if (nc < 0 || nr < 0 || nc >= grid.cols || nr >= grid.rows) continue;
+            const next = nr * grid.cols + nc;
+            if (grid.blocked[next] || closed[next]) continue;
+            if (dc && dr && (grid.blocked[row * grid.cols + nc] || grid.blocked[nr * grid.cols + col])) continue;
+            const cost = dc && dr ? 1.414 : 1;
+            const tentative = gScore[current] + cost;
+            if (tentative >= gScore[next]) continue;
+            cameFrom[next] = current;
+            gScore[next] = tentative;
+            fScore[next] = tentative + heuristic(next);
+            if (!inOpen[next]) {
+              open.push(next);
+              inOpen[next] = 1;
+            }
+          }
+        }
+      }
+      if (!found) return [[goal.x, goal.z]];
+      const path = [];
+      let node = goalIndex;
+      while (node !== -1) {
+        const col = node % grid.cols;
+        const row = (node / grid.cols) | 0;
+        path.push([
+          grid.bounds.minX + (col + 0.5) * grid.step,
+          grid.bounds.minZ + (row + 0.5) * grid.step
+        ]);
+        if (node === startIndex) break;
+        node = cameFrom[node];
+      }
+      path.reverse();
+      return path.length ? path : [[goal.x, goal.z]];
+    }
+
     selectMap(key) {
       if (!this.mapData[key]) return;
       this.selectedMap = key;
@@ -449,7 +1119,11 @@
       if (this.refs.selectedMapName) this.refs.selectedMapName.textContent = map.name;
       if (this.refs.mapLabel) this.refs.mapLabel.textContent = map.label;
       if (this.refs.mapDesc) this.refs.mapDesc.textContent = map.desc;
+      if (this.refs.playMapThumb) {
+        this.refs.playMapThumb.innerHTML = `${this.mapPreview(key)}<span class="cs2-play-mapletter">${map.sites[0].id}</span><small>SELECTED</small>`;
+      }
       this.applyMapTheme(key);
+      if (this.initialized && !this.running) this.buildMapGeometry(key, { lobby: true });
     }
 
     applyMapTheme(key) {
@@ -457,15 +1131,15 @@
       if (!this.initialized) return;
       if (this.scene?.background) this.scene.background.setHex(map.bg);
       if (this.scene?.fog) this.scene.fog.color.setHex(map.fog);
-      this.floorMaterial?.color.setHex(map.floor);
+      if (this.floorMaterial) this.floorMaterial.color.setHex(this.floorMaterial.map ? 0xffffff : map.floor);
       this.wallMaterial?.color.setHex(map.wall);
       this.trimMaterial?.color.setHex(map.trim);
-      this.trimMaterial?.emissive.setHex(map.fog);
+      this.trimMaterial?.emissive.setHex(map.trim);
       this.crateMaterial?.color.setHex(map.crate);
       this.sunLight?.color.setHex(map.sun);
       this.fillLight?.color.setHex(map.fill);
       this.hemiLight?.color.setHex(map.sun);
-      if (this.refs.hudMapLabel) this.refs.hudMapLabel.textContent = `${map.name} · 竞技训练`;
+      if (this.refs.hudMapLabel) this.refs.hudMapLabel.textContent = `${map.name} · 竞技模式`;
     }
 
     returnToLobby() {
@@ -489,10 +1163,19 @@
     updateLobbyCamera(dt) {
       this.lobbyTime = (this.lobbyTime || 0) + dt;
       if (this.gun) this.gun.visible = false;
-      const angle = this.lobbyTime * 0.09;
-      const radius = 14 + Math.sin(this.lobbyTime * 0.2) * 1.4;
-      this.camera.position.set(Math.sin(angle) * radius, 5.5 + Math.sin(this.lobbyTime * 0.4) * 0.45, Math.cos(angle) * radius);
-      this.camera.lookAt(0, 1.15, 0);
+      const layout = this.mapLayout || this.mapData[this.selectedMap] || this.mapData.mirage;
+      const bounds = layout.bounds;
+      const centerX = (bounds.minX + bounds.maxX) * 0.5;
+      const centerZ = (bounds.minZ + bounds.maxZ) * 0.5;
+      const span = Math.max(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ);
+      const angle = -0.7 + this.lobbyTime * 0.045;
+      const radius = span * (0.62 + Math.sin(this.lobbyTime * 0.13) * 0.04);
+      this.camera.position.set(
+        centerX + Math.sin(angle) * radius,
+        21 + Math.sin(this.lobbyTime * 0.23) * 1.8,
+        centerZ + Math.cos(angle) * radius
+      );
+      this.camera.lookAt(centerX, 1.2, centerZ);
     }
 
     startLoop() {
@@ -556,11 +1239,15 @@
       this.hits = 0;
       this.elapsed = 0;
       this.wave = 0;
+      this.roundsWon = 0;
+      this.roundsLost = 0;
       this.lastMap = this.selectedMap;
-      this.applyMapTheme(this.selectedMap);
-      this.player.set(0, 1.7, 9);
-      this.yaw = 0;
+      const layout = this.buildMapGeometry(this.selectedMap);
+      this.player.set(layout.spawn.x, 1.7, layout.spawn.z);
+      this.yaw = layout.spawn.yaw || 0;
       this.pitch = 0;
+      this.camera.position.copy(this.player);
+      this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
       this.reloading = false;
       this.nextShot = 0;
       clearTimeout(this.reloadTimer);
@@ -576,7 +1263,7 @@
       this.refs.retryBtn?.blur();
       this.refs.resumeBtn?.blur();
       this.updateHUD();
-      this.spawnWave(4);
+      this.spawnWave(5);
       this.clock.getDelta();
       this.requestLock();
     }
@@ -787,17 +1474,37 @@
 
     createBot(index, total) {
       const group = new THREE.Group();
-      const angle = (Math.PI * 2 * index) / Math.max(1, total) + Math.random() * 0.4;
-      const radius = 12 + Math.random() * 8;
-      group.position.set(Math.sin(angle) * radius, 0, Math.cos(angle) * radius);
+      const layout = this.mapLayout || this.mapData[this.selectedMap] || this.mapData.mirage;
+      const spawn = layout.tSpawn;
+      const angle = (Math.PI * 2 * index) / Math.max(1, total);
+      const radius = 1.2 + (index % 3) * 1.1;
+      group.position.set(spawn.x + Math.cos(angle) * radius, 0, spawn.z + Math.sin(angle) * radius);
+      const site = layout.sites[index % layout.sites.length];
+      const offsetX = (Math.random() - 0.5) * 2.8;
+      const offsetZ = (Math.random() - 0.5) * 2.8;
+      const navPath = this.findNavPath(
+        { x: group.position.x, z: group.position.z },
+        { x: site.x + offsetX, z: site.z + offsetZ }
+      );
+      const path = navPath.length ? navPath : [[spawn.x, spawn.z], [site.x, site.z]];
+      const names = ['Astra', 'Bolt', 'Cipher', 'Drift', 'Echo', 'Frost', 'Ghost', 'Hawk', 'Ivy', 'Jinx'];
       const bot = {
         group,
-        name: `BOT ${String(index + 1).padStart(2, '0')}`,
+        name: names[index % names.length],
+        team: 'T',
         health: 100,
         alive: true,
-        speed: 1.15 + Math.random() * 0.55 + this.wave * 0.06,
+        speed: 2.2 + Math.random() * 0.65,
         fireTimer: 900 + Math.random() * 1100,
-        bob: Math.random() * Math.PI * 2
+        bob: Math.random() * Math.PI * 2,
+        path,
+        pathIndex: 0,
+        site,
+        offsetX,
+        offsetZ,
+        stuckTimer: 0,
+        lastX: group.position.x,
+        lastZ: group.position.z
       };
       group.userData.bot = bot;
       const bodyMat = new THREE.MeshStandardMaterial({ color: index % 2 ? 0xb64b3a : 0x9b5d34, roughness: 0.72, metalness: 0.08 });
@@ -872,9 +1579,16 @@
       this.movePlayer(dt);
       this.updateBots(dt);
       this.updateTracers(dt);
+      this.updateCallout();
       this.updateHUD();
       if (this.bots.length && this.bots.every((bot) => !bot.alive) && !this.waveTimer && !this.over) {
-        this.waveTimer = setTimeout(() => this.spawnWave(this.wave + 4), 1050);
+        this.roundsWon += 1;
+        this.score += 500;
+        this.addKillfeed('回合胜利 · 所有 T 已被消灭');
+        this.updateWaveHUD();
+        this.waveTimer = setTimeout(() => {
+          if (!this.over) this.spawnWave(5);
+        }, 1450);
       }
     }
 
@@ -888,38 +1602,91 @@
       if (this.keys.has('KeyA')) direction.sub(right);
       if (direction.lengthSq() > 0) {
         direction.normalize().multiplyScalar((this.keys.has('ShiftLeft') ? 7.2 : 5.2) * dt);
-        this.player.add(direction);
+        this.movePlayerBy(direction.x, direction.z);
       }
-      this.player.x = clamp(this.player.x, -25.5, 25.5);
-      this.player.z = clamp(this.player.z, -25.5, 25.5);
       this.camera.position.copy(this.player);
       this.camera.position.y = 1.72 + Math.sin(this.elapsed * 10) * 0.012;
       this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
     }
 
+    playerBlocked(x, z) {
+      const radius = 0.38;
+      for (const box of this.colliders || []) {
+        if (x + radius > box.minX && x - radius < box.maxX && z + radius > box.minZ && z - radius < box.maxZ) return true;
+      }
+      return false;
+    }
+
+    movePlayerBy(dx, dz) {
+      const bounds = this.mapLayout?.bounds || { minX: -38, maxX: 38, minZ: -36, maxZ: 36 };
+      const nextX = clamp(this.player.x + dx, bounds.minX + 0.55, bounds.maxX - 0.55);
+      if (!this.playerBlocked(nextX, this.player.z)) this.player.x = nextX;
+      const nextZ = clamp(this.player.z + dz, bounds.minZ + 0.55, bounds.maxZ - 0.55);
+      if (!this.playerBlocked(this.player.x, nextZ)) this.player.z = nextZ;
+    }
+
     updateBots(dt) {
       const playerPos = new THREE.Vector3(this.player.x, 1.1, this.player.z);
+      const bounds = this.mapLayout?.bounds || { minX: -38, maxX: 38, minZ: -36, maxZ: 36 };
       this.bots.forEach((bot) => {
         if (!bot.alive) return;
         const pos = bot.group.position;
         const toPlayer = new THREE.Vector3(this.player.x - pos.x, 0, this.player.z - pos.z);
         const distance = toPlayer.length();
-        if (distance > 3.2) {
-          toPlayer.normalize();
-          pos.x += toPlayer.x * bot.speed * dt;
-          pos.z += toPlayer.z * bot.speed * dt;
+        const canSeePlayer = distance < 22 && this.hasLineOfSight(bot, playerPos);
+        if (canSeePlayer) {
+          bot.group.rotation.y = Math.atan2(this.player.x - pos.x, this.player.z - pos.z);
+          if (distance > 8 && distance < 18) {
+            const strafe = Math.sin(this.elapsed * 1.1 + bot.bob) * 0.6;
+            this.moveBotBy(bot, -toPlayer.z / Math.max(1, distance) * strafe * dt, toPlayer.x / Math.max(1, distance) * strafe * dt);
+          }
+          if (distance < 18 && !this.over) {
+            bot.fireTimer -= dt * 1000;
+            if (bot.fireTimer <= 0) {
+              bot.fireTimer = 760 + Math.random() * 980;
+              this.enemyShoot(bot);
+            }
+          }
+        } else {
+          let waypoint = bot.path[Math.min(bot.pathIndex, bot.path.length - 1)];
+          if (bot.pathIndex >= bot.path.length) {
+            const wobble = Math.sin(this.elapsed * 0.8 + bot.bob) * 2.2;
+            waypoint = [bot.site.x + wobble, bot.site.z];
+          }
+          const tx = waypoint[0] + bot.offsetX * 0.35;
+          const tz = waypoint[1] + bot.offsetZ * 0.35;
+          const dx = tx - pos.x;
+          const dz = tz - pos.z;
+          const targetDistance = Math.hypot(dx, dz);
+          if (targetDistance < 1.5) {
+            if (bot.pathIndex < bot.path.length) bot.pathIndex += 1;
+          } else {
+            const step = bot.speed * dt;
+            this.moveBotBy(bot, dx / targetDistance * step, dz / targetDistance * step);
+            bot.group.rotation.y = Math.atan2(dx, dz);
+          }
+          bot.stuckTimer += dt;
+          if (bot.stuckTimer > 1.1) {
+            const moved = Math.hypot(pos.x - bot.lastX, pos.z - bot.lastZ);
+            if (moved < 0.18 && bot.pathIndex < bot.path.length - 1) bot.pathIndex += 1;
+            bot.stuckTimer = 0;
+            bot.lastX = pos.x;
+            bot.lastZ = pos.z;
+          }
         }
         bot.bob += dt * 3.2;
         bot.group.position.y = Math.sin(bot.bob) * 0.025;
-        bot.group.rotation.y = Math.atan2(this.player.x - pos.x, this.player.z - pos.z);
-        if (distance < 15 && !this.over) {
-          bot.fireTimer -= dt * 1000;
-          if (bot.fireTimer <= 0 && this.hasLineOfSight(bot, playerPos)) {
-            bot.fireTimer = 950 + Math.random() * 1150;
-            this.enemyShoot(bot);
-          }
-        }
+        pos.x = clamp(pos.x, bounds.minX + 0.7, bounds.maxX - 0.7);
+        pos.z = clamp(pos.z, bounds.minZ + 0.7, bounds.maxZ - 0.7);
       });
+    }
+
+    moveBotBy(bot, dx, dz) {
+      const pos = bot.group.position;
+      const nextX = pos.x + dx;
+      if (!this.playerBlocked(nextX, pos.z)) pos.x = nextX;
+      const nextZ = pos.z + dz;
+      if (!this.playerBlocked(pos.x, nextZ)) pos.z = nextZ;
     }
 
     hasLineOfSight(bot, playerPos) {
@@ -992,8 +1759,9 @@
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
       const hits = raycaster.intersectObjects(this.botHitMeshes, false);
+      const wallHit = raycaster.intersectObjects(this.obstacles, false)[0];
       const origin = this.camera.position.clone().add(new THREE.Vector3(0, -0.2, 0));
-      if (hits.length) {
+      if (hits.length && !(wallHit && wallHit.distance < hits[0].distance)) {
         const hit = hits[0];
         const bot = hit.object.userData.bot;
         if (bot && bot.alive) {
@@ -1065,6 +1833,31 @@
       }, 1350);
     }
 
+    updateCallout() {
+      const layout = this.mapLayout;
+      if (!layout || !this.refs.location) return;
+      let nearest = null;
+      let nearestDistance = Infinity;
+      (layout.callouts || []).forEach((callout) => {
+        const distance = Math.hypot(this.player.x - callout.x, this.player.z - callout.z);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = callout;
+        }
+      });
+      if (!nearest || nearestDistance > 18) {
+        const site = layout.sites.reduce((best, entry) => {
+          const distance = Math.hypot(this.player.x - entry.x, this.player.z - entry.z);
+          return distance < best.distance ? { entry, distance } : best;
+        }, { entry: layout.sites[0], distance: Infinity });
+        nearest = site.distance < 20 ? { text: `${site.entry.id} 点` } : { text: '战场' };
+      }
+      if (nearest.text !== this.currentCallout) {
+        this.currentCallout = nearest.text;
+        this.refs.location.textContent = nearest.text;
+      }
+    }
+
     updateHUD() {
       if (!this.refs) return;
       this.refs.health.textContent = String(Math.max(0, Math.round(this.health)));
@@ -1077,11 +1870,14 @@
 
     updateWaveHUD() {
       if (this.refs.wave) this.refs.wave.textContent = String(this.wave).padStart(2, '0');
+      if (this.refs.roundScore) this.refs.roundScore.textContent = `CT ${this.roundsWon} · T ${Math.max(0, this.roundsLost)}`;
     }
 
     endGame() {
       if (this.over) return;
       this.over = true;
+      this.roundsLost += 1;
+      this.updateWaveHUD();
       this.running = false;
       this.paused = false;
       this.keys.clear();
