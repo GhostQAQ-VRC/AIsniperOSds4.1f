@@ -227,6 +227,38 @@
   /* ==========================================================================
      Counter-Strike 2 — low-poly training match
      ========================================================================== */
+  const CS2_WEAPONS = {
+    usp: { id: 'usp', name: 'USP-S', cn: 'USP 消音手枪', slot: 'secondary', category: 'pistol', price: 0, damage: 21, rate: 0.22, mag: 12, reserve: 24, spread: 0.0025, model: 'pistol', caliber: '9 × 19 mm', tone: '#7e9bad' },
+    p250: { id: 'p250', name: 'P250', cn: 'P250 手枪', slot: 'secondary', category: 'pistol', price: 300, damage: 24, rate: 0.18, mag: 13, reserve: 26, spread: 0.0032, model: 'pistol', caliber: '.40 S&W', tone: '#b28b65' },
+    fiveseven: { id: 'fiveseven', name: 'Five-SeveN', cn: 'FN 57 手枪', slot: 'secondary', category: 'pistol', price: 500, damage: 23, rate: 0.17, mag: 20, reserve: 40, spread: 0.0028, model: 'pistol', caliber: '5.7 × 28 mm', tone: '#7fa7b5' },
+    deagle: { id: 'deagle', name: 'Desert Eagle', cn: '沙漠之鹰', slot: 'secondary', category: 'pistol', price: 700, damage: 55, rate: 0.4, mag: 7, reserve: 21, spread: 0.0045, model: 'pistol', caliber: '.50 AE', tone: '#c7a36c' },
+    dualies: { id: 'dualies', name: 'Dual Berettas', cn: '双持贝瑞塔', slot: 'secondary', category: 'pistol', price: 300, damage: 18, rate: 0.12, mag: 30, reserve: 60, spread: 0.005, model: 'pistol', caliber: '9 × 19 mm', tone: '#8d8c9e' },
+    m4a1s: { id: 'm4a1s', name: 'M4A1-S', cn: 'M4A1 消音版', slot: 'primary', category: 'rifle', price: 2900, damage: 30, rate: 0.095, mag: 20, reserve: 80, spread: 0.0022, model: 'rifle', caliber: '5.56 × 45 mm', tone: '#6b8ea5' },
+    m4a4: { id: 'm4a4', name: 'M4A4', cn: 'M4A4 步枪', slot: 'primary', category: 'rifle', price: 3100, damage: 28, rate: 0.09, mag: 30, reserve: 90, spread: 0.0028, model: 'rifle', caliber: '5.56 × 45 mm', tone: '#7f8e96' },
+    aug: { id: 'aug', name: 'AUG', cn: 'AUG 狙击步枪', slot: 'primary', category: 'rifle', price: 3300, damage: 32, rate: 0.1, mag: 30, reserve: 90, spread: 0.002, model: 'rifle', caliber: '5.56 × 45 mm', tone: '#7d9c76' },
+    ssg08: { id: 'ssg08', name: 'SSG 08', cn: 'SSG 08 狙击枪', slot: 'primary', category: 'sniper', price: 1700, damage: 70, rate: 1.25, mag: 10, reserve: 30, spread: 0.0012, model: 'rifle', caliber: '.308 Win', tone: '#6b857e' },
+    awp: { id: 'awp', name: 'AWP', cn: 'AWP 狙击枪', slot: 'primary', category: 'sniper', price: 4750, damage: 115, rate: 1.46, mag: 5, reserve: 20, spread: 0.0008, model: 'rifle', caliber: '.338 Lapua', tone: '#4f7f91' },
+    mp9: { id: 'mp9', name: 'MP9', cn: 'MP9 冲锋枪', slot: 'primary', category: 'smg', price: 1250, damage: 18, rate: 0.07, mag: 30, reserve: 120, spread: 0.0042, model: 'rifle', caliber: '9 × 19 mm', tone: '#788e99' },
+    ump45: { id: 'ump45', name: 'UMP-45', cn: 'UMP-45 冲锋枪', slot: 'primary', category: 'smg', price: 1200, damage: 25, rate: 0.11, mag: 25, reserve: 100, spread: 0.0038, model: 'rifle', caliber: '.45 ACP', tone: '#9a8f7e' },
+    p90: { id: 'p90', name: 'P90', cn: 'P90 冲锋枪', slot: 'primary', category: 'smg', price: 2350, damage: 22, rate: 0.075, mag: 50, reserve: 100, spread: 0.0044, model: 'rifle', caliber: '5.7 × 28 mm', tone: '#7b8e86' },
+    nova: { id: 'nova', name: 'Nova', cn: '新星霰弹枪', slot: 'primary', category: 'heavy', price: 1050, damage: 19, rate: 0.82, mag: 8, reserve: 32, spread: 0.058, pellets: 6, model: 'rifle', caliber: '12 Gauge', tone: '#9b7d5e' },
+    xm1014: { id: 'xm1014', name: 'XM1014', cn: 'XM1014 霰弹枪', slot: 'primary', category: 'heavy', price: 2000, damage: 17, rate: 0.25, mag: 7, reserve: 32, spread: 0.066, pellets: 6, model: 'rifle', caliber: '12 Gauge', tone: '#8d725b' },
+    negev: { id: 'negev', name: 'Negev', cn: '内格夫机枪', slot: 'primary', category: 'heavy', price: 1700, damage: 22, rate: 0.06, mag: 150, reserve: 150, spread: 0.008, model: 'rifle', caliber: '5.56 × 45 mm', tone: '#7d8d86' },
+    knife: { id: 'knife', name: 'Knife', cn: '战术匕首', slot: 'knife', category: 'knife', price: 0, damage: 55, rate: 0.55, mag: 0, reserve: 0, spread: 0, model: 'knife', caliber: 'MELEE', tone: '#aab7bd' }
+  };
+  const CS2_BUY_CATEGORIES = [
+    { id: 'pistol', label: '手枪', en: 'PISTOLS' },
+    { id: 'rifle', label: '步枪', en: 'RIFLES' },
+    { id: 'smg', label: '冲锋枪', en: 'SMGS' },
+    { id: 'sniper', label: '狙击枪', en: 'SNIPERS' },
+    { id: 'heavy', label: '霰弹 / 机枪', en: 'HEAVY' },
+    { id: 'gear', label: '装备', en: 'GEAR' }
+  ];
+  const CS2_GEAR = [
+    { id: 'kevlar', name: 'Kevlar Vest', cn: '防弹衣', price: 650, category: 'gear', slot: 'gear', armor: 100, helmet: false, tone: '#6d8996' },
+    { id: 'kevlarhelmet', name: 'Kevlar + Helmet', cn: '防弹衣 + 头盔', price: 1000, category: 'gear', slot: 'gear', armor: 100, helmet: true, tone: '#7d9c9f' }
+  ];
+
 
   class CS2Game {
     constructor(root, host = {}) {
@@ -276,9 +308,22 @@
       this.currentCallout = '';
       this.roundsWon = 0;
       this.roundsLost = 0;
+      this.credits = 800;
+      this.loadout = { primary: null, secondary: 'usp', knife: 'knife' };
+      this.weaponAmmo = {};
+      this.activeSlot = 'secondary';
+      this.buyOpen = false;
+      this.buyCategory = 'rifle';
+      this.inspectTime = 0;
+      this.armor = 0;
+      this.helmet = false;
       this.buildUI();
       this.bindUI();
       this.selectMap(this.selectedMap);
+    }
+
+    toast(message, tone = '') {
+      this.host?.showToast?.({ title: 'Counter-Strike 2', message, icon: 'app-steam' });
     }
 
     mapCardsMarkup() {
@@ -313,17 +358,23 @@
               <div class="cs2-team-card"><span class="cs2-team-mark">CT</span><div><b>反恐精英</b><small>训练服务器 · de_mirage</small></div></div>
               <div class="cs2-round-info"><span>比赛用时</span><b class="cs2-timer">00:00</b></div>
               <div class="cs2-wave-card"><span>回合</span><b class="cs2-wave">01</b><small class="cs2-round-score">CT 0 · T 0</small></div>
+              <div class="cs2-credits-card"><span>余额</span><b class="cs2-credits">$800</b><small>BUY</small></div>
             </div>
             <div class="cs2-crosshair"><i></i><i></i><i></i><i></i><b></b></div>
             <div class="cs2-hitmarker" hidden><i></i><i></i><i></i><i></i></div>
             <div class="cs2-killfeed"></div>
             <div class="cs2-location-chip"><i></i><span class="cs2-location">CT 出生点</span><small>128 TICK</small></div>
             <div class="cs2-hud-bottom">
-              <div class="cs2-health-block"><div class="cs2-hud-label"><span>生命</span><b class="cs2-health-value">100</b></div><div class="cs2-health-track"><i class="cs2-health-fill"></i></div></div>
-              <div class="cs2-ammo-block"><b class="cs2-ammo-value">30</b><span>/ <em class="cs2-ammo-reserve">90</em></span><small>7.62 × 39</small></div>
+              <div class="cs2-health-block"><div class="cs2-hud-label"><span>生命</span><b class="cs2-health-value">100</b></div><div class="cs2-health-track"><i class="cs2-health-fill"></i></div><div class="cs2-armor-line"><span>护甲</span><b class="cs2-armor-value">0</b></div></div>
+              <div class="cs2-ammo-block"><span class="cs2-weapon-name">USP-S</span><b class="cs2-ammo-value">12</b><span>/ <em class="cs2-ammo-reserve">24</em></span><small class="cs2-ammo-caliber">9 × 19 mm</small></div>
+              <div class="cs2-loadout" aria-label="武器槽位">
+                <span class="cs2-loadout-slot" data-cs2-slot="primary"><i>1</i><b>—</b></span>
+                <span class="cs2-loadout-slot is-active" data-cs2-slot="secondary"><i>2</i><b>USP-S</b></span>
+                <span class="cs2-loadout-slot" data-cs2-slot="knife"><i>3</i><b>刀</b></span>
+              </div>
               <div class="cs2-kills-block"><span>淘汰</span><b class="cs2-kills">0</b></div>
             </div>
-            <div class="cs2-hint-line"><span>WASD 移动</span><span>鼠标瞄准</span><span>左键射击</span><span>R 装填</span><span>Esc 释放鼠标</span></div>
+            <div class="cs2-hint-line"><span>WASD 移动</span><span>左键射击</span><span>1/2/3 武器</span><span>B 购买</span><span>F 检视</span><span>R 装填</span><span>Esc 释放鼠标</span></div>
           </div>
           <div class="cs2-overlay cs2-lobby-panel">
             <div class="cs2-lobby-backdrop" aria-hidden="true">
@@ -353,6 +404,8 @@
             <div class="cs2-lobby-content">
               <section class="cs2-play-stack">
                 <div class="cs2-play-card">
+                  <div class="cs2-play-bg" data-play-bg aria-hidden="true"></div>
+                  <span class="cs2-play-watermark">PLAY</span>
                   <div class="cs2-play-card-top">
                     <span class="cs2-play-kicker"><i></i>优先匹配 · 本地服务器</span>
                     <span class="cs2-play-season">第 4 赛季 · 黄金 3</span>
@@ -361,6 +414,7 @@
                     <div>
                       <h2>竞技匹配</h2>
                       <p>5v5 竞技 · 128 tick · 本地 BOT 填充</p>
+                      <div class="cs2-play-modes"><button class="is-active" type="button">优先匹配</button><button type="button">竞技</button><button type="button">休闲</button></div>
                     </div>
                     <div class="cs2-play-score"><span>CT</span><b>0</b><em>:</em><b>0</b><span class="t">T</span></div>
                   </div>
@@ -442,6 +496,20 @@
             <button class="cs2-primary-btn cs2-resume-btn"><span>继续比赛</span><svg viewBox="0 0 24 24"><use href="#i-play"></use></svg></button>
             <button class="cs2-text-btn cs2-abandon-btn" type="button">返回大厅</button>
           </div>
+          <div class="cs2-overlay cs2-buy-panel" hidden>
+            <div class="cs2-buy-shell">
+              <header class="cs2-buy-head">
+                <div><span>BUY MENU · <b class="cs2-buy-clock">FREEZE TIME</b></span><h2>购买装备</h2></div>
+                <div class="cs2-buy-balance"><span>可用资金</span><b class="cs2-buy-money">$800</b></div>
+                <button class="cs2-buy-close" data-cs2-buy-close type="button" aria-label="关闭购买菜单">×</button>
+              </header>
+              <div class="cs2-buy-tabs">
+                ${CS2_BUY_CATEGORIES.map((cat) => `<button data-cs2-buy-cat="${cat.id}" type="button" class="${cat.id === 'rifle' ? 'is-active' : ''}"><b>${cat.label}</b><small>${cat.en}</small></button>`).join('')}
+              </div>
+              <div class="cs2-buy-grid"></div>
+              <footer class="cs2-buy-foot"><span>1 主武器 · 2 副武器 · 3 刀 · F 检视</span><span>购买后立即装备，资金会从本回合余额扣除</span><button data-cs2-buy-close type="button">完成</button></footer>
+            </div>
+          </div>
           <div class="cs2-overlay cs2-over-panel" hidden>
             <span class="cs2-eyebrow">比赛结束</span>
             <h2>反恐精英落败。</h2>
@@ -464,8 +532,17 @@
         fatal: $('.cs2-fatal', this.root),
         health: $('.cs2-health-value', this.root),
         healthFill: $('.cs2-health-fill', this.root),
+        armor: $('.cs2-armor-value', this.root),
         ammo: $('.cs2-ammo-value', this.root),
         reserve: $('.cs2-ammo-reserve', this.root),
+        ammoCaliber: $('.cs2-ammo-caliber', this.root),
+        weaponName: $('.cs2-weapon-name', this.root),
+        credits: $('.cs2-credits', this.root),
+        loadout: $('.cs2-loadout', this.root),
+        buyPanel: $('.cs2-buy-panel', this.root),
+        buyGrid: $('.cs2-buy-grid', this.root),
+        buyMoney: $('.cs2-buy-money', this.root),
+        buyTabs: $('.cs2-buy-tabs', this.root),
         kills: $('.cs2-kills', this.root),
         wave: $('.cs2-wave', this.root),
         timer: $('.cs2-timer', this.root),
@@ -486,6 +563,7 @@
         loadingSkip: $('.cs2-load-skip', this.root),
         selectedMapName: $('.cs2-selected-map-name', this.root),
         playMapThumb: $('.cs2-play-mapthumb', this.root),
+        playBg: $('[data-play-bg]', this.root),
         mapLabel: $('.cs2-map-label', this.root),
         mapDesc: $('.cs2-map-desc', this.root),
         hudMapLabel: $('.cs2-team-card small', this.root),
@@ -519,6 +597,23 @@
       $$('[data-cs2-map]', this.root).forEach((button) => {
         button.addEventListener('click', () => this.selectMap(button.dataset.cs2Map));
       });
+      this.refs.buyPanel?.addEventListener('click', (event) => {
+        if (event.target.closest('[data-cs2-buy-close]')) { this.toggleBuyMenu(false); return; }
+        const tab = event.target.closest('[data-cs2-buy-cat]');
+        if (tab) { this.buyCategory = tab.dataset.cs2BuyCat; this.renderBuyMenu(); return; }
+        const item = event.target.closest('[data-cs2-buy]');
+        if (item) { this.buyItem(item.dataset.cs2Buy); return; }
+      });
+      this.refs.loadout?.addEventListener('click', (event) => {
+        const slot = event.target.closest('[data-cs2-slot]');
+        if (slot) this.switchWeaponSlot(slot.dataset.cs2Slot);
+      });
+      $$('.cs2-play-modes button', this.root).forEach((button) => {
+        button.addEventListener('click', () => {
+          $$('.cs2-play-modes button', this.root).forEach((entry) => entry.classList.toggle('is-active', entry === button));
+          this.toast(`模式 · ${button.textContent}`);
+        });
+      });
       $$('.cs2-mainnav-tabs button', this.root).forEach((button) => {
         button.addEventListener('click', () => {
           $$('.cs2-mainnav-tabs button', this.root).forEach((entry) => entry.classList.toggle('is-active', entry === button));
@@ -531,7 +626,7 @@
         this.host?.showToast?.({ title: '邀请已复制', message: '好友邀请链接已复制到剪贴板（本地模拟）。', icon: 'app-steam' });
       });
       this.refs.canvas?.addEventListener('pointerdown', (event) => {
-        if (event.button !== 0 || !this.running || this.over) return;
+        if (event.button !== 0 || !this.running || this.over || this.buyOpen) return;
         if (document.pointerLockElement !== this.refs.canvas) {
           this.requestLock();
           return;
@@ -557,7 +652,7 @@
           if (this.running && !this.over && this.paused) this.resume(false);
         } else if (this.wasLocked) {
           this.wasLocked = false;
-          if (this.running && !this.over) this.pause();
+          if (this.running && !this.over && !this.buyOpen) this.pause();
         }
       });
       document.addEventListener('keydown', (event) => this.onKey(event, true));
@@ -569,11 +664,20 @@
       if (!this.started || !this.running || this.over) return;
       if (!WINDOW_ACTIVE('cs2')) return;
       if (event.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
-      const codes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'];
+      if (this.buyOpen) {
+        if (down && (event.code === 'KeyB' || event.code === 'Escape')) this.toggleBuyMenu(false);
+        return;
+      }
+      const codes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyB', 'KeyF', 'Digit1', 'Digit2', 'Digit3', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'];
       if (codes.includes(event.code)) event.preventDefault();
       if (down) {
         this.keys.add(event.code);
         if (event.code === 'KeyR') this.reload();
+        if (event.code === 'KeyB') this.toggleBuyMenu();
+        if (event.code === 'KeyF') this.inspectWeapon();
+        if (event.code === 'Digit1') this.switchWeaponSlot('primary');
+        if (event.code === 'Digit2') this.switchWeaponSlot('secondary');
+        if (event.code === 'Digit3') this.switchWeaponSlot('knife');
         if (event.code === 'Space') this.shoot();
         if (event.code === 'KeyQ' || event.code === 'ArrowLeft') this.yaw += 0.055;
         if (event.code === 'KeyE' || event.code === 'ArrowRight') this.yaw -= 0.055;
@@ -585,6 +689,7 @@
     }
 
     requestLock() {
+      if (this.buyOpen) return;
       try {
         const result = this.refs.canvas?.requestPointerLock?.();
         if (result?.catch) result.catch(() => {});
@@ -745,8 +850,108 @@
       return `<svg class="cs2-map-blueprint" viewBox="0 0 ${W} ${H}" aria-hidden="true"><rect x="0" y="0" width="${W}" height="${H}" fill="${floorColor}"/><rect x="${pad}" y="${pad}" width="${W - pad * 2}" height="${H - pad * 2}" fill="rgba(0,0,0,.16)" stroke="rgba(255,255,255,.18)" stroke-width=".7"/>${paths}${walls}${crates}${sites}</svg>`;
     }
 
+    cs2WallTexture(kind = 'sand') {
+      if (typeof document === 'undefined') return null;
+      this.cs2WallTextures = this.cs2WallTextures || {};
+      if (this.cs2WallTextures[kind]) return this.cs2WallTextures[kind];
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.fillStyle = kind === 'metal' ? '#9aa2a4' : kind === 'plaster' ? '#c9c3b7' : kind === 'brick' ? '#b39b8e' : '#bcae96';
+      ctx.fillRect(0, 0, 256, 256);
+      let seed = kind === 'metal' ? 881 : kind === 'brick' ? 1921 : kind === 'plaster' ? 331 : 771;
+      const random = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+      for (let i = 0; i < 1800; i += 1) {
+        ctx.fillStyle = random() > 0.5 ? `rgba(255,255,255,${0.025 + random() * 0.08})` : `rgba(20,22,20,${0.02 + random() * 0.1})`;
+        ctx.fillRect(random() * 256, random() * 256, 1 + random() * 5, 1 + random() * 3);
+      }
+      if (kind === 'brick') {
+        ctx.strokeStyle = 'rgba(58,47,40,.34)';
+        ctx.lineWidth = 2;
+        for (let row = 0; row < 16; row += 1) {
+          const y = row * 16;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(256, y);
+          ctx.stroke();
+          const offset = row % 2 ? 16 : 0;
+          for (let col = 0; col < 9; col += 1) {
+            ctx.beginPath();
+            ctx.moveTo(offset + col * 32, y);
+            ctx.lineTo(offset + col * 32, y + 16);
+            ctx.stroke();
+          }
+        }
+      } else if (kind === 'metal') {
+        ctx.strokeStyle = 'rgba(36,44,47,.28)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 5; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(i * 52, 0);
+          ctx.lineTo(i * 52, 256);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 16; i += 1) {
+          ctx.fillStyle = 'rgba(232,234,230,.16)';
+          ctx.beginPath();
+          ctx.arc(12 + (i % 5) * 52, 12 + Math.floor(i / 5) * 52, 2.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.strokeStyle = 'rgba(66,58,48,.2)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 8; i += 1) {
+          let x = random() * 256;
+          let y = random() * 256;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          for (let step = 0; step < 4; step += 1) {
+            x += (random() - 0.5) * 22;
+            y += 8 + random() * 15;
+            ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }
+      for (let i = 0; i < 14; i += 1) {
+        const x = random() * 256;
+        const y = random() * 256;
+        ctx.fillStyle = `rgba(25,24,20,${0.12 + random() * 0.18})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.2 + random() * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(2, 2);
+      this.cs2WallTextures[kind] = texture;
+      return texture;
+    }
+
     buildMapGeometry(key = this.selectedMap, options = {}) {
-      const layout = this.mapData[key] || this.mapData.mirage;
+      const rawLayout = this.mapData[key] || this.mapData.mirage;
+      const S = rawLayout.worldScale || 1.15;
+      const scalePoint = ([x, z]) => [x * S, z * S];
+      const layout = {
+        ...rawLayout,
+        bounds: {
+          minX: rawLayout.bounds.minX * S, maxX: rawLayout.bounds.maxX * S,
+          minZ: rawLayout.bounds.minZ * S, maxZ: rawLayout.bounds.maxZ * S
+        },
+        spawn: { ...rawLayout.spawn, x: rawLayout.spawn.x * S, z: rawLayout.spawn.z * S },
+        tSpawn: { ...rawLayout.tSpawn, x: rawLayout.tSpawn.x * S, z: rawLayout.tSpawn.z * S },
+        sites: rawLayout.sites.map((site) => ({ ...site, x: site.x * S, z: site.z * S })),
+        walls: rawLayout.walls.map(([x, z, w, d, kind]) => [x * S, z * S, w * S, d * S, kind]),
+        crates: rawLayout.crates.map(([x, z, w, d, h, kind]) => [x * S, z * S, w * S, d * S, h, kind]),
+        arches: (rawLayout.arches || []).map(([x, z, w, d, h]) => [x * S, z * S, w * S, d * S, h]),
+        callouts: (rawLayout.callouts || []).map((callout) => ({ ...callout, x: callout.x * S, z: callout.z * S })),
+        botPaths: (rawLayout.botPaths || []).map((path) => path.map(scalePoint))
+      };
       this.mapLayout = layout;
       this.currentMapKey = key;
       if (this.mapGroup) {
@@ -817,11 +1022,17 @@
       const brickColor = wallColor.clone().offsetHSL(-0.01, 0.05, -0.08);
       const stoneColor = wallColor.clone().offsetHSL(0, -0.03, -0.03);
       const metalColor = new THREE.Color(palette.crate).offsetHSL(0, -0.03, 0.12);
-      const materialFor = (kind) => new THREE.MeshStandardMaterial({
-        color: kind === 'plaster' ? plasterColor : kind === 'brick' ? brickColor : kind === 'stone' ? stoneColor : kind === 'metal' ? metalColor : wallColor,
-        roughness: kind === 'metal' ? 0.58 : 0.94,
-        metalness: kind === 'metal' ? 0.45 : 0.04
-      });
+      const materialFor = (kind) => {
+        const texture = this.cs2WallTexture(kind);
+        return new THREE.MeshStandardMaterial({
+          color: kind === 'plaster' ? plasterColor : kind === 'brick' ? brickColor : kind === 'stone' ? stoneColor : kind === 'metal' ? metalColor : wallColor,
+          map: texture || null,
+          bumpMap: texture || null,
+          bumpScale: 0.018,
+          roughness: kind === 'metal' ? 0.58 : 0.94,
+          metalness: kind === 'metal' ? 0.45 : 0.04
+        });
+      };
       const wallMat = materialFor('sand');
       const trimMat = new THREE.MeshStandardMaterial({
         color: new THREE.Color(palette.trim), emissive: new THREE.Color(palette.trim),
@@ -969,21 +1180,179 @@
       return layout;
     }
 
-    buildGun() {
-      this.gun = window.AISniperModels?.createFirstPersonRifle?.({ variant: 'cs2' }) || new THREE.Group();
-      const glove = new THREE.MeshStandardMaterial({ color: 0x1a1c1c, roughness: 0.82, metalness: 0.04 });
-      const handRight = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.13), glove);
-      handRight.position.set(0.02, -0.17, -0.06);
-      const handLeft = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.1, 0.15), glove);
-      handLeft.position.set(-0.02, -0.06, -0.52);
-      handLeft.rotation.x = 0.16;
-      this.gun.add(handRight, handLeft);
-      this.gun.position.set(0.3, -0.27, -0.56);
-      this.camera.add(this.gun);
+    currentWeapon() {
+      return CS2_WEAPONS[this.loadout?.[this.activeSlot]] || null;
+    }
+
+    saveCurrentAmmo() {
+      const weapon = this.currentWeapon();
+      if (!weapon || weapon.slot === 'knife') return;
+      this.weaponAmmo[weapon.id] = { ammo: this.ammo, reserve: this.reserve };
+    }
+
+    equipWeaponSlot(slot, silent = false) {
+      const id = this.loadout?.[slot];
+      const weapon = CS2_WEAPONS[id];
+      if (!weapon) return false;
+      if (this.activeSlot !== slot) this.saveCurrentAmmo();
+      this.activeSlot = slot;
+      this.currentWeaponId = weapon.id;
+      this.mag = weapon.mag;
+      this.reloading = false;
+      clearTimeout(this.reloadTimer);
+      if (weapon.slot === 'knife') {
+        this.ammo = 0;
+        this.reserve = 0;
+      } else {
+        const state = this.weaponAmmo[weapon.id] || { ammo: weapon.mag, reserve: weapon.reserve };
+        this.weaponAmmo[weapon.id] = state;
+        this.ammo = state.ammo;
+        this.reserve = state.reserve;
+      }
+      this.inspectTime = 0;
+      this.buildGun(true);
+      if (!silent) this.toast(`切换武器 · ${weapon.cn}`, 'success');
+      this.updateHUD();
+      return true;
+    }
+
+    switchWeaponSlot(slot) {
+      if (this.buyOpen || this.reloading) return;
+      if (!this.loadout?.[slot]) {
+        this.toast(slot === 'primary' ? '还没有购买主武器 · 按 B 打开购买菜单' : '这个槽位为空');
+        return;
+      }
+      this.equipWeaponSlot(slot);
+    }
+
+    inspectWeapon() {
+      if (this.buyOpen || !this.currentWeapon()) return;
+      this.inspectTime = 1.35;
+      const weapon = this.currentWeapon();
+      this.toast(`检视武器 · ${weapon.name} · ${weapon.cn}`);
+      this.audio?.play('ui');
+    }
+
+    buyItem(id) {
+      const weapon = CS2_WEAPONS[id];
+      const gear = CS2_GEAR.find((entry) => entry.id === id);
+      const item = weapon || gear;
+      if (!item) return;
+      if (weapon && this.loadout?.[weapon.slot] === id) {
+        this.equipWeaponSlot(weapon.slot);
+        return;
+      }
+      if (this.credits < item.price) {
+        this.toast(`资金不足 · 还需要 $${item.price - this.credits}`, 'danger');
+        return;
+      }
+      this.credits -= item.price;
+      if (gear) {
+        if (gear.armor) this.armor = Math.max(this.armor, gear.armor);
+        if (gear.helmet) this.helmet = true;
+        this.toast(`已购买装备 · ${gear.cn}`, 'success');
+      } else {
+        this.loadout[weapon.slot] = weapon.id;
+        this.weaponAmmo[weapon.id] = { ammo: weapon.mag, reserve: weapon.reserve };
+        this.equipWeaponSlot(weapon.slot, true);
+        this.toast(`已购买 · ${weapon.name} · $${item.price}`, 'success');
+      }
+      this.audio?.play('loot');
+      this.renderBuyMenu();
+      this.updateHUD();
+    }
+
+    toggleBuyMenu(force = null) {
+      const next = force === null ? !this.buyOpen : Boolean(force);
+      if (next && (this.over || this.deathState)) return;
+      this.buyOpen = next;
+      if (this.refs?.buyPanel) this.refs.buyPanel.hidden = !next;
+      if (next) {
+        this.keys.clear();
+        if (document.pointerLockElement === this.refs.canvas) document.exitPointerLock?.();
+        this.renderBuyMenu();
+      } else {
+        this.requestLock();
+      }
+      this.updateHUD();
+    }
+
+    renderBuyMenu() {
+      if (!this.refs?.buyGrid) return;
+      if (this.refs.buyMoney) this.refs.buyMoney.textContent = `$${this.credits}`;
+      if (this.refs.buyTabs) {
+        $$('[data-cs2-buy-cat]', this.refs.buyTabs).forEach((button) => {
+          button.classList.toggle('is-active', button.dataset.cs2BuyCat === this.buyCategory);
+        });
+      }
+      const grouped = this.buyCategory === 'gear'
+        ? CS2_GEAR
+        : Object.values(CS2_WEAPONS).filter((item) => item.category === this.buyCategory && item.slot !== 'knife');
+      const items = grouped.map((item) => {
+        const isWeapon = Boolean(item.slot && item.slot !== 'gear');
+        const owned = isWeapon ? this.loadout?.[item.slot] === item.id : Boolean(item.helmet ? this.helmet && this.armor > 0 : this.armor > 0);
+        const equipped = isWeapon && this.loadout?.[item.slot] === item.id && this.activeSlot === item.slot;
+        const canAfford = this.credits >= item.price;
+        const disabled = !owned && !canAfford;
+        const priceLabel = owned ? (equipped ? '已装备' : '已拥有') : `$${item.price}`;
+        const stats = isWeapon
+          ? `<span>伤害 ${item.damage}</span><span>弹匣 ${item.mag}</span><span>${item.caliber || ''}</span>`
+          : `<span>护甲 ${item.armor || 0}</span><span>${item.helmet ? '含头盔' : '无头盔'}</span>`;
+        return `<button class="cs2-buy-item${owned ? ' is-owned' : ''}${disabled ? ' is-disabled' : ''}" data-cs2-buy="${item.id}" type="button" ${disabled ? 'disabled' : ''}>
+          <span class="cs2-buy-art" style="--tone:${item.tone || '#788d97'}"><i>${isWeapon ? (item.name || '').slice(0, 3).toUpperCase() : 'GEAR'}</i></span>
+          <span class="cs2-buy-copy"><b>${item.name}</b><small>${item.cn || ''}</small><em>${stats}</em></span>
+          <span class="cs2-buy-price">${priceLabel}</span>
+        </button>`;
+      }).join('');
+      this.refs.buyGrid.innerHTML = items;
+    }
+
+    buildGun(force = false) {
+      if (this.muzzle) {
+        this.camera?.remove(this.muzzle);
+        this.muzzle = null;
+      }
+      if (this.gun) {
+        this.camera?.remove(this.gun);
+        this.gun.traverse?.((child) => {
+          if (child.geometry) child.geometry.dispose?.();
+          if (child.material && child.material.dispose) child.material.dispose();
+        });
+        this.gun = null;
+      }
+      const weapon = this.currentWeapon();
+      const kind = weapon?.model || 'rifle';
+      let group = null;
+      if (window.AISniperModels) {
+        if (kind === 'knife') group = window.AISniperModels.createFirstPersonKnife({ variant: 'cs2-ct' });
+        else if (kind === 'pistol') group = window.AISniperModels.createFirstPersonPistol({ variant: 'cs2-ct' });
+        else group = window.AISniperModels.createFirstPersonRifle({ variant: 'cs2' });
+      }
+      if (!group) {
+        group = new THREE.Group();
+        const metal = new THREE.MeshStandardMaterial({ color: 0x1d252c, roughness: 0.34, metalness: 0.7 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.72), metal);
+        body.position.set(0, 0, -0.23);
+        group.add(body);
+      }
+      if (kind !== 'knife') {
+        const glove = new THREE.MeshStandardMaterial({ color: 0x1b1f20, roughness: 0.86, metalness: 0.04 });
+        const handRight = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.13), glove);
+        handRight.position.set(0.02, kind === 'pistol' ? -0.2 : -0.17, -0.06);
+        const handLeft = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.1, 0.15), glove);
+        handLeft.position.set(-0.02, -0.06, kind === 'pistol' ? -0.38 : -0.52);
+        handLeft.rotation.x = 0.16;
+        group.add(handRight, handLeft);
+      }
+      this.gun = group;
+      this.gunBase = kind === 'pistol' ? { x: 0.31, y: -0.27, z: -0.48 } : kind === 'knife' ? { x: 0.36, y: -0.3, z: -0.5 } : { x: 0.3, y: -0.27, z: -0.56 };
+      this.gun.position.set(this.gunBase.x, this.gunBase.y, this.gunBase.z);
+      this.camera?.add(this.gun);
       this.muzzle = new THREE.PointLight(0xffc46e, 0, 6);
-      this.muzzle.position.set(0.3, -0.22, -1.55);
-      this.camera.add(this.muzzle);
+      this.muzzle.position.set(this.gunBase.x, this.gunBase.y + 0.08, this.gunBase.z - (kind === 'pistol' ? 0.2 : 0.55));
+      this.camera?.add(this.muzzle);
       this.gunRecoil = 0;
+      this.gunVisibleKind = kind;
     }
 
     buildNavGrid() {
@@ -1129,6 +1498,7 @@
       if (this.refs.playMapThumb) {
         this.refs.playMapThumb.innerHTML = `${this.mapPreview(key)}<span class="cs2-play-mapletter">${map.sites[0].id}</span><small>SELECTED</small>`;
       }
+      if (this.refs.playBg) this.refs.playBg.innerHTML = this.mapPreview(key);
       this.applyMapTheme(key);
       if (this.initialized && !this.running) this.buildMapGeometry(key, { lobby: true });
     }
@@ -1163,6 +1533,8 @@
       this.refs.pausePanel.hidden = true;
       this.refs.overPanel.hidden = true;
       this.refs.startPanel.hidden = false;
+      if (this.refs.buyPanel) this.refs.buyPanel.hidden = true;
+      this.buyOpen = false;
       this.refs.hud.hidden = true;
       this.refs.damage.hidden = true;
     }
@@ -1202,7 +1574,7 @@
         const dt = Math.min(this.clock.getDelta(), 0.048);
         if (!this.started) this.updateLobbyCamera(dt);
         else if (this.gun) this.gun.visible = true;
-        if (this.running && !this.paused && !this.over) this.update(dt);
+        if (this.running && !this.paused && !this.over && !this.buyOpen) this.update(dt);
         this.updateGun(dt);
         this.renderer.render(this.scene, this.camera);
       };
@@ -1238,8 +1610,6 @@
       this.over = false;
       this.started = true;
       this.health = 100;
-      this.ammo = 30;
-      this.reserve = 90;
       this.kills = 0;
       this.score = 0;
       this.shots = 0;
@@ -1248,6 +1618,14 @@
       this.wave = 0;
       this.roundsWon = 0;
       this.roundsLost = 0;
+      this.credits = 800;
+      this.loadout = { primary: null, secondary: 'usp', knife: 'knife' };
+      this.weaponAmmo = {};
+      this.activeSlot = 'secondary';
+      this.buyOpen = false;
+      this.inspectTime = 0;
+      this.armor = 0;
+      this.helmet = false;
       this.lastMap = this.selectedMap;
       const layout = this.buildMapGeometry(this.selectedMap);
       this.player.set(layout.spawn.x, 1.7, layout.spawn.z);
@@ -1255,6 +1633,7 @@
       this.pitch = 0;
       this.camera.position.copy(this.player);
       this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
+      this.equipWeaponSlot('secondary', true);
       this.reloading = false;
       this.nextShot = 0;
       clearTimeout(this.reloadTimer);
@@ -1262,6 +1641,7 @@
       this.refs.startPanel.hidden = true;
       this.refs.pausePanel.hidden = true;
       this.refs.overPanel.hidden = true;
+      if (this.refs.buyPanel) this.refs.buyPanel.hidden = true;
       this.refs.loading.hidden = true;
       this.refs.hud.hidden = false;
       this.refs.fatal.hidden = true;
@@ -1287,6 +1667,10 @@
 
     pause() {
       if (!this.running || this.over || this.paused) return;
+      if (this.buyOpen) {
+        this.buyOpen = false;
+        if (this.refs.buyPanel) this.refs.buyPanel.hidden = true;
+      }
       this.paused = true;
       this.keys.clear();
       this.refs.pausePanel.hidden = false;
@@ -1487,12 +1871,20 @@
       const radius = 1.2 + (index % 3) * 1.1;
       group.position.set(spawn.x + Math.cos(angle) * radius, 0, spawn.z + Math.sin(angle) * radius);
       const site = layout.sites[index % layout.sites.length];
-      const offsetX = (Math.random() - 0.5) * 2.8;
-      const offsetZ = (Math.random() - 0.5) * 2.8;
-      const navPath = this.findNavPath(
+      const offsetX = (Math.random() - 0.5) * 3.6;
+      const offsetZ = (Math.random() - 0.5) * 3.6;
+      const routes = layout.botPaths?.length ? layout.botPaths : [];
+      const route = routes[index % Math.max(1, routes.length)] || [];
+      const pivot = route[Math.min(route.length - 1, 2)] || [site.x, site.z];
+      const firstLeg = this.findNavPath(
         { x: group.position.x, z: group.position.z },
+        { x: pivot[0] + offsetX * 0.4, z: pivot[1] + offsetZ * 0.4 }
+      );
+      const secondLeg = this.findNavPath(
+        { x: pivot[0], z: pivot[1] },
         { x: site.x + offsetX, z: site.z + offsetZ }
       );
+      const navPath = firstLeg.concat(secondLeg.slice(1));
       const path = navPath.length ? navPath : [[spawn.x, spawn.z], [site.x, site.z]];
       const names = ['Astra', 'Bolt', 'Cipher', 'Drift', 'Echo', 'Frost', 'Ghost', 'Hawk', 'Ivy', 'Jinx'];
       const bot = {
@@ -1500,8 +1892,11 @@
         name: names[index % names.length],
         team: 'T',
         health: 100,
+        armor: 28,
         alive: true,
-        speed: 2.2 + Math.random() * 0.65,
+        role: ['entry', 'support', 'flank'][index % 3],
+        preferredRange: [9, 17, 12][index % 3],
+        speed: 2.8 + Math.random() * 0.8,
         fireTimer: 900 + Math.random() * 1100,
         bob: Math.random() * Math.PI * 2,
         path,
@@ -1581,7 +1976,8 @@
       if (this.bots.length && this.bots.every((bot) => !bot.alive) && !this.waveTimer && !this.over) {
         this.roundsWon += 1;
         this.score += 500;
-        this.addKillfeed('回合胜利 · 所有 T 已被消灭');
+        this.credits = Math.min(16000, this.credits + 3250);
+        this.addKillfeed('回合胜利 · 所有 T 已被消灭 · +$3250');
         this.updateWaveHUD();
         this.waveTimer = setTimeout(() => {
           if (!this.over) this.spawnWave(5);
@@ -1598,7 +1994,7 @@
       if (this.keys.has('KeyD')) direction.add(right);
       if (this.keys.has('KeyA')) direction.sub(right);
       if (direction.lengthSq() > 0) {
-        direction.normalize().multiplyScalar((this.keys.has('ShiftLeft') ? 7.2 : 5.2) * dt);
+        direction.normalize().multiplyScalar((this.keys.has('ShiftLeft') ? 7.4 : 5.4) * dt);
         this.movePlayerBy(direction.x, direction.z);
       }
       this.camera.position.copy(this.player);
@@ -1630,50 +2026,77 @@
         const pos = bot.group.position;
         const toPlayer = new THREE.Vector3(this.player.x - pos.x, 0, this.player.z - pos.z);
         const distance = toPlayer.length();
-        const canSeePlayer = distance < 22 && this.hasLineOfSight(bot, playerPos);
+        const canSeePlayer = distance < 26 && this.hasLineOfSight(bot, playerPos);
         let moving = false;
         if (canSeePlayer) {
           bot.group.rotation.y = Math.atan2(this.player.x - pos.x, this.player.z - pos.z);
-          if (distance > 8 && distance < 18) {
-            const strafe = Math.sin(this.elapsed * 1.1 + bot.bob) * 0.6;
-            moving = Math.abs(strafe) > 0.1;
-            this.moveBotBy(bot, -toPlayer.z / Math.max(1, distance) * strafe * dt, toPlayer.x / Math.max(1, distance) * strafe * dt);
+          const preferred = bot.health < 40 ? 20 : bot.preferredRange || 12;
+          const forwardX = toPlayer.x / Math.max(1, distance);
+          const forwardZ = toPlayer.z / Math.max(1, distance);
+          const strafe = Math.sin(this.elapsed * (1.2 + (bot.bob % 0.6)) + bot.bob) * 0.9;
+          if (distance > preferred + 2.5) {
+            moving = true;
+            this.moveBotBy(bot, forwardX * bot.speed * dt, forwardZ * bot.speed * dt);
+          } else if (distance < preferred - 3 || bot.health < 40) {
+            moving = true;
+            this.moveBotBy(bot, -forwardX * bot.speed * 0.8 * dt, -forwardZ * bot.speed * 0.8 * dt);
+          } else {
+            moving = true;
+            this.moveBotBy(bot, -forwardZ * strafe * dt, forwardX * strafe * dt);
           }
-          if (distance < 18 && !this.over) {
-            bot.fireTimer -= dt * 1000;
-            if (bot.fireTimer <= 0) {
-              bot.fireTimer = 760 + Math.random() * 980;
+          bot.fireTimer -= dt * 1000;
+          if (bot.fireTimer <= 0 && distance < 24) {
+            bot.burstLeft = bot.role === 'entry' ? 3 : 2;
+            bot.burstTimer = 0;
+            bot.fireTimer = (bot.role === 'support' ? 920 : 720) + Math.random() * 820;
+          }
+          if (bot.burstLeft > 0) {
+            bot.burstTimer = (bot.burstTimer || 0) - dt;
+            if (bot.burstTimer <= 0) {
+              bot.burstTimer = 0.12;
+              bot.burstLeft -= 1;
               this.enemyShoot(bot);
             }
           }
         } else {
           let waypoint = bot.path[Math.min(bot.pathIndex, bot.path.length - 1)];
           if (bot.pathIndex >= bot.path.length) {
-            const wobble = Math.sin(this.elapsed * 0.8 + bot.bob) * 2.2;
-            waypoint = [bot.site.x + wobble, bot.site.z];
+            const wobble = Math.sin(this.elapsed * 0.8 + bot.bob) * (bot.role === 'support' ? 3.4 : 2.2);
+            waypoint = [bot.site.x + wobble + bot.offsetX, bot.site.z + bot.offsetZ];
           }
-          const tx = waypoint[0] + bot.offsetX * 0.35;
-          const tz = waypoint[1] + bot.offsetZ * 0.35;
+          const tx = waypoint[0];
+          const tz = waypoint[1];
           const dx = tx - pos.x;
           const dz = tz - pos.z;
           const targetDistance = Math.hypot(dx, dz);
           if (targetDistance < 1.5) {
             if (bot.pathIndex < bot.path.length) bot.pathIndex += 1;
           } else {
-            const step = bot.speed * dt;
+            const step = bot.speed * (bot.role === 'support' ? 0.84 : 1) * dt;
             moving = true;
             this.moveBotBy(bot, dx / targetDistance * step, dz / targetDistance * step);
             bot.group.rotation.y = Math.atan2(dx, dz);
           }
           bot.stuckTimer += dt;
-          if (bot.stuckTimer > 1.1) {
+          if (bot.stuckTimer > 1.2) {
             const moved = Math.hypot(pos.x - bot.lastX, pos.z - bot.lastZ);
-            if (moved < 0.18 && bot.pathIndex < bot.path.length - 1) bot.pathIndex += 1;
+            if (moved < 0.2 && bot.pathIndex < bot.path.length - 1) bot.pathIndex += 1;
             bot.stuckTimer = 0;
             bot.lastX = pos.x;
             bot.lastZ = pos.z;
           }
         }
+        // Keep squad members from stacking into one target.
+        this.bots.forEach((other) => {
+          if (other === bot || !other.alive) return;
+          const ox = pos.x - other.group.position.x;
+          const oz = pos.z - other.group.position.z;
+          const dist = Math.hypot(ox, oz);
+          if (dist > 0.01 && dist < 2.4) {
+            const push = (2.4 - dist) * 0.5;
+            this.moveBotBy(bot, ox / dist * push, oz / dist * push);
+          }
+        });
         bot.bob += dt * 3.2;
         bot.group.position.y = Math.sin(bot.bob) * 0.025;
         if (bot.visual) bot.visual.setPose(this.elapsed + bot.bob * 0.12, moving, 0.2);
@@ -1707,8 +2130,15 @@
       const spread = new THREE.Vector3((Math.random() - 0.5) * 0.65, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.65);
       target.add(spread);
       this.addTracer(origin, target, 0xff5a3c, 0.8);
-      if (Math.random() < 0.69) {
-        const damage = 5 + Math.floor(Math.random() * 7);
+      const distance = bot.group.position.distanceTo(this.player);
+      const accuracy = clamp(0.72 - distance * 0.008, 0.42, 0.7);
+      if (Math.random() < accuracy) {
+        let damage = 7 + Math.random() * 8;
+        if (this.armor > 0) {
+          const absorbed = Math.min(this.armor, damage * 0.62);
+          this.armor -= absorbed;
+          damage -= absorbed;
+        }
         this.health = Math.max(0, this.health - damage);
         this.flashDamage();
         if (this.health <= 0) this.endGame();
@@ -1738,47 +2168,110 @@
 
     updateGun(dt) {
       if (!this.gun) return;
+      this.inspectTime = Math.max(0, (this.inspectTime || 0) - dt);
       this.gunRecoil = Math.max(0, this.gunRecoil - dt * 8.5);
-      this.gun.position.z = -0.56 + this.gunRecoil * 0.08;
-      this.gun.rotation.x = -this.gunRecoil * 0.04;
+      const base = this.gunBase || { x: 0.3, y: -0.27, z: -0.56 };
+      const bob = this.gunVisibleKind === 'knife' ? 0.004 : 0.008;
+      const inspectProgress = this.inspectTime > 0 ? 1 - this.inspectTime / 1.35 : 0;
+      const inspectArc = Math.sin(clamp(inspectProgress, 0, 1) * Math.PI);
+      this.gun.position.x = base.x + Math.sin(this.gunBob || 0) * 0.012;
+      this.gun.position.y = base.y + Math.abs(Math.cos(this.gunBob || 0)) * bob + inspectArc * 0.12;
+      this.gun.position.z = base.z + this.gunRecoil * 0.075 + inspectArc * 0.06;
+      this.gun.rotation.x = -this.gunRecoil * 0.04 - inspectArc * 0.25;
+      this.gun.rotation.y = -0.06 + inspectArc * 0.9;
+      this.gun.rotation.z = inspectArc * 0.18;
       if (this.muzzle) this.muzzle.intensity = Math.max(0, this.muzzle.intensity - dt * 26);
     }
 
     shoot() {
-      if (!this.running || this.paused || this.over || this.reloading) return;
+      if (!this.running || this.paused || this.over || this.reloading || this.buyOpen) return;
       const now = performance.now();
       if (now < this.nextShot) return;
+      const weapon = this.currentWeapon();
+      if (!weapon) return;
+      if (weapon.slot === 'knife') {
+        this.knifeAttack(now);
+        return;
+      }
       if (this.ammo <= 0) {
         this.reload();
         return;
       }
-      this.nextShot = now + 112;
+      this.inspectTime = 0;
+      this.nextShot = now + weapon.rate * 1000;
       this.ammo -= 1;
       this.shots += 1;
-      this.gunRecoil = 1;
+      this.gunRecoil = weapon.slot === 'primary' ? 1 : 0.7;
       if (this.muzzle) this.muzzle.intensity = 2.2;
+      this.updateHUD();
+      const pellets = weapon.pellets || 1;
+      let hitSomething = false;
+      let headshotAny = false;
+      for (let pellet = 0; pellet < pellets; pellet += 1) {
+        const raycaster = new THREE.Raycaster();
+        const spread = weapon.spread || 0;
+        raycaster.setFromCamera({
+          x: pellets > 1 ? (Math.random() - 0.5) * spread * 2 : (Math.random() - 0.5) * spread * 1.4,
+          y: pellets > 1 ? (Math.random() - 0.5) * spread * 1.4 : (Math.random() - 0.5) * spread
+        }, this.camera);
+        const hits = raycaster.intersectObjects(this.botHitMeshes, false);
+        const wallHit = raycaster.intersectObjects(this.obstacles, false)[0];
+        const origin = this.camera.position.clone().add(new THREE.Vector3(0, -0.2, 0));
+        if (hits.length && !(wallHit && wallHit.distance < hits[0].distance)) {
+          const hit = hits[0];
+          const bot = hit.object.userData.bot;
+          if (bot && bot.alive) {
+            const headshot = hit.object.userData.part === 'head';
+            const damage = weapon.damage * (headshot ? 2.35 : 1) * (pellets > 1 ? 0.8 : 1);
+            this.applyBotDamage(bot, damage, headshot);
+            this.hits += 1;
+            hitSomething = true;
+            headshotAny = headshotAny || headshot;
+            this.addTracer(origin, hit.point, headshot ? 0xffe0a0 : 0xffb35c, 0.85);
+          }
+        } else if (pellet === 0) {
+          const end = origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(60));
+          this.addTracer(origin, end, 0xffd18b, 0.5);
+        }
+      }
+      if (hitSomething) this.showHitmarker(headshotAny);
+      if (weapon.slot === 'primary' && weapon.category === 'sniper') this.nextShot = now + weapon.rate * 1000;
+      if (this.ammo <= 0) this.startReloadTimer();
+    }
+
+    applyBotDamage(bot, damage, headshot = false) {
+      if (!bot || !bot.alive) return;
+      let remaining = damage;
+      if (bot.armor > 0 && !headshot) {
+        const absorbed = Math.min(bot.armor, remaining * 0.62);
+        bot.armor -= absorbed;
+        remaining -= absorbed;
+      }
+      bot.health -= remaining;
+      bot.flash = 0.14;
+      if (bot.health <= 0) this.killBot(bot, headshot);
+    }
+
+    knifeAttack(now) {
+      this.nextShot = now + 550;
+      this.inspectTime = 0;
+      this.gunRecoil = 0.6;
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
+      raycaster.far = 3.8;
       const hits = raycaster.intersectObjects(this.botHitMeshes, false);
       const wallHit = raycaster.intersectObjects(this.obstacles, false)[0];
-      const origin = this.camera.position.clone().add(new THREE.Vector3(0, -0.2, 0));
+      const origin = this.camera.position.clone();
       if (hits.length && !(wallHit && wallHit.distance < hits[0].distance)) {
-        const hit = hits[0];
-        const bot = hit.object.userData.bot;
+        const bot = hits[0].object.userData.bot;
         if (bot && bot.alive) {
-          const headshot = hit.object.userData.part === 'head';
-          const damage = headshot ? 120 : 36;
-          bot.health -= damage;
-          this.hits += 1;
-          this.showHitmarker(headshot);
-          this.addTracer(origin, hit.point, headshot ? 0xffe0a0 : 0xffb35c, 0.85);
-          if (bot.health <= 0) this.killBot(bot, headshot);
+          this.applyBotDamage(bot, hits[0].object.userData.part === 'head' ? 110 : 55, true);
+          this.showHitmarker(true);
+          this.addTracer(origin, hits[0].point, 0xdde8ec, 0.5);
         }
       } else {
-        const end = origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(60));
-        this.addTracer(origin, end, 0xffd18b, 0.5);
+        this.addTracer(origin, origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(3.6)), 0xdde8ec, 0.35);
       }
-      this.updateHUD();
     }
 
     killBot(bot, headshot) {
@@ -1786,7 +2279,8 @@
       bot.group.visible = false;
       this.kills += 1;
       this.score += headshot ? 200 : 100;
-      this.addKillfeed(`你 ${headshot ? '⌖ 爆头' : '✕'} ${bot.name}`);
+      this.credits = Math.min(16000, this.credits + 300);
+      this.addKillfeed(`你 ${headshot ? '⌖ 爆头' : '✕'} ${bot.name} · +$300`);
       this.showHitmarker(headshot);
       if (this.bots.every((entry) => !entry.alive)) this.score += 250;
       this.updateHUD();
@@ -1819,19 +2313,28 @@
       setTimeout(() => row.remove(), 5000);
     }
 
-    reload() {
-      if (this.reloading || this.ammo === 30 || this.reserve <= 0) return;
+    startReloadTimer() {
+      const weapon = this.currentWeapon();
+      if (!weapon || weapon.slot === 'knife') return;
+      if (this.reloading || this.ammo >= weapon.mag || this.reserve <= 0) return;
       this.reloading = true;
-      this.refs.ammo.textContent = '—';
+      if (this.refs.ammo) this.refs.ammo.textContent = '—';
       clearTimeout(this.reloadTimer);
       this.reloadTimer = setTimeout(() => {
-        const needed = 30 - this.ammo;
+        const active = this.currentWeapon();
+        if (!active || active.slot === 'knife') { this.reloading = false; return; }
+        const needed = active.mag - this.ammo;
         const take = Math.min(needed, this.reserve);
         this.ammo += take;
         this.reserve -= take;
+        this.saveCurrentAmmo();
         this.reloading = false;
         this.updateHUD();
       }, 1350);
+    }
+
+    reload() {
+      this.startReloadTimer();
     }
 
     updateCallout() {
@@ -1861,17 +2364,37 @@
 
     updateHUD() {
       if (!this.refs) return;
-      this.refs.health.textContent = String(Math.max(0, Math.round(this.health)));
+      const weapon = this.currentWeapon();
+      if (this.refs.health) this.refs.health.textContent = String(Math.max(0, Math.round(this.health)));
       if (this.refs.healthFill) this.refs.healthFill.style.width = `${clamp(this.health, 0, 100)}%`;
-      if (!this.reloading) this.refs.ammo.textContent = String(this.ammo).padStart(2, '0');
-      this.refs.reserve.textContent = String(this.reserve);
-      this.refs.kills.textContent = String(this.kills);
-      this.refs.timer.textContent = `${String(Math.floor(this.elapsed / 60)).padStart(2, '0')}:${String(Math.floor(this.elapsed % 60)).padStart(2, '0')}`;
+      if (this.refs.armor) this.refs.armor.textContent = String(Math.max(0, Math.round(this.armor || 0)));
+      if (this.refs.ammo) {
+        if (this.reloading) this.refs.ammo.textContent = '—';
+        else this.refs.ammo.textContent = weapon?.slot === 'knife' ? '—' : String(this.ammo).padStart(2, '0');
+      }
+      if (this.refs.reserve) this.refs.reserve.textContent = weapon?.slot === 'knife' ? '—' : String(this.reserve);
+      if (this.refs.weaponName) this.refs.weaponName.textContent = weapon ? weapon.name : '—';
+      if (this.refs.ammoCaliber) this.refs.ammoCaliber.textContent = weapon ? (weapon.slot === 'knife' ? 'MELEE' : weapon.caliber) : '';
+      if (this.refs.kills) this.refs.kills.textContent = String(this.kills);
+      if (this.refs.credits) this.refs.credits.textContent = `$${this.credits}`;
+      if (this.refs.buyMoney) this.refs.buyMoney.textContent = `$${this.credits}`;
+      if (this.refs.timer) this.refs.timer.textContent = `${String(Math.floor(this.elapsed / 60)).padStart(2, '0')}:${String(Math.floor(this.elapsed % 60)).padStart(2, '0')}`;
+      if (this.refs.loadout) {
+        $$('[data-cs2-slot]', this.refs.loadout).forEach((slot) => {
+          const id = this.loadout?.[slot.dataset.cs2Slot];
+          const item = CS2_WEAPONS[id];
+          slot.classList.toggle('is-active', this.activeSlot === slot.dataset.cs2Slot);
+          slot.classList.toggle('is-empty', !item);
+          const label = $('b', slot);
+          if (label) label.textContent = item ? item.name : '—';
+        });
+      }
     }
 
     updateWaveHUD() {
       if (this.refs.wave) this.refs.wave.textContent = String(this.wave).padStart(2, '0');
       if (this.refs.roundScore) this.refs.roundScore.textContent = `CT ${this.roundsWon} · T ${Math.max(0, this.roundsLost)}`;
+      if (this.refs.credits) this.refs.credits.textContent = `$${this.credits}`;
     }
 
     endGame() {
@@ -1890,6 +2413,8 @@
       this.refs.finalScore.textContent = String(this.score);
       this.refs.overPanel.hidden = false;
       this.refs.pausePanel.hidden = true;
+      if (this.refs.buyPanel) this.refs.buyPanel.hidden = true;
+      this.buyOpen = false;
       this.refs.hud.hidden = true;
       this.clearWaveTimer();
     }

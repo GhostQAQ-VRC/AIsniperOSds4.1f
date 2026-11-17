@@ -459,11 +459,57 @@
     return { group, sphere, cloudGroup, texture };
   }
 
+  function createFirstPersonPistol(options = {}) {
+    const palette = SOLDIER_PALETTES[options.variant || 'cs2-ct'] || SOLDIER_PALETTES['cs2-ct'];
+    const group = new THREE.Group();
+    const metal = material(0x202529, 0.3, 0.82);
+    const slide = material(0x3a4247, 0.34, 0.72);
+    const polymer = material(0x14181a, 0.72, 0.18);
+    const accent = material(palette.accent, 0.42, 0.35, palette.accent);
+    const glove = material(0x1a1e1f, 0.86, 0.04);
+    box(group, slide, 0.11, 0.1, 0.42, 0, 0.08, -0.24);
+    box(group, metal, 0.08, 0.06, 0.18, 0, 0.08, -0.5);
+    box(group, polymer, 0.1, 0.2, 0.12, 0, -0.08, -0.03, 0.16);
+    box(group, metal, 0.06, 0.1, 0.2, 0, -0.2, -0.11, -0.12);
+    box(group, polymer, 0.07, 0.08, 0.13, 0, -0.07, -0.31, 0.08);
+    box(group, accent, 0.02, 0.018, 0.05, 0, 0.135, -0.22);
+    box(group, metal, 0.045, 0.035, 0.05, 0, 0.14, -0.42);
+    cylinder(group, metal, 0.03, 0.03, 0.1, 0, 0.08, -0.56, Math.PI / 2);
+    const hand = box(group, glove, 0.1, 0.14, 0.15, 0, -0.17, 0.02, 0.16);
+    hand.rotation.z = -0.08;
+    box(group, glove, 0.085, 0.1, 0.12, -0.02, 0.06, -0.38, 0.18);
+    group.userData.muzzle = new THREE.Vector3(0, 0.08, -0.65);
+    group.userData.glow = accent;
+    return group;
+  }
+
+  function createFirstPersonKnife(options = {}) {
+    const palette = SOLDIER_PALETTES[options.variant || 'cs2-ct'] || SOLDIER_PALETTES['cs2-ct'];
+    const group = new THREE.Group();
+    const steel = material(0xaeb9bd, 0.25, 0.86);
+    const steelDark = material(0x59656b, 0.38, 0.7);
+    const grip = material(0x15191a, 0.82, 0.08);
+    const accent = material(palette.accent, 0.42, 0.32, palette.accent);
+    const glove = material(0x1a1e1f, 0.86, 0.04);
+    const blade = box(group, steel, 0.05, 0.32, 0.035, 0, 0.19, -0.22, 0, 0, -0.05);
+    blade.rotation.x = -0.06;
+    box(group, steelDark, 0.052, 0.08, 0.045, 0, 0.02, -0.11);
+    box(group, grip, 0.075, 0.2, 0.1, 0, -0.09, -0.02, 0.08);
+    box(group, accent, 0.085, 0.025, 0.11, 0, 0.01, -0.02);
+    box(group, glove, 0.13, 0.15, 0.14, 0, -0.12, 0.02, 0.14);
+    box(group, glove, 0.09, 0.08, 0.11, -0.01, -0.03, -0.12, 0.18);
+    group.userData.muzzle = new THREE.Vector3(0, 0.34, -0.22);
+    group.userData.glow = accent;
+    return group;
+  }
+
   window.AISniperModels = {
     palettes: SOLDIER_PALETTES,
     createSoldier,
     createRifle,
     createFirstPersonRifle,
+    createFirstPersonPistol,
+    createFirstPersonKnife,
     createSkyDome,
     createGlowTexture,
     materials: { material, box, cylinder, sphere }
