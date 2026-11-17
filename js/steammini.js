@@ -7662,6 +7662,7 @@
       this.fpSettings = this.loadFpSettings();
       this.fpLookDX = 0;
       this.fpLookDY = 0;
+      this.fpLockGrace = 0;
       this.fpYaw = -Math.PI / 2;
       this.fpPitch = 0;
       this.fpLookDX = 0;
@@ -8893,6 +8894,9 @@
       this.resetWeaponAmmo('primary');
       this.fpYaw = -Math.PI / 2;
       this.fpPitch = 0;
+      this.fpLookDX = 0;
+      this.fpLookDY = 0;
+      this.fpLockGrace = 0.2;
       this.fpBob = 0;
       this.fpRecoil = 0;
       this.fpMoving = false;
@@ -10495,49 +10499,95 @@
       this.fpPitch = clamp(this.fpPitch + 0.0022, -1.5, 1.5);
       const point = this.playerPoint();
       const mouse = this.worldMouse();
-      const pitch = this.firstPersonActive() ? (this.fpPitch || 0) : 0;
-      const pitchCos = Math.cos(pitch);
-      const assisted = spec.explosive || Math.abs(pitch) > 0.16
-        ? { x: mouse.x, y: mouse.y, target: null, locked: false }
-        : this.assistAim(point, mouse, 420, 0.34, 0.55);
-      const baseAngle = Math.atan2(assisted.y - point.y, assisted.x - point.x) + rand(-0.018, 0.018);
       const count = spec.pellets || spec.burst || 1;
       const spread = spec.spread || (count > 1 ? 0.13 : 0);
       const speed = spec.speed || 1080;
       const burnBoost = spec.exoticEffect?.type === 'burn' ? 1 + (spec.exoticEffect.ratio || 0) : 1;
       const damage = (spec.damage + this.currentLight() * (spec.slot === 'power' ? 0.65 : 0.22))
         * this.exoticWeaponMultiplier(spec) * burnBoost;
+      let baseAngle = this.fpYaw;
+      if (!this.firstPersonActive()) {
+        const assisted = spec.explosive
+          ? { x: mouse.x, y: mouse.y, target: null, locked: false }
+          : this.assistAim(point, mouse, 420, 0.34, 0.55);
+        baseAngle = Math.atan2(assisted.y - point.y, assisted.x - point.x) + rand(-0.018, 0.018);
+      }
       const muzzle = this.playerMuzzlePoint(baseAngle);
-      const trajectoryAngle = Math.atan2(assisted.y - muzzle.y, assisted.x - muzzle.x);
-      const fpMuzzle = this.firstPersonActive() ? this.fpMuzzleWorld() : null;
-      const muzzleWorld = fpMuzzle ? { x: fpMuzzle.x, y: fpMuzzle.y, z: fpMuzzle.z } : null;
-      const muzzleZ = this.firstPersonActive()
-        ? (fpMuzzle ? fpMuzzle.y : this.fpGroundHeightAt(muzzle.x, muzzle.y) + 30 + (this.fpJumpZ || 0) * 0.7)
-        : 0;
-      for (let i = 0; i < count; i += 1) {
-        const offset = count > 1 ? (i - (count - 1) / 2) * spread : 0;
-        const angle = trajectoryAngle + offset;
-        this.bullets.push({
-          x: muzzle.x + Math.cos(angle) * 4,
-          y: muzzle.y + Math.sin(angle) * 4,
-          vx: Math.cos(angle) * speed * pitchCos,
-          vy: Math.sin(angle) * speed * pitchCos,
-          vz: this.firstPersonActive() ? Math.sin(pitch) * speed : 0,
-          life: spec.life || 1.15,
-          damage,
-          color: spec.bulletColor,
-          width: spec.bulletWidth,
-          z: muzzleZ,
-          muzzleWorld,
-          age: 0,
-          explosive: Boolean(spec.explosive),
-          explosionRadius: spec.explosionRadius || 0,
-          explosionDamage: spec.explosive ? damage * 1.15 : 0,
-          projectileType: spec.projectileType || 'bullet',
-          weaponLabel: spec.typeLabel,
-          exoticId: spec.exoticId || null,
-          exoticEffect: spec.exoticEffect || null
-        });
+      if (this.firstPersonActive()) {
+        const THREE = window.THREE;
+        const pitch = this.fpPitch || 0;
+        const forward = new THREE.Vector3(
+          Math.cos(pitch) * Math.cos(this.fpYaw),
+          Math.sin(pitch),
+          Math.cos(pitch) * Math.sin(this.fpYaw)
+        ).normalize();
+        const eye = this.fpsCamera?.position
+          ? this.fpsCamera.position.clone()
+          : new THREE.Vector3(point.x, 36 + (this.fpJumpZ || 0), point.y);
+        const fpMuzzle = this.fpMuzzleWorld() || eye.clone().add(forward.clone().multiplyScalar(0.9));
+        const muzzleWorld = { x: fpMuzzle.x, y: fpMuzzle.y, z: fpMuzzle.z };
+        const aimPoint = eye.clone().add(forward.clone().multiplyScalar(4200));
+        const baseDirection = aimPoint.clone().sub(fpMuzzle).normalize();
+        for (let i = 0; i < count; i += 1) {
+          const direction = baseDirection.clone();
+          if (spread) {
+            direction.x += rand(-spread, spread);
+            direction.y += rand(-spread, spread);
+            direction.z += rand(-spread, spread);
+            direction.normalize();
+          }
+          this.bullets.push({
+            x: fpMuzzle.x,
+            y: fpMuzzle.z,
+            z: fpMuzzle.y,
+            vx: direction.x * speed,
+            vy: direction.z * speed,
+            vz: direction.y * speed,
+            life: spec.life || 1.15,
+            damage,
+            color: spec.bulletColor,
+            width: spec.bulletWidth,
+            muzzleWorld,
+            age: 0,
+            explosive: Boolean(spec.explosive),
+            explosionRadius: spec.explosionRadius || 0,
+            explosionDamage: spec.explosive ? damage * 1.15 : 0,
+            projectileType: spec.projectileType || 'bullet',
+            weaponLabel: spec.typeLabel,
+            exoticId: spec.exoticId || null,
+            exoticEffect: spec.exoticEffect || null
+          });
+        }
+      } else {
+        const assisted = spec.explosive
+          ? { x: mouse.x, y: mouse.y }
+          : this.assistAim(point, mouse, 420, 0.34, 0.55);
+        const trajectoryAngle = Math.atan2(assisted.y - muzzle.y, assisted.x - muzzle.x);
+        for (let i = 0; i < count; i += 1) {
+          const offset = count > 1 ? (i - (count - 1) / 2) * spread : 0;
+          const angle = trajectoryAngle + offset;
+          this.bullets.push({
+            x: muzzle.x + Math.cos(angle) * 4,
+            y: muzzle.y + Math.sin(angle) * 4,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            vz: 0,
+            life: spec.life || 1.15,
+            damage,
+            color: spec.bulletColor,
+            width: spec.bulletWidth,
+            z: 0,
+            muzzleWorld: null,
+            age: 0,
+            explosive: Boolean(spec.explosive),
+            explosionRadius: spec.explosionRadius || 0,
+            explosionDamage: spec.explosive ? damage * 1.15 : 0,
+            projectileType: spec.projectileType || 'bullet',
+            weaponLabel: spec.typeLabel,
+            exoticId: spec.exoticId || null,
+            exoticEffect: spec.exoticEffect || null
+          });
+        }
       }
       this.fx.burst(muzzle.x, muzzle.y, spec.bulletColor, spec.explosive ? 7 : 2, spec.explosive ? 120 : 70, spec.explosive ? 2 : 1.1);
       if (player.ammo <= 0) this.startReload();
@@ -11890,8 +11940,8 @@
 
       const mountainGroups = city
         ? [
-          { radius: 24500, height: 2600, color: 0x8095a1, count: 30, kind: 'peak' },
-          { radius: 20200, height: 1900, color: 0x5e7480, count: 26, kind: 'peak' }
+          { radius: 24500, height: 2600, color: 0x8095a1, count: 30, kind: 'rock' },
+          { radius: 20200, height: 1900, color: 0x5e7480, count: 26, kind: 'rock' }
         ]
         : isEdz
           ? [
@@ -12380,10 +12430,10 @@
           const z = ny * this.h;
           const ground = this.fpGroundHeightAt(x, z);
           const material = variant ? red : blue;
-          add(material, x, ground + 14, z, 74, 28, 26, 0, ry, 0);
-          add(concreteDark, x, ground + 28, z, 76, 2, 28, 0, ry, 0);
+          add(material, x, ground + 23, z, 74, 46, 26, 0, ry, 0);
+          add(concreteDark, x, ground + 47, z, 76, 2, 28, 0, ry, 0);
           for (let rib = 0; rib < 5; rib += 1) {
-            add(material === red ? rust : metal, x - 29 + rib * 14, ground + 14, z + 13, 2, 25, 2, 0, ry, 0);
+            add(material === red ? rust : metal, x - 29 + rib * 14, ground + 23, z + 13, 2, 43, 2, 0, ry, 0);
           }
         });
         for (let i = 0; i < 12; i += 1) {
@@ -12591,7 +12641,92 @@
         smoke.scale.set(520, 820, 1);
         this.fpsWorld.add(smoke);
       }
+      this.fpsBuildCityStreets(style);
       this.fpsBuildCityPlaza(style);
+    }
+
+    fpsBuildCityStreets(style) {
+      if (!window.THREE) return;
+      const THREE = window.THREE;
+      const bounds = this.fpBounds();
+      const centerX = this.w * 0.5;
+      const centerZ = this.h * 0.5;
+      const asphalt = new THREE.MeshStandardMaterial({ color: 0x20272b, roughness: 0.9, metalness: 0.03 });
+      const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x666a68, roughness: 0.92, metalness: 0.02 });
+      const curbMat = new THREE.MeshStandardMaterial({ color: 0x7d7c73, roughness: 0.94, metalness: 0.02 });
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0xd8c58e, transparent: true, opacity: 0.48 });
+      const metal = new THREE.MeshStandardMaterial({ color: 0x2c3438, roughness: 0.6, metalness: 0.48 });
+      const bulb = new THREE.MeshStandardMaterial({ color: 0xffd28a, emissive: 0xffad55, emissiveIntensity: 1.25, roughness: 0.3 });
+      const add = (material, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0) => {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
+        mesh.position.set(x, y, z);
+        mesh.scale.set(sx, sy, sz);
+        mesh.rotation.set(rx, ry, rz);
+        this.fpsWorld.add(mesh);
+        return mesh;
+      };
+      const roadWidth = this.w * 0.16;
+      const crossDepth = this.h * 0.12;
+      const zStart = bounds.minY + 0.12;
+      const zEnd = bounds.maxY - 0.12;
+      const xStart = bounds.minX + 0.12;
+      const xEnd = bounds.maxX - 0.12;
+      const segmentsZ = 20;
+      const segmentsX = 20;
+      for (let i = 0; i < segmentsZ; i += 1) {
+        const y = zStart + (zEnd - zStart) * ((i + 0.5) / segmentsZ);
+        const ground = this.fpGroundHeightAt(centerX, y * this.h);
+        add(asphalt, centerX, ground + 1.1, y * this.h, roadWidth, 2.4, (zEnd - zStart) * this.h / segmentsZ * 1.06);
+        [-1, 1].forEach((side) => {
+          add(sidewalkMat, centerX + side * (roadWidth * 0.58), ground + 2.1, y * this.h, roadWidth * 0.16, 3.2, (zEnd - zStart) * this.h / segmentsZ * 1.02);
+          add(curbMat, centerX + side * (roadWidth * 0.5), ground + 3.2, y * this.h, 5, 1.2, (zEnd - zStart) * this.h / segmentsZ * 1.02);
+        });
+        if (i % 2 === 0) add(lineMat, centerX, ground + 2.4, y * this.h, 4, 0.4, (zEnd - zStart) * this.h / segmentsZ * 0.48);
+      }
+      for (let i = 0; i < segmentsX; i += 1) {
+        const x = xStart + (xEnd - xStart) * ((i + 0.5) / segmentsX);
+        const ground = this.fpGroundHeightAt(x * this.w, centerZ);
+        add(asphalt, x * this.w, ground + 1.12, centerZ, (xEnd - xStart) * this.w / segmentsX * 1.06, 2.4, crossDepth);
+        [-1, 1].forEach((side) => {
+          add(sidewalkMat, x * this.w, ground + 2.12, centerZ + side * (crossDepth * 0.58), (xEnd - xStart) * this.w / segmentsX * 1.02, 3.2, crossDepth * 0.16);
+          add(curbMat, x * this.w, ground + 3.2, centerZ + side * (crossDepth * 0.5), (xEnd - xStart) * this.w / segmentsX * 1.02, 1.2, 5);
+        });
+        if (i % 2 === 0) add(lineMat, x * this.w, ground + 2.42, centerZ, (xEnd - xStart) * this.w / segmentsX * 0.48, 0.4, 4);
+      }
+      // crosswalks at the central junction
+      for (let i = 0; i < 7; i += 1) {
+        const offset = (i - 3) * 22;
+        const ground = this.fpGroundHeightAt(centerX + offset, (0.5 * this.h) + roadWidth * 0.58);
+        add(lineMat, centerX + offset, ground + 2.55, 0.5 * this.h - roadWidth * 0.58, 12, 0.4, 46);
+        add(lineMat, centerX + offset, ground + 2.55, 0.5 * this.h + roadWidth * 0.58, 12, 0.4, 46);
+      }
+      // tall street lights
+      [0.18, 0.34, 0.66, 0.82].forEach((ny, index) => {
+        [-1, 1].forEach((side) => {
+          const x = centerX + side * (roadWidth * 0.78);
+          const z = ny * this.h;
+          const ground = this.fpGroundHeightAt(x, z);
+          add(metal, x, ground + 58, z, 9, 116, 9);
+          add(metal, x - side * 18, ground + 112, z, 38, 5, 5);
+          add(bulb, x - side * 36, ground + 109, z, 16, 8, 12);
+          if (index < 2) {
+            const light = new THREE.PointLight(0xffc27a, 0.72, 320, 2);
+            light.position.set(x - side * 36, ground + 106, z);
+            this.fpsWorld.add(light);
+          }
+        });
+      });
+      // traffic signals at the central junction
+      [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([sx, sz]) => {
+        const x = centerX + sx * roadWidth * 0.64;
+        const z = centerZ + sz * crossDepth * 0.65;
+        const ground = this.fpGroundHeightAt(x, z);
+        add(metal, x, ground + 48, z, 5, 96, 5);
+        add(metal, x, ground + 91, z, 10, 23, 9);
+        add(new THREE.MeshStandardMaterial({ color: 0xff6450, emissive: 0xff3c2f, emissiveIntensity: 1.2 }), x, ground + 96, z + 5, 5, 5, 2);
+        add(new THREE.MeshStandardMaterial({ color: 0xffc45c, emissive: 0x3d2a08, emissiveIntensity: 0.5 }), x, ground + 90, z + 5, 5, 5, 2);
+        add(new THREE.MeshStandardMaterial({ color: 0x7fd18a, emissive: 0x0b2a12, emissiveIntensity: 0.4 }), x, ground + 84, z + 5, 5, 5, 2);
+      });
     }
 
     fpsBuildCityPlaza(style) {
@@ -15270,6 +15405,7 @@
 
     updateFirstPersonLook(dt) {
       const settings = this.fpSettings || this.defaultFpSettings();
+      this.fpLockGrace = Math.max(0, (this.fpLockGrace || 0) - dt);
       const keys = this.manager.keys;
       if (keys.has('ArrowLeft')) this.fpYaw -= 1.55 * dt * settings.sensitivity;
       if (keys.has('ArrowRight')) this.fpYaw += 1.55 * dt * settings.sensitivity;
@@ -15281,8 +15417,8 @@
         const viewH = this.viewH || this.manager.height || 560;
         const nx = (mouse.x - viewW / 2) / (viewW / 2);
         const ny = (mouse.y - viewH / 2) / (viewH / 2);
-        if (Math.abs(nx) > 0.06) this.fpYaw += nx * 1.4 * dt * settings.sensitivity;
-        if (Math.abs(ny) > 0.1) this.fpPitch -= ny * 0.7 * dt * settings.sensitivity * (settings.invertY ? -1 : 1);
+        if (Math.abs(nx) > 0.06 && Math.abs(nx) < 0.68) this.fpYaw += nx * 0.62 * dt * settings.sensitivity;
+        if (Math.abs(ny) > 0.1 && Math.abs(ny) < 0.68) this.fpPitch -= ny * 0.48 * dt * settings.sensitivity * (settings.invertY ? -1 : 1);
       }
       const smoothing = clamp(settings.smoothing, 0, 1);
       const response = 1 - Math.exp(-dt * (18 + (1 - smoothing) * 42));
@@ -15299,9 +15435,12 @@
     }
 
     lookMove(dx, dy) {
-      if (!this.firstPersonActive()) return;
-      this.fpLookDX += dx;
-      this.fpLookDY += dy;
+      if (!this.firstPersonActive() || this.fpLockGrace > 0) return;
+      const stepX = clamp(Number(dx) || 0, -140, 140);
+      const stepY = clamp(Number(dy) || 0, -140, 140);
+      if (Math.abs(stepX) >= 139 || Math.abs(stepY) >= 139) return;
+      this.fpLookDX = clamp(this.fpLookDX + stepX, -240, 240);
+      this.fpLookDY = clamp(this.fpLookDY + stepY, -240, 240);
     }
 
     jump() {
@@ -15412,6 +15551,9 @@
 
     onPointerLockChange(locked) {
       this.fpMouseLocked = Boolean(locked);
+      this.fpLookDX = 0;
+      this.fpLookDY = 0;
+      this.fpLockGrace = locked ? 0.22 : 0;
     }
 
     setupFirstPersonEnvironment() {
@@ -15626,7 +15768,8 @@
           rows.forEach((row, rowIndex) => {
             const x = col + (next() - 0.5) * 0.1;
             const y = row + (next() - 0.5) * 0.1;
-            if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearStructure(x, y)) return;
+            const onRoad = Math.abs(x - 0.5) < 0.115 || Math.abs(y - 0.5) < 0.075;
+            if (onRoad || nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearStructure(x, y)) return;
             if (next() < 0.06) return;
             const roll = next();
             const kind = roll < 0.8 ? 'building' : roll < 0.87 ? 'wreck' : 'rubble';
@@ -15648,12 +15791,13 @@
         for (let index = 0; index < 64; index += 1) {
           let x = streetBounds.minX + 0.25 + next() * (streetBounds.maxX - streetBounds.minX - 0.5);
           let y = streetBounds.minY + 0.22 + next() * (streetBounds.maxY - streetBounds.minY - 0.44);
-          if (nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearPyramid(x, y) || nearStructure(x, y)) continue;
+          const onRoad = Math.abs(x - 0.5) < 0.115 || Math.abs(y - 0.5) < 0.075;
+          if (onRoad || nearAltar(x, y, 0.02) || nearSpawn(x, y) || nearDais(x, y) || nearPyramid(x, y) || nearStructure(x, y)) continue;
           const lamp = index % 2 === 0;
           this.fpProps.push({
             x, y,
-            width: lamp ? 7 : 16 + next() * 26,
-            height: lamp ? 52 : 10 + next() * 18,
+            width: lamp ? 8 : 16 + next() * 26,
+            height: lamp ? 108 : 10 + next() * 18,
             kind: lamp ? 'lamp' : 'rubble',
             color: lamp ? '#ffd09a' : biome.accent2,
             phase: next() * Math.PI * 2,

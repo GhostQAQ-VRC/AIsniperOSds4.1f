@@ -317,6 +317,7 @@
       this.inspectTime = 0;
       this.armor = 0;
       this.helmet = false;
+      this.lockGrace = 0;
       this.buildUI();
       this.bindUI();
       this.selectMap(this.selectedMap);
@@ -634,9 +635,13 @@
       });
       document.addEventListener('mousemove', (event) => {
         if (document.pointerLockElement !== this.refs.canvas) return;
-        if (!this.running || this.paused || this.over) return;
-        this.yaw -= event.movementX * 0.0021;
-        this.pitch = clamp(this.pitch - event.movementY * 0.0018, -1.25, 1.25);
+        if (!this.running || this.paused || this.over || this.buyOpen) return;
+        if (performance.now() < (this.lockGrace || 0)) return;
+        const dx = clamp(Number(event.movementX) || 0, -110, 110);
+        const dy = clamp(Number(event.movementY) || 0, -110, 110);
+        if (Math.abs(dx) >= 109 || Math.abs(dy) >= 109) return;
+        this.yaw -= dx * 0.0021;
+        this.pitch = clamp(this.pitch - dy * 0.0018, -1.25, 1.25);
       });
       document.addEventListener('mousedown', (event) => {
         if (event.button !== 0) return;
@@ -649,6 +654,7 @@
         this.hasLock = locked;
         if (locked) {
           this.wasLocked = true;
+          this.lockGrace = performance.now() + 220;
           if (this.running && !this.over && this.paused) this.resume(false);
         } else if (this.wasLocked) {
           this.wasLocked = false;
