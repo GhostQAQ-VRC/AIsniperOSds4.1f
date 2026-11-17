@@ -5106,7 +5106,7 @@
   ];
 
   const DESTINY_BIOMES = {
-    mercury: { sky: '#7a421d', sky2: '#1c0d06', ground: '#b98753', accent: '#f6d58a', accent2: '#e39a50', horizon: 'mercury-desert', particles: 'dust' },
+    mercury: { sky: '#d99a58', sky2: '#8b5732', ground: '#c7955f', accent: '#ffe8ad', accent2: '#e8a55e', horizon: 'mercury-desert', particles: 'dust' },
     venus: { sky: '#5b4829', sky2: '#161007', ground: '#4a3a23', accent: '#e8ca78', accent2: '#8fe0b5', horizon: 'venus-jungle', particles: 'spores' },
     vaultglass: { sky: '#453b27', sky2: '#0d0b07', ground: '#3a3423', accent: '#e7d38d', accent2: '#8ce7dc', horizon: 'vault-glass', particles: 'data' },
     blackhole: { sky: '#10091c', sky2: '#020104', ground: '#120b1c', accent: '#e7b96e', accent2: '#a98bff', horizon: 'blackhole', particles: 'motes' },
@@ -5141,6 +5141,7 @@
     'tharsis-fort': { sky: '#47221e', sky2: '#120807', ground: '#3c2824', accent: '#dd8f56', accent2: '#b7d4dc', horizon: 'tharsis-fort', particles: 'dust' },
     lastcity: { sky: '#5a2826', sky2: '#140d12', ground: '#30343a', accent: '#e9bd72', accent2: '#e25d48', horizon: 'city', particles: 'embers' },
     edz: { sky: '#233f36', sky2: '#07130f', ground: '#263b2d', accent: '#a8eed8', accent2: '#62c7a7', horizon: 'forest', particles: 'spores' },
+    cosmodrome: { sky: '#3d5563', sky2: '#10171c', ground: '#4b5055', accent: '#bad7df', accent2: '#e0a35c', horizon: 'cosmodrome', particles: 'snow' },
     almighty: { sky: '#5f2c1a', sky2: '#180b0b', ground: '#3a2d28', accent: '#ffd37a', accent2: '#ff7b3f', horizon: 'ship', particles: 'embers' },
     cabalship: { sky: '#351719', sky2: '#0b070a', ground: '#2a2324', accent: '#e7b460', accent2: '#d94f3e', horizon: 'ship', particles: 'embers' },
     cabalthrone: { sky: '#481b1b', sky2: '#0b0708', ground: '#32231e', accent: '#f2c66f', accent2: '#f05d46', horizon: 'cabalthrone', particles: 'embers' }
@@ -5192,6 +5193,8 @@
 
   const DESTINY_PLANET_BY_BIOME = {
     lastcity: 'earth',
+    edz: 'earth',
+    cosmodrome: 'earth',
     mercury: 'mercury',
     vexforest: 'mercury',
     vexcore: 'mercury',
@@ -5241,7 +5244,7 @@
     const isScorn = /prison|asteroids/.test(horizon);
     const isHive = /hive|scarlet|pyramid|throne|awoken/.test(horizon);
     const isIce = /ice|fallen/.test(horizon);
-    const isCity = /neon|typhon|city|forest|ship|cabalthrone/.test(horizon);
+    const isCity = /neon|typhon|city|forest|cosmodrome|ship|cabalthrone/.test(horizon);
     const isOrganic = /organic|sanctum/.test(horizon);
     const isKepler = /kepler|singularity/.test(horizon);
     const isTharsis = /tharsis/.test(horizon);
@@ -5576,10 +5579,11 @@
       } else if (horizon === 'tharsis-city') {
         landmarks += `<path d="M0 286c90-40 150-10 210-52s120-18 175 14 130 8 190-22 150 10 225 60" fill="none" stroke="${palette.accent2}" stroke-width="1.5" opacity=".22"/>`;
       }
-    } else if (horizon === 'city' || horizon === 'forest' || horizon === 'ship' || horizon === 'throne') {
+    } else if (horizon === 'city' || horizon === 'forest' || horizon === 'cosmodrome' || horizon === 'ship' || horizon === 'throne') {
       landmarks = towers(horizon === 'city' ? 12 : 6, '#1b2229', palette.accent2, 105);
       if (horizon === 'city') landmarks += `<circle cx="400" cy="112" r="58" fill="#f4fbff" opacity=".14"/><circle cx="400" cy="112" r="42" fill="#eefaff" opacity=".28"/>`;
       if (horizon === 'forest') landmarks += spires(15, '#12241a', 18, 95);
+      if (horizon === 'cosmodrome') landmarks += `<path d="M0 250h800v36H0z" fill="#3c474d" opacity=".8"/><path d="M120 250V150h28v100M650 250V130h30v120" fill="#2e383e" opacity=".9"/><path d="M620 130l50-25v24l-50 25z" fill="#687a82" opacity=".5"/><path d="M80 250V128h60v122" fill="#303a3f" opacity=".7"/>`; 
       if (horizon === 'ship') landmarks += `<ellipse cx="400" cy="170" rx="230" ry="72" fill="none" stroke="${palette.accent}" stroke-width="2" opacity=".2"/><path d="M150 286h500" stroke="${palette.accent2}" stroke-width="5" opacity=".12"/>`;
       if (horizon === 'throne') landmarks += `<path d="M260 286V196h80v90M460 286V180h90v106" fill="#2a1e1d" opacity=".9"/>`;
     } else {
@@ -5894,6 +5898,58 @@
     ]
   };
 
+  const DESTINY_EDZ_DESTINATION = {
+    id: 'edz',
+    title: 'European Dead Zone',
+    cn: '欧洲无人区',
+    planet: 'Earth',
+    planetEn: 'EARTH',
+    planetCn: '地球',
+    regionCn: '欧洲无人区',
+    date: '2017-09-06',
+    installed: true,
+    accent: '#8fb69a',
+    accent2: '#d8b56d',
+    biome: 'edz',
+    faction: 'fallen',
+    factionCn: 'Fallen · 欧洲死区',
+    map: { x: 0.35, y: 0.70 },
+    story: '欧洲最后一片未被完全占领的森林里，农场与旧发电站仍在运转。Fallen 部落沿着河谷推进，而失踪的守护者信号把先锋引向更深处。',
+    missions: [
+      { id: 'edz-farm', title: '农场', en: 'The Farm', location: 'EDZ // THE FARM', brief: '穿过特罗斯特兰的废墟，抵达农场外围。清剿盘踞在旧村庄里的 Fallen 侦察队。', objective: '清理农场外围的 Fallen', biome: 'edz', faction: 'fallen' },
+      { id: 'edz-trostland', title: '特罗斯特兰', en: 'Trostland', location: 'EDZ // TROSTLAND', brief: '特罗斯特兰的教堂钟声再次响起。Fallen 在广场集结，夺回通往旧城区的路口。', objective: '夺回特罗斯特兰广场', biome: 'edz', faction: 'fallen' },
+      { id: 'edz-firebase', title: '哈迪斯基地', en: 'Firebase Hades', location: 'EDZ // FIREBASE HADES', brief: '红色军团把旧导弹基地改造成了前线机场。摧毁燃料阵列，切断他们的空中补给。', objective: '摧毁哈迪斯基地的燃料阵列', biome: 'edz', faction: 'cabal' },
+      { id: 'edz-mines', title: '盐矿', en: 'Salt Mines', location: 'EDZ // SALT MINES', brief: '地下盐矿里回荡着不属于 Fallen 的低语。沿着黑暗的矿道前进，找到被封锁的古老舱门。', objective: '穿过盐矿并解除舱门封锁', biome: 'edz', faction: 'taken' },
+      { id: 'edz-shadows', title: '暗影之湖', en: 'Lake of Shadows', location: 'EDZ // TROSTLAND', brief: '湖面上浮着一层不属于这个世界的黑雾。净化湖区，击败被 Taken 力量扭曲的守卫。', objective: '净化暗影之湖', biome: 'edz', faction: 'taken', boss: true, bossName: 'Grask, the Consumed', bossKind: 'taken' }
+    ]
+  };
+
+  const DESTINY_COSMODROME_DESTINATION = {
+    id: 'cosmodrome',
+    title: 'Cosmodrome',
+    cn: '太空发射基地',
+    planet: 'Earth',
+    planetEn: 'EARTH',
+    planetCn: '地球',
+    regionCn: '旧俄罗斯 · 太空发射基地',
+    date: '2014-09-09',
+    installed: true,
+    accent: '#8fb8c8',
+    accent2: '#d9a15c',
+    biome: 'cosmodrome',
+    faction: 'fallen',
+    factionCn: 'Fallen · 破败军团',
+    map: { x: 0.62, y: 0.84 },
+    story: '这里是守护者苏醒的地方。锈蚀的火箭架、积雪的发射场和被 Fallen 占据的旧俄罗斯基地，构成了一切故事开始之前的战场。',
+    missions: [
+      { id: 'cosmodrome-wall', title: '旧城墙', en: 'The Wall', location: 'COSMODROME // THE WALL', brief: '沿着旧城墙前进，清理盘踞在雷达站中的 Fallen，为先锋打开通往发射场的道路。', objective: '清理旧城墙的 Fallen', biome: 'cosmodrome', faction: 'fallen' },
+      { id: 'cosmodrome-hangar', title: '机库', en: 'The Hangar', location: 'COSMODROME // SKY WATCH', brief: '机库深处还有一台可以启动的旧式运输船。先夺回控制塔，再为它清空跑道。', objective: '夺回机库控制塔', biome: 'cosmodrome', faction: 'fallen' },
+      { id: 'cosmodrome-dark', title: '黑暗中的低语', en: 'The Dark Within', location: 'COSMODROME // SKY WATCH', brief: '地下的 Hive 巢穴正在向发射场扩张。深入黑暗，关闭它们的仪式节点。', objective: '关闭 Hive 仪式节点', biome: 'cosmodrome', faction: 'hive' },
+      { id: 'cosmodrome-array', title: '最后的阵列', en: 'The Last Array', location: 'COSMODROME // THE LAST ARRAY', brief: '旧俄罗斯的深空阵列仍在等待唤醒。重启阵列，向旅行者发送一条属于新守护者的信号。', objective: '重启深空阵列并守住信号', biome: 'cosmodrome', faction: 'fallen' },
+      { id: 'cosmodrome-ship', title: '离港', en: 'Departure', location: 'COSMODROME // LAUNCH PAD', brief: '舰船已经准备就绪。清理跑道上的最后一批 Fallen，然后登上飞船离开发射基地。', objective: '登上飞船离开太空发射基地', biome: 'cosmodrome', faction: 'fallen', boss: true, bossName: 'Rahn, Dockmaster', bossKind: 'fallen' }
+    ]
+  };
+
   function buildDlcMissions(dlc) {
     const list = Array.isArray(dlc.missions) ? dlc.missions : [];
     return list.map((mission, index) => {
@@ -6011,6 +6067,27 @@
     sky: '#13252a',
     sky2: '#070c0e',
     ground: '#1d2b2e'
+  };
+
+  DESTINY_ACTIVITIES.zerohour = {
+    chapter: '异域任务',
+    title: '0时行动',
+    biome: 'edz',
+    faction: 'fallen',
+    factionCn: '堕落者 · 旧发射场',
+    cn: 'ZERO HOUR · OLD LAUNCH COMPLEX',
+    location: 'EUROPEAN DEAD ZONE // OLD LAUNCH COMPLEX',
+    brief: '一段被遗忘的发射井仍在倒计时。穿过悬空的冷却塔、时间闸门与碎片回路，在发射井终端重启零时协议。',
+    objective: '穿过旧发射场，收集时之碎片并抵达发射井终点',
+    type: 'parkour',
+    boss: true,
+    bossName: '零时执政官',
+    bossKind: 'fallen',
+    accent: '#8ff7d8',
+    accent2: '#e3b04b',
+    sky: '#1a2723',
+    sky2: '#070d0b',
+    ground: '#26342f'
   };
 
   const DESTINY_ENEMY_FACTION = {
@@ -7121,6 +7198,13 @@
         abilityName: '视界回响', ability: '光束在终点制造引力涡流，持续拉拽并削弱敌人。',
         effect: { type: 'vortex', radius: 110, ratio: 0.6, color: '#b28ae8' },
         overrides: { damage: 155, mag: 5, reserve: 20, rate: 0.95, bulletWidth: 2.8, speed: 1950, projectileType: 'beam' }
+      },
+      outbreak: {
+        id: 'outbreak', name: '全面爆发', en: 'Outbreak Perfected', slot: 'primary',
+        weaponType: 'pulse', element: 'kinetic', source: 'quest', sourceKey: 'edz', sourceLabel: '异域任务 · 0时行动',
+        abilityName: '腐败蔓延', ability: '精准命中会附着 SIVA 纳米虫群并持续造成伤害；精准击杀会让虫群扩散到附近敌人。',
+        effect: { type: 'siva', ratio: 0.3, radius: 170, duration: 4.5, color: '#b8ffd9' },
+        overrides: { damage: 18, mag: 36, reserve: 324, rate: 0.075, burst: 3, spread: 0.012, bulletWidth: 1.4, speed: 1250 }
       }
     },
     armor: {
@@ -7265,6 +7349,7 @@
     },
     quests: {
       redwar: { id: 'quest-hawkmoon', destination: 'redwar', name: '鹰月的回声', en: 'Echo of the Hawkmoon', weapon: 'hawkmoon', bossName: '鹰月守卫', bossKind: 'cabal', brief: '一段来自最后城市的旧信号指向鹰月。追踪信号，击败守卫，取回这把烈日手炮。' },
+      edz: { id: 'zero-hour', destination: 'edz', name: '0时行动', en: 'Zero Hour', weapon: 'outbreak', bossName: '零时执政官', bossKind: 'fallen', mode: 'parkour', brief: '欧洲无人区的旧发射井中，一段被 SIVA 感染的信号正在重复广播。穿过失重、激光与断裂平台，在发射井底部取回全面爆发。' },
       'curse-of-osiris': { id: 'quest-polaris', destination: 'curse-of-osiris', name: '无限之径', en: 'The Infinite Path', weapon: 'polaris', bossName: '无限守卫', bossKind: 'vex', brief: '水星的无限森林记录着一次未发生的射击。沿着光迹前进，找到北极星长矛。' },
       warmind: { id: 'quest-sleeper', destination: 'warmind', name: '沉睡者协议', en: 'The Sleeper Protocol', weapon: 'sleeper', bossName: '协议看守', bossKind: 'cabal', brief: '拉斯普京的武器库深处还有一把沉睡的重炮。重启协议，带走它。' },
       forsaken: { id: 'quest-ace', destination: 'forsaken', name: '黑桃', en: 'The Ace', weapon: 'ace', bossName: '牌桌守卫', bossKind: 'scorn', brief: '一张黑桃被留在纷争海岸的牌桌上。沿着弹壳和旧账本找到它的主人。' },
@@ -7597,6 +7682,8 @@
       this.fpStructures = [];
       this.fpStructureWalls = [];
       this.fpTerrain = null;
+      this.fpSpawnPoint = null;
+      this.parkour = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
       this.fpAltarBuffCd = 0;
@@ -7669,6 +7756,8 @@
       this.raidStageBanner = null;
       this.strikeConfig = null;
       this.raidCleared = {};
+      this.cosmodromeComplete = false;
+      this.tutorial = null;
       this.encounter = null;
       this.hazards = [];
       this.inventoryHover = null;
@@ -7871,6 +7960,7 @@
             if (value === true) this.exoticQuestCompleted[key] = true;
           });
         }
+        if (typeof saved.cosmodromeComplete === 'boolean') this.cosmodromeComplete = saved.cosmodromeComplete;
         if (Number.isFinite(saved.worldExoticPity)) this.worldExoticPity = Math.max(0, Math.floor(saved.worldExoticPity));
         if (Number.isFinite(saved.vanguardIndex)) this.vanguardIndex = Math.max(0, Math.floor(saved.vanguardIndex));
         if (typeof saved.directorSelected === 'string') {
@@ -7915,6 +8005,11 @@
         }
         this.normalizeGearExotics();
         this.rebuildExoticCollection();
+        const legacyGuardian = this.campaignProgress > 0
+          || Object.keys(this.dlcProgress || {}).length > 0
+          || Object.keys(this.raidCleared || {}).length > 0
+          || Object.keys(this.exoticCollection || {}).length > 0;
+        if (saved.cosmodromeComplete === undefined && legacyGuardian) this.cosmodromeComplete = true;
         this.progressLoaded = Boolean(
           this.classId
           || this.gearInitialized
@@ -7937,6 +8032,7 @@
           campaignProgress: this.campaignProgress || 0,
           dlcProgress: this.dlcProgress || {},
           raidCleared: this.raidCleared || {},
+          cosmodromeComplete: Boolean(this.cosmodromeComplete),
           vanguardIndex: this.vanguardIndex || 0,
           directorSelected: this.directorSelected || 'redwar',
           prismaticChoices: this.prismaticChoices || {},
@@ -7985,6 +8081,10 @@
       }
       this.unequipInvalidExoticArmor();
       this.syncExoticRewards();
+      if (!this.cosmodromeComplete) {
+        this.startCosmodromeTutorial();
+        return;
+      }
       this.showOrbit();
     }
 
@@ -8049,6 +8149,9 @@
       this.fpStructures = [];
       this.fpStructureWalls = [];
       this.fpTerrain = null;
+      this.fpSpawnPoint = null;
+      this.parkour = null;
+      this.tutorial = null;
       this.fpAltar = null;
       this.fpAltarStand = 0;
       this.crucible = null;
@@ -8542,6 +8645,8 @@
       if (id === 'venus') return DESTINY_VENUS_DESTINATION;
       if (id === 'blackhole') return DESTINY_BLACKHOLE_DESTINATION;
       if (id === 'eternal-realm') return DESTINY_ETERNAL_DESTINATION;
+      if (id === 'edz') return DESTINY_EDZ_DESTINATION;
+      if (id === 'cosmodrome') return DESTINY_COSMODROME_DESTINATION;
       return this.dlcModes.find((entry) => entry.id === id) || null;
     }
 
@@ -8550,7 +8655,7 @@
       if (destination.id === 'redwar') return DESTINY_MISSIONS;
       if (destination.id === 'dreaming-city') return buildDlcMissions(destination);
       if (destination.id === 'nessus') return buildDlcMissions(destination);
-      if (destination.id === 'venus' || destination.id === 'blackhole' || destination.id === 'eternal-realm') return buildDlcMissions(destination);
+      if (['venus', 'blackhole', 'eternal-realm', 'edz', 'cosmodrome'].includes(destination.id)) return buildDlcMissions(destination);
       return destination.missions?.length ? destination.missions : buildDlcMissions(destination);
     }
 
@@ -8692,12 +8797,71 @@
         this.startStrike(this.nextVanguardStrike());
         return;
       }
+      if (id === 'zerohour') {
+        const quest = this.exoticQuestForDestination('edz');
+        if (quest && this.exoticQuestCompleted[quest.id]) {
+          this.toast('0时行动已经完成 · 全面爆发已在你的收藏中');
+          return;
+        }
+        if (!this.destinationStoryComplete('edz')) {
+          this.toast('先完成欧洲无人区主线，才能追踪 0时行动的信号。', 'danger');
+          return;
+        }
+        this.startExoticQuest('edz');
+        return;
+      }
       const activity = DESTINY_ACTIVITIES[id];
       if (!activity) return;
       this.screen = 'play';
       this.currentMode = id;
       this.activityId = id;
       this.startMission(0, { mode: id, mission: activity });
+    }
+
+    startCosmodromeTutorial() {
+      const ship = { x: 4.2, y: 0.35 };
+      this.cosmodromeComplete = false;
+      this.tutorial = {
+        stage: 'breach',
+        spawned: false,
+        stageTimer: 0,
+        wavesCleared: 0,
+        boarded: false,
+        boardTime: 0,
+        ship,
+        shipGroup: null,
+        hintShown: false
+      };
+      const mission = {
+        id: 'tutorial:cosmodrome',
+        chapter: '序章 · 新光',
+        title: '太空发射基地',
+        en: 'A New Light',
+        location: 'COSMODROME // SHATTERED COAST',
+        brief: '你第一次被光复活。旧俄罗斯的发射基地已经被堕落者占据，沿着冻土与废弃机库杀出去，找到一架还能起飞的飞船，星图才会为你展开。',
+        objective: '穿过发射基地，找到可以起飞的飞船',
+        biome: 'cosmodrome',
+        faction: 'fallen',
+        factionCn: '堕落者',
+        type: 'tutorial',
+        boss: false,
+        accent: '#bad7df',
+        accent2: '#e0a35c'
+      };
+      this.missions = [mission];
+      this.missionIndex = 0;
+      this.mission = mission;
+      this.currentMode = 'tutorial';
+      this.activityId = 'tutorial:cosmodrome';
+      this.directorSelected = 'cosmodrome';
+      this.directorPanelOpen = false;
+      this.raidConfig = null;
+      this.strikeConfig = null;
+      this.dlcConfig = null;
+      this.exoticQuestConfig = null;
+      this.exoticQuestWeaponId = null;
+      this.startMission(0, { mode: 'tutorial', mission, activityId: 'tutorial:cosmodrome' });
+      this.toast('序章 · 太空发射基地 · 沿着指示器前进，找到飞船', 'success');
     }
 
     startMission(index, options = {}) {
@@ -8710,14 +8874,18 @@
       this.activityId = options.activityId || (this.currentMode === 'campaign' ? 'campaign' : this.currentMode);
       this.missionIndex = index;
       this.mission = options.mission || this.missions[index] || this.missions[0];
+      if (this.mission?.type !== 'tutorial') this.tutorial = null;
+      if (this.mission?.type !== 'parkour') this.parkour = null;
       this.mission.faction = this.mission.faction || 'cabal';
       this.mission.factionCn = this.mission.factionCn || this.factionName(this.mission.faction);
       this.prepareMissionScene(this.mission);
+      const missionSpawn = this.fpMissionSpawn();
+      this.fpSpawnPoint = { ...missionSpawn };
       this.inventoryOpen = false;
       this.manager.canvas?.classList.remove('is-inventory-open');
       this.lootDrops = [];
       this.player = {
-        x: 0.5, y: this.mission.type === 'raid' ? 0.72 : 0.79, hp: 200, maxHp: 200, shield: 100, maxShield: 100,
+        x: missionSpawn.x, y: missionSpawn.y, hp: 200, maxHp: 200, shield: 100, maxShield: 100,
         ammo: 32, mag: 32, reserve: 224, reserveMax: 224, fireCd: 0, reload: 0, grenadeCd: 0, superCharge: 0,
         dashCd: 0, dashTime: 0, dashX: 0, dashY: 0, invuln: 0, flash: 0,
         classCd: 0, classCdMax: 5, shieldTimer: 0, muzzle: 0, meleeCd: 0, meleeCdMax: 3.2, hazardCd: 0
@@ -8746,6 +8914,11 @@
       this.fpAltarBuffCd = 0;
       this.fpAltarHintShown = false;
       this.setupFirstPersonEnvironment();
+      if (this.player) {
+        this.fpJumpZ = this.fpGroundHeightAt(this.player.x * this.w, this.player.y * this.h);
+        this.fpJumpV = 0;
+        this.fpGrounded = true;
+      }
       this.ammoDrops = [];
       this.ammoDropTimer = rand(6, 10);
       this.transcendenceTime = 0;
@@ -9141,13 +9314,16 @@
         chapter: '异域任务',
         title: quest.name,
         en: quest.en,
-        location: destination.location || sourceMission.location || destination.planetEn || 'DESTINY 2',
+        location: quest.mode === 'parkour' ? 'EUROPEAN DEAD ZONE // OLD LAUNCH COMPLEX'
+          : destination.location || sourceMission.location || destination.planetEn || 'DESTINY 2',
         brief: quest.brief,
-        objective: `完成 ${quest.name} 的追猎，击败 ${quest.bossName}`,
+        objective: quest.mode === 'parkour'
+          ? '穿过旧发射场，收集 3 枚时之碎片并抵达发射井终点'
+          : `完成 ${quest.name} 的追猎，击败 ${quest.bossName}`,
         biome: destination.biome || sourceMission.biome || 'edz',
         faction: destination.faction || sourceMission.faction || 'cabal',
         factionCn: destination.factionCn || sourceMission.factionCn || this.factionName(destination.faction || 'cabal'),
-        type: 'exoticQuest',
+        type: quest.mode === 'parkour' ? 'parkour' : 'exoticQuest',
         boss: true,
         bossName: quest.bossName,
         bossKind: quest.bossKind || destination.faction || 'cabal',
@@ -9291,6 +9467,14 @@
           this.damageEnemy(enemy, amount * ratio);
         });
         this.fx.ring(x, y, color, 38, 0.3, 1.4);
+      } else if (effect.type === 'siva') {
+        if (source.sivaDot) return;
+        target.sivaUntil = this.time + (effect.duration || 4.5);
+        target.sivaDps = Math.max(target.sivaDps || 0, amount * (effect.ratio ?? 0.3));
+        target.sivaEffect = effect;
+        target.sivaTick = Math.min(target.sivaTick || 0.3, 0.28);
+        this.fx.ring(x, y, color, 25, 0.3, 1.2);
+        this.fx.burst(x, y, color, 4, 60, 1.2);
       } else if (effect.type === 'freeze' || effect.type === 'slow') {
         target.slowTimer = Math.max(target.slowTimer || 0, effect.duration || 3);
         this.fx.ring(x, y, color, 48, 0.45, 2.2);
@@ -9323,6 +9507,27 @@
     applyExoticKill(target, source) {
       const effect = source?.exoticEffect;
       if (!effect) return;
+      const sivaEffect = effect.type === 'siva' ? effect : target?.sivaEffect;
+      if (sivaEffect?.type === 'siva' && target) {
+        const sx = target.x * this.w;
+        const sy = target.y * this.h;
+        const radius = sivaEffect.radius || 170;
+        const spread = this.enemies
+          .filter((enemy) => enemy !== target && enemy.alive && dist(sx, sy, enemy.x * this.w, enemy.y * this.h) < radius)
+          .slice(0, 5);
+        spread.forEach((enemy) => {
+          enemy.sivaUntil = this.time + (sivaEffect.duration || 4.5);
+          enemy.sivaDps = Math.max(enemy.sivaDps || 0, (target.sivaDps || 18) * 0.8);
+          enemy.sivaEffect = sivaEffect;
+          enemy.sivaTick = 0.2;
+          this.chainBolts.push({
+            x1: sx, y1: sy, x2: enemy.x * this.w, y2: enemy.y * this.h,
+            time: 0.36, max: 0.36, color: '#b8ffd9'
+          });
+          this.fx.burst(enemy.x * this.w, enemy.y * this.h, '#b8ffd9', 5, 65, 1.2);
+        });
+        this.fx.ring(sx, sy, '#b8ffd9', 70, 0.5, 2.2);
+      }
       const refund = effect.refund || 0;
       if (refund > 0) {
         const state = this.weaponAmmo?.[this.activeWeaponSlot];
@@ -10969,8 +11174,12 @@
 
     respawnPlayer() {
       if (!this.player) return;
-      this.player.x = 0.5;
-      this.player.y = this.currentMode === 'raid' ? 0.72 : 0.79;
+      const spawn = this.fpSpawnPoint || { x: 0.5, y: this.currentMode === 'raid' ? 0.72 : 0.79 };
+      this.player.x = spawn.x;
+      this.player.y = spawn.y;
+      this.fpJumpZ = this.fpGroundHeightAt(spawn.x * this.w, spawn.y * this.h);
+      this.fpJumpV = 0;
+      this.fpGrounded = true;
       this.player.hp = this.player.maxHp;
       this.player.shield = this.player.maxShield;
       this.player.shieldTimer = 0;
@@ -11094,7 +11303,7 @@
         dreaming: 'dreaming', kepler: 'kepler', 'kepler-academy': 'kepler', 'kepler-singularity': 'kepler',
         throne: 'throne', temple: 'throne',
         pyramid: 'dread', sanctum: 'dread',
-        lastcity: 'earth', edz: 'earth',
+        lastcity: 'earth', edz: 'earth', cosmodrome: 'earth',
         prison: 'unknown', tangled: 'unknown', scarlet: 'unknown', riis: 'unknown', paleheart: 'unknown',
         almighty: 'unknown', cabalship: 'unknown', cabalthrone: 'unknown'
       }[biomeId];
@@ -11261,10 +11470,72 @@
       return texture;
     }
 
+    fpsMercurySkyTexture(style) {
+      if (typeof document === 'undefined') return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      const sky = ctx.createLinearGradient(0, 0, 0, 1024);
+      sky.addColorStop(0, '#25516f');
+      sky.addColorStop(0.24, '#4f82a0');
+      sky.addColorStop(0.48, '#9dbcc5');
+      sky.addColorStop(0.66, '#e6c9a0');
+      sky.addColorStop(0.83, '#f4cf95');
+      sky.addColorStop(1, '#d59b62');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, 2048, 1024);
+      ctx.globalCompositeOperation = 'lighter';
+      const sunX = 1510;
+      const sunY = 665;
+      const sun = ctx.createRadialGradient(sunX, sunY, 1, sunX, sunY, 720);
+      sun.addColorStop(0, 'rgba(255,255,252,1)');
+      sun.addColorStop(0.045, 'rgba(255,252,224,.98)');
+      sun.addColorStop(0.16, 'rgba(255,235,173,.58)');
+      sun.addColorStop(0.48, 'rgba(255,199,117,.16)');
+      sun.addColorStop(1, 'rgba(255,165,77,0)');
+      ctx.fillStyle = sun;
+      ctx.fillRect(0, 0, 2048, 1024);
+      for (let i = 0; i < 12; i += 1) {
+        const angle = (i / 12) * Math.PI * 2 + 0.3;
+        const length = 520 + (i % 4) * 160;
+        ctx.strokeStyle = `rgba(255, 243, 197, ${0.022 + (i % 3) * 0.015})`;
+        ctx.lineWidth = i % 3 === 0 ? 10 : 4;
+        ctx.beginPath();
+        ctx.moveTo(sunX + Math.cos(angle) * 34, sunY + Math.sin(angle) * 34);
+        ctx.lineTo(sunX + Math.cos(angle) * length, sunY + Math.sin(angle) * length);
+        ctx.stroke();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      for (let i = 0; i < 24; i += 1) {
+        const y = 520 + (i % 6) * 58;
+        const alpha = 0.025 + (i % 4) * 0.012;
+        ctx.strokeStyle = `rgba(255, 225, 176, ${alpha})`;
+        ctx.lineWidth = 7 + (i % 5) * 6;
+        ctx.beginPath();
+        ctx.moveTo(-100, y);
+        ctx.bezierCurveTo(580, y - 46, 1430, y + 28, 2148, y - 20);
+        ctx.stroke();
+      }
+      const haze = ctx.createLinearGradient(0, 760, 0, 1024);
+      haze.addColorStop(0, 'rgba(244, 199, 137, 0)');
+      haze.addColorStop(0.55, 'rgba(236, 178, 111, .18)');
+      haze.addColorStop(1, 'rgba(185, 123, 72, .28)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 760, 2048, 264);
+      const texture = new window.THREE.CanvasTexture(canvas);
+      texture.wrapS = window.THREE.RepeatWrapping;
+      texture.wrapT = window.THREE.ClampToEdgeWrapping;
+      if ('encoding' in texture && window.THREE.sRGBEncoding !== undefined) texture.encoding = window.THREE.sRGBEncoding;
+      return texture;
+    }
+
     fpsSkyTexture(style) {
       if (typeof document === 'undefined') return null;
       if (style?.key === 'earth') return this.fpsEarthSkyTexture(style);
       if (style?.key === 'blackhole' || style?.key === 'eternal') return this.fpsVoidSkyTexture(style);
+      if (style?.key === 'mercury') return this.fpsMercurySkyTexture(style);
       const canvas = document.createElement('canvas');
       canvas.width = 2048;
       canvas.height = 1024;
@@ -11472,10 +11743,10 @@
         blending: THREE.AdditiveBlending, depthWrite: false, fog: false
       }));
       sunGlow.position.copy(sunPosition);
-      sunGlow.scale.set(style.key === 'mercury' ? 5600 : 3200, style.key === 'mercury' ? 5600 : 3200, 1);
+      sunGlow.scale.set(style.key === 'mercury' ? 7600 : 3200, style.key === 'mercury' ? 7600 : 3200, 1);
       sunGlow.visible = !voidWorld;
       this.fpsWorld.add(sunGlow);
-      const sun = new THREE.DirectionalLight(new THREE.Color(style.key === 'earth' ? '#ffd2a1' : style.key === 'mercury' ? '#ffd08a' : style.accent), voidWorld ? 0.045 : style.key === 'earth' ? 1.32 : style.key === 'mercury' ? 1.55 : 1.15);
+      const sun = new THREE.DirectionalLight(new THREE.Color(style.key === 'earth' ? '#ffd2a1' : style.key === 'mercury' ? '#ffd08a' : style.accent), voidWorld ? 0.045 : style.key === 'earth' ? 1.32 : style.key === 'mercury' ? 1.9 : 1.15);
       sun.position.copy(sunPosition);
       this.fpsWorld.add(sun);
       const planetAngle = -Math.PI / 2 + 0.42;
@@ -11823,10 +12094,10 @@
         const group = new THREE.Group();
         group.position.set(x, ground, z);
         group.rotation.y = pyramid.rotation || 0;
-        const levels = 7;
+        const levels = 9;
         const stepHeight = pyramid.height / levels;
         for (let level = 0; level < levels; level += 1) {
-          const width = pyramid.base * (1 - level * 0.112);
+          const width = pyramid.base * (1 - level * 0.094);
           const block = new THREE.Mesh(unitBox, level === levels - 1 ? sunStone : sandstone);
           block.position.set(0, level * stepHeight + stepHeight * 0.5, 0);
           block.scale.set(width, stepHeight, width * 0.92);
@@ -11860,20 +12131,22 @@
         this.fpsWorld.add(group);
       });
       const obelisks = [
-        [-1.9, 0.7], [1.8, 0.7], [-2.2, 2.0], [2.9, 0.9], [3.15, 1.8],
-        [-0.7, 2.4], [1.3, 2.7], [-3.1, -0.4], [2.0, -2.0]
+        [-0.36, 0.58], [0.36, 0.58], [-0.42, 0.18], [0.42, 0.18],
+        [-0.48, -0.24], [0.48, -0.24], [-0.52, -0.58], [0.52, -0.58],
+        [-1.35, 1.0], [1.35, 1.0], [-1.45, 1.75], [1.45, 1.75],
+        [-2.0, 2.35], [2.0, 2.35]
       ];
       obelisks.forEach(([nx, ny], index) => {
         const x = nx * this.w;
         const z = ny * this.h;
         const ground = this.fpGroundHeightAt(x, z);
-        const height = 92 + (index % 4) * 20;
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(3.8, 8.5, height, 4), sandstone);
+        const height = 150 + (index % 4) * 38;
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(7.5, 17, height, 4), sandstone);
         body.position.set(x, ground + height * 0.5, z);
         body.rotation.y = Math.PI * 0.25;
         this.fpsWorld.add(body);
-        const tip = new THREE.Mesh(new THREE.ConeGeometry(5.2, 16, 4), gold);
-        tip.position.set(x, ground + height + 8, z);
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(11, 28, 4), gold);
+        tip.position.set(x, ground + height + 14, z);
         tip.rotation.y = Math.PI * 0.25;
         this.fpsWorld.add(tip);
       });
@@ -11897,6 +12170,15 @@
         group.add(mesh);
         return mesh;
       };
+      const biomeId = String(this.mission?.biome || this.mission?.biomeId || '').toLowerCase();
+      if (biomeId === 'cosmodrome') {
+        this.fpsBuildCosmodromeLandmarks(style, addBox, stone, glow);
+        return;
+      }
+      if (biomeId === 'edz') {
+        this.fpsBuildEDZLandmarks(style, addBox, stone, glow);
+        return;
+      }
       const sites = [
         { x: -2.75, y: 0.95, scale: 1.15 },
         { x: 2.85, y: -0.75, scale: 0.86 }
@@ -11993,6 +12275,187 @@
       });
     }
 
+    fpsBuildCosmodromeLandmarks(style, addBox, stone, glow) {
+      if (!window.THREE) return;
+      const THREE = window.THREE;
+      const host = new THREE.Group();
+      this.fpsWorld.add(host);
+      const bounds = this.fpBounds();
+      const rust = new THREE.MeshStandardMaterial({ color: '#6f5a45', roughness: 0.86, metalness: 0.42 });
+      const metal = new THREE.MeshStandardMaterial({ color: '#566269', roughness: 0.62, metalness: 0.66 });
+      const snow = new THREE.MeshStandardMaterial({ color: '#c9d6dc', roughness: 0.9, metalness: 0.04 });
+      const red = new THREE.MeshStandardMaterial({ color: '#a84e3c', roughness: 0.78, metalness: 0.32 });
+      const add = (material, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0) => addBox(host, material, x, y, z, sx, sy, sz, rx, ry, rz);
+      const wallZ = (bounds.minY + 0.38) * this.h;
+      const centerX = (bounds.minX + bounds.maxX) * 0.5 * this.w;
+      const span = (bounds.maxX - bounds.minX) * this.w;
+      add(stone, centerX - span * 0.28, 230, wallZ, span * 0.43, 460, 52);
+      add(stone, centerX + span * 0.31, 230, wallZ, span * 0.38, 460, 52);
+      add(snow, centerX - span * 0.28, 466, wallZ, span * 0.43, 14, 58);
+      add(snow, centerX + span * 0.31, 466, wallZ, span * 0.38, 14, 58);
+      for (let i = 0; i < 11; i += 1) {
+        const px = centerX - span * 0.43 + i * span * 0.083;
+        if (Math.abs(px - centerX) < span * 0.065) continue;
+        add(glow, px, 180 + (i % 3) * 42, wallZ - 28, 8, 13, 2);
+      }
+      const gapX = centerX + span * 0.06;
+      add(metal, gapX - 52, 250, wallZ, 16, 500, 58);
+      add(metal, gapX + 52, 250, wallZ, 16, 500, 58);
+      add(rust, gapX, 430, wallZ, 120, 24, 62);
+      add(glow, gapX, 418, wallZ - 33, 96, 2.2, 3);
+      const gantryX = -1.3 * this.w;
+      const gantryZ = -1.5 * this.h;
+      const gantryGround = this.fpGroundHeightAt(gantryX, gantryZ);
+      [-1, 1].forEach((side) => {
+        add(metal, gantryX + side * 58, gantryGround + 152, gantryZ, 18, 304, 18);
+        add(red, gantryX + side * 58, gantryGround + 248, gantryZ, 20, 38, 20);
+        add(red, gantryX + side * 58, gantryGround + 92, gantryZ, 20, 38, 20);
+      });
+      for (let level = 0; level < 5; level += 1) {
+        add(rust, gantryX, gantryGround + 40 + level * 62, gantryZ, 116, 4, 5);
+      }
+      add(rust, gantryX, gantryGround + 314, gantryZ, 190, 8, 9, 0, 0, 0.08);
+      add(glow, gantryX - 78, gantryGround + 300, gantryZ, 5, 34, 3);
+      const dishSites = [
+        { x: -3.5, y: 2.35, r: 34 }, { x: 3.55, y: -1.85, r: 26 }, { x: -0.65, y: -2.55, r: 22 }
+      ];
+      this.fpsCosmodromeDishes = [];
+      dishSites.forEach((site, index) => {
+        const dx = site.x * this.w;
+        const dz = site.y * this.h;
+        const ground = this.fpGroundHeightAt(dx, dz);
+        add(metal, dx, ground + 22, dz, 6, 44, 6);
+        const dish = new THREE.Mesh(new THREE.SphereGeometry(site.r, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.42), new THREE.MeshStandardMaterial({
+          color: '#9caeb4', roughness: 0.6, metalness: 0.56, side: THREE.DoubleSide
+        }));
+        dish.rotation.x = Math.PI * 0.7;
+        const pivot = new THREE.Group();
+        pivot.position.set(dx, ground + 58, dz);
+        pivot.rotation.y = index * 1.7;
+        pivot.rotation.z = -0.25;
+        pivot.add(dish);
+        host.add(pivot);
+        this.fpsCosmodromeDishes.push(pivot);
+        add(glow, dx, ground + 58, dz, 2, 0.5, 36);
+      });
+      const tankX = 1.05 * this.w;
+      const tankZ = -2.25 * this.h;
+      const tankGround = this.fpGroundHeightAt(tankX, tankZ);
+      for (let i = 0; i < 3; i += 1) {
+        const tank = new THREE.Mesh(new THREE.CylinderGeometry(32, 36, 92, 18), metal);
+        tank.position.set(tankX + i * 76, tankGround + 46, tankZ);
+        tank.rotation.z = Math.PI / 2;
+        host.add(tank);
+        add(snow, tankX + i * 76, tankGround + 82, tankZ, 64, 6, 46);
+      }
+      const crashX = -0.6 * this.w;
+      const crashZ = 1.25 * this.h;
+      const crashGround = this.fpGroundHeightAt(crashX, crashZ);
+      add(rust, crashX, crashGround + 18, crashZ, 108, 26, 66, 0.2, 0.4, 0.12);
+      add(metal, crashX + 28, crashGround + 34, crashZ - 30, 40, 8, 92, 0.1, 0.4, 0.18);
+      add(glow, crashX - 20, crashGround + 22, crashZ + 18, 34, 1.2, 3, 0.2, 0.4, 0.12);
+      for (let i = 0; i < 7; i += 1) {
+        const angle = (i / 7) * Math.PI * 2;
+        add(metal, centerX + Math.cos(angle) * span * 0.33, 52, (3.15 + Math.sin(angle) * 0.42) * this.h, 4, 104, 4);
+        add(glow, centerX + Math.cos(angle) * span * 0.33, 104, (3.15 + Math.sin(angle) * 0.42) * this.h, 13, 2.4, 2.4);
+      }
+      const snowPatch = new THREE.MeshStandardMaterial({ color: '#dbe6ea', roughness: 0.94, metalness: 0.01 });
+      for (let i = 0; i < 34; i += 1) {
+        const px = (bounds.minX + 0.35 + (i * 0.617) % 1 * (bounds.maxX - bounds.minX - 0.7)) * this.w;
+        const pz = (bounds.minY + 0.3 + (i * 0.393) % 1 * (bounds.maxY - bounds.minY - 0.6)) * this.h;
+        if (Math.hypot(px / this.w - 0.5, pz / this.h - 0.45) < 0.2) continue;
+        const ground = this.fpGroundHeightAt(px, pz);
+        add(snowPatch, px, ground + 0.7, pz, 26 + (i % 5) * 13, 1.4, 20 + (i % 4) * 11, 0, i * 0.57, 0);
+      }
+      const pine = new THREE.MeshStandardMaterial({ color: '#37452f', roughness: 0.96, metalness: 0.01 });
+      for (let i = 0; i < 30; i += 1) {
+        const angle = i * 2.399;
+        const px = (0.5 + Math.cos(angle) * (0.34 + (i % 5) * 0.09)) * this.w;
+        const pz = (0.5 + Math.sin(angle) * (0.3 + (i % 5) * 0.09)) * this.h;
+        if (Math.hypot(px / this.w - 0.5, pz / this.h - 0.4) < 0.24) continue;
+        const ground = this.fpGroundHeightAt(px, pz);
+        const height = 54 + (i % 5) * 22;
+        add(metal, px, ground + 12, pz, 3, 24, 3);
+        const crown = new THREE.Mesh(new THREE.ConeGeometry(10 + (i % 3) * 4, height, 6), pine);
+        crown.position.set(px, ground + height * 0.62, pz);
+        crown.rotation.y = i * 0.7;
+        host.add(crown);
+      }
+      const light = new THREE.PointLight(new THREE.Color('#a9dff4'), 1.25, 1800, 2);
+      light.position.set(gapX, 380, wallZ);
+      host.add(light);
+      const warm = new THREE.PointLight(new THREE.Color('#ffb070'), 0.8, 1100, 2);
+      warm.position.set(tankX, 130, tankZ);
+      host.add(warm);
+    }
+
+    fpsBuildEDZLandmarks(style, addBox, stone, glow) {
+      if (!window.THREE) return;
+      const THREE = window.THREE;
+      const host = new THREE.Group();
+      this.fpsWorld.add(host);
+      const bark = new THREE.MeshStandardMaterial({ color: '#3c2e22', roughness: 0.98, metalness: 0.02 });
+      const leafA = new THREE.MeshStandardMaterial({ color: '#4c5e35', roughness: 0.94, metalness: 0.02 });
+      const leafB = new THREE.MeshStandardMaterial({ color: '#6c7042', roughness: 0.94, metalness: 0.02 });
+      const stoneWall = new THREE.MeshStandardMaterial({ color: '#6a655a', roughness: 0.97, metalness: 0.02 });
+      const roof = new THREE.MeshStandardMaterial({ color: '#4e3b2c', roughness: 0.9, metalness: 0.04 });
+      const add = (material, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0) => addBox(host, material, x, y, z, sx, sy, sz, rx, ry, rz);
+      const bounds = this.fpBounds();
+      for (let i = 0; i < 110; i += 1) {
+        const angle = i * 2.399;
+        const ring = 0.25 + (i % 9) * 0.085;
+        const px = (0.5 + Math.cos(angle) * (bounds.maxX - bounds.minX) * ring * 0.5) * this.w;
+        const pz = (0.5 + Math.sin(angle) * (bounds.maxY - bounds.minY) * ring * 0.46) * this.h;
+        if (Math.hypot(px / this.w - 0.5, pz / this.h - 0.5) < 0.44) continue;
+        const ground = this.fpGroundHeightAt(px, pz);
+        const height = 80 + (i % 7) * 18;
+        add(bark, px, ground + height * 0.24, pz, 5, height * 0.48, 5);
+        const crown = new THREE.Mesh(new THREE.ConeGeometry(16 + (i % 4) * 4, height * 0.72, 6), i % 3 ? leafA : leafB);
+        crown.position.set(px, ground + height * 0.7, pz);
+        crown.rotation.y = i * 0.6;
+        host.add(crown);
+      }
+      const churchX = -1.35 * this.w;
+      const churchZ = -1.7 * this.h;
+      const churchGround = this.fpGroundHeightAt(churchX, churchZ);
+      add(stoneWall, churchX, churchGround + 70, churchZ, 150, 140, 88);
+      const steeple = new THREE.Mesh(new THREE.ConeGeometry(46, 120, 4), roof);
+      steeple.position.set(churchX, churchGround + 190, churchZ);
+      steeple.rotation.y = Math.PI * 0.25;
+      host.add(steeple);
+      add(glow, churchX, churchGround + 94, churchZ - 46, 22, 34, 2);
+      add(roof, churchX, churchGround + 140, churchZ, 164, 10, 100);
+      const siloX = 2.25 * this.w;
+      const siloZ = -1.45 * this.h;
+      const siloGround = this.fpGroundHeightAt(siloX, siloZ);
+      const silo = new THREE.Mesh(new THREE.CylinderGeometry(34, 38, 128, 20), new THREE.MeshStandardMaterial({
+        color: '#8b8b80', roughness: 0.88, metalness: 0.24
+      }));
+      silo.position.set(siloX, siloGround + 64, siloZ);
+      host.add(silo);
+      const siloCap = new THREE.Mesh(new THREE.ConeGeometry(39, 30, 20), roof);
+      siloCap.position.set(siloX, siloGround + 143, siloZ);
+      host.add(siloCap);
+      for (let i = 0; i < 5; i += 1) {
+        add(stoneWall, (-2.6 + i * 1.25) * this.w, 28, 2.65 * this.h, 92, 56, 14, 0, 0.04 * (i % 2 ? 1 : -1));
+      }
+      const watchX = 3.0 * this.w;
+      const watchZ = 1.75 * this.h;
+      const watchGround = this.fpGroundHeightAt(watchX, watchZ);
+      [-1, 1].forEach((side) => {
+        add(bark, watchX + side * 34, watchGround + 80, watchZ, 8, 160, 8);
+      });
+      add(roof, watchX, watchGround + 150, watchZ, 90, 8, 78);
+      add(roof, watchX, watchGround + 184, watchZ, 72, 58, 60);
+      add(glow, watchX, watchGround + 184, watchZ - 31, 44, 1.6, 2);
+      const warm = new THREE.PointLight(new THREE.Color('#ffc27a'), 1.1, 1500, 2);
+      warm.position.set(churchX, churchGround + 120, churchZ);
+      host.add(warm);
+      const cold = new THREE.PointLight(new THREE.Color('#a8d7e8'), 0.7, 1200, 2);
+      cold.position.set(siloX, siloGround + 120, siloZ);
+      host.add(cold);
+    }
+
     refreshFpStructureHeights() {
       if (!this.fpStructures?.length) return;
       this.fpStructureWalls = [];
@@ -12013,6 +12476,231 @@
       });
     }
 
+    fpsBuildTutorialShip(style) {
+      if (!this.tutorial || !window.THREE) return;
+      const THREE = window.THREE;
+      const ship = this.tutorial.ship;
+      const x = ship.x * this.w;
+      const z = ship.y * this.h;
+      const ground = this.fpTerrainHeightAt(x, z);
+      const group = new THREE.Group();
+      group.position.set(x, ground, z);
+      group.rotation.y = -0.62;
+      const hull = new THREE.MeshStandardMaterial({ color: '#879399', roughness: 0.52, metalness: 0.62 });
+      const hullDark = new THREE.MeshStandardMaterial({ color: '#3d474c', roughness: 0.6, metalness: 0.7 });
+      const hullWarm = new THREE.MeshStandardMaterial({ color: '#9a7b52', roughness: 0.72, metalness: 0.45 });
+      const glass = new THREE.MeshStandardMaterial({
+        color: '#123443', emissive: new THREE.Color('#6fd6ff'), emissiveIntensity: 1.5, roughness: 0.16, metalness: 0.4
+      });
+      const trim = new THREE.MeshBasicMaterial({
+        color: new THREE.Color('#8fd8ff'), transparent: true, opacity: 0.62,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const engine = new THREE.MeshBasicMaterial({
+        color: new THREE.Color('#7fe6ff'), transparent: true, opacity: 0.9,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const add = (geometry, material, px, py, pz, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) => {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(px, py, pz);
+        mesh.scale.set(sx, sy, sz);
+        mesh.rotation.set(rx, ry, rz);
+        group.add(mesh);
+        return mesh;
+      };
+      const box = this.fpsGeo?.box || new THREE.BoxGeometry(1, 1, 1);
+      const cone = this.fpsGeo?.cone || new THREE.ConeGeometry(1, 1, 7);
+      const cylinder = this.fpsGeo?.cylinder || new THREE.CylinderGeometry(1, 1, 1, 8);
+      add(new THREE.CylinderGeometry(102, 112, 5, 40), hullDark, 0, 2.5, 0);
+      add(new THREE.TorusGeometry(92, 2.6, 6, 48), trim, 0, 5.2, 0, 1, 1, 1, Math.PI / 2);
+      add(box, hull, 0, 40, 0, 62, 30, 142);
+      add(box, hullDark, 0, 28, -18, 82, 10, 112);
+      add(box, hullWarm, 0, 56, 18, 40, 6, 62);
+      add(cone, hull, 0, 44, -104, 30, 58, 30, -Math.PI / 2);
+      add(box, glass, 0, 55, -54, 30, 13, 34);
+      add(box, hull, -68, 38, 22, 84, 7, 46, 0, 0, -0.12);
+      add(box, hull, 68, 38, 22, 84, 7, 46, 0, 0, 0.12);
+      add(box, hullWarm, -112, 40, 31, 20, 5, 26, 0, 0, -0.12);
+      add(box, hullWarm, 112, 40, 31, 20, 5, 26, 0, 0, 0.12);
+      add(box, hullDark, -24, 22, 54, 8, 18, 8);
+      add(box, hullDark, 24, 22, 54, 8, 18, 8);
+      add(box, hullDark, 0, 20, -38, 8, 14, 8);
+      add(box, hullDark, 0, 7, 58, 34, 3, 54, 0.18);
+      for (const side of [-1, 1]) {
+        add(cylinder, hullDark, side * 24, 46, 78, 10, 32, 10, Math.PI / 2);
+        add(cylinder, engine, side * 24, 46, 96, 7.5, 3, 7.5, Math.PI / 2);
+        add(box, trim, side * 24, 46, 100, 15, 2, 2);
+      }
+      add(box, trim, 0, 44, -121, 3, 3, 30);
+      const engineGlows = [];
+      [-1, 1].forEach((side) => {
+        const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: this.fpsGlowTexture('#7fe6ff'), color: new THREE.Color('#7fe6ff'),
+          transparent: true, opacity: 0.58, blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        glow.position.set(side * 24, 46, 106);
+        glow.scale.set(52, 52, 1);
+        group.add(glow);
+        engineGlows.push(glow);
+      });
+      const beacon = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: this.fpsGlowTexture('#8fd8ff'), color: new THREE.Color('#8fd8ff'),
+        transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      beacon.position.set(0, 150, 0);
+      beacon.scale.set(190, 190, 1);
+      group.add(beacon);
+      const beam = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: this.fpsGlowTexture('#8fd8ff'), color: new THREE.Color('#8fd8ff'),
+        transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      beam.position.set(0, 300, 0);
+      beam.scale.set(55, 340, 1);
+      group.add(beam);
+      const light = new THREE.PointLight(new THREE.Color('#8fd8ff'), 1.15, 680, 2);
+      light.position.set(0, 90, 0);
+      group.add(light);
+      this.fpsWorld.add(group);
+      this.tutorial.shipGroup = group;
+      this.tutorial.engineGlows = engineGlows;
+      this.tutorial.shipBeacon = beacon;
+    }
+
+    fpsBuildParkour(style) {
+      if (!this.parkour || !window.THREE) return;
+      const THREE = window.THREE;
+      const unitBox = new THREE.BoxGeometry(1, 1, 1);
+      const slab = new THREE.MeshStandardMaterial({
+        color: 0x1a2225, roughness: 0.54, metalness: 0.58,
+        emissive: new THREE.Color(style.accent || '#e0a35c'), emissiveIntensity: 0.035
+      });
+      const edge = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(style.accent || '#e0a35c'), transparent: true, opacity: 0.62,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const checkpointMaterial = new THREE.MeshBasicMaterial({
+        color: 0x8ff7d8, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const addBox = (material, x, y, z, sx, sy, sz) => {
+        const mesh = new THREE.Mesh(unitBox, material);
+        mesh.position.set(x, y, z);
+        mesh.scale.set(sx, sy, sz);
+        this.fpsWorld.add(mesh);
+        return mesh;
+      };
+      this.parkour.platforms.forEach((platform) => {
+        const x = platform.x * this.w;
+        const z = platform.y * this.h;
+        const w = platform.w * this.w;
+        const d = platform.d * this.h;
+        const top = platform.top;
+        addBox(slab, x, top - 5, z, w, 10, d);
+        addBox(edge, x, top + 1, z - d * 0.5, w * 0.94, 1.1, 1.2);
+        addBox(edge, x, top + 1, z + d * 0.5, w * 0.94, 1.1, 1.2);
+        addBox(edge, x - w * 0.5, top + 1, z, 1.2, 1.1, d * 0.82);
+        addBox(edge, x + w * 0.5, top + 1, z, 1.2, 1.1, d * 0.82);
+        if (platform.kind === 'parkour-start' || platform.kind === 'parkour-final') {
+          addBox(edge, x, top + 2, z, w * 0.46, 0.9, 1.3);
+        }
+      });
+      this.parkour.checkpointMeshes = [];
+      this.parkour.checkpoints.forEach((checkpoint) => {
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(24, 2.2, 7, 40), checkpointMaterial);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.set(checkpoint.x * this.w, checkpoint.top + 3, checkpoint.y * this.h);
+        this.fpsWorld.add(ring);
+        this.parkour.checkpointMeshes.push(ring);
+      });
+      this.parkour.shardMeshes = [];
+      this.parkour.shards.forEach((shard) => {
+        const group = new THREE.Group();
+        const core = new THREE.Mesh(new THREE.OctahedronGeometry(7, 0), new THREE.MeshStandardMaterial({
+          color: 0xb8ffd9, emissive: 0xb8ffd9, emissiveIntensity: 1.6, roughness: 0.2
+        }));
+        core.position.y = shard.top + 30;
+        group.add(core);
+        const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: this.fpsGlowTexture('#b8ffd9'), color: 0xb8ffd9, transparent: true,
+          opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        glow.position.y = shard.top + 30;
+        glow.scale.set(70, 70, 1);
+        group.add(glow);
+        group.position.set(shard.x * this.w, 0, shard.y * this.h);
+        this.fpsWorld.add(group);
+        this.parkour.shardMeshes.push({ group, core });
+      });
+      this.parkour.trapMeshes = [];
+      this.parkour.traps.forEach((trap) => {
+        const beam = new THREE.Mesh(unitBox, new THREE.MeshBasicMaterial({
+          color: 0xff805e, transparent: true, opacity: 0.7,
+          blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        beam.position.set(trap.x * this.w, trap.top + 38, trap.y * this.h);
+        beam.scale.set(trap.w * this.w, 76, 2.2);
+        this.fpsWorld.add(beam);
+        const bar = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 1, 8), new THREE.MeshBasicMaterial({ color: 0xffb28c }));
+        bar.position.set(trap.x * this.w, trap.top + 1, trap.y * this.h);
+        bar.scale.y = 2;
+        this.fpsWorld.add(bar);
+        this.parkour.trapMeshes.push(beam);
+      });
+      if (this.parkour.final) {
+        const final = this.parkour.final;
+        const portal = new THREE.Mesh(new THREE.TorusGeometry(58, 5, 8, 64), new THREE.MeshBasicMaterial({
+          color: 0x8ff7d8, transparent: true, opacity: 0.52,
+          blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        portal.position.set(final.x * this.w, final.top + 62, final.y * this.h);
+        portal.rotation.y = 0.25;
+        this.fpsWorld.add(portal);
+        const light = new THREE.PointLight(0x8ff7d8, 1.1, 520, 2);
+        light.position.set(final.x * this.w, final.top + 50, final.y * this.h);
+        this.fpsWorld.add(light);
+      }
+      const silo = new THREE.MeshStandardMaterial({ color: '#151b1d', roughness: 0.86, metalness: 0.38 });
+      const rib = new THREE.MeshStandardMaterial({ color: '#2e383b', roughness: 0.74, metalness: 0.48 });
+      const hazard = new THREE.MeshBasicMaterial({
+        color: 0xff8a5e, transparent: true, opacity: 0.46, blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const sivaGlow = new THREE.MeshBasicMaterial({
+        color: 0xb8ffd9, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const centerX = this.w * 0.5;
+      const centerZ = this.h * 1.62;
+      for (let level = 0; level < 7; level += 1) {
+        const y = 46 + level * 58;
+        [-1, 1].forEach((side) => {
+          addBox(silo, centerX + side * this.w * 0.335, y, centerZ, 7, 54, this.h * 2.85);
+          addBox(rib, centerX + side * this.w * 0.315, y, centerZ, 2.4, 50, this.h * 2.7);
+          addBox(hazard, centerX + side * this.w * 0.322, y + 18, centerZ - this.h * 0.32, 10, 1.4, 3);
+        });
+        addBox(rib, centerX, y, centerZ + this.h * 1.38, this.w * 0.64, 3.2, 4);
+        addBox(rib, centerX, y, centerZ - this.h * 1.32, this.w * 0.64, 3.2, 4);
+      }
+      [-1, 1].forEach((side) => {
+        const towerX = centerX + side * this.w * 0.4;
+        for (let level = 0; level < 5; level += 1) {
+          addBox(rib, towerX, 80 + level * 74, centerZ - this.h * 0.9, 15, 70, 15);
+          addBox(hazard, towerX, 112 + level * 74, centerZ - this.h * 0.89, 17, 1.4, 17);
+        }
+        addBox(rib, towerX, 382, centerZ - this.h * 0.9, 42, 5, 42);
+      });
+      const sivaCables = [
+        { x: 0.31, y: 2.15, top: 92 }, { x: 0.69, y: 1.55, top: 170 }, { x: 0.29, y: 1.05, top: 245 }
+      ];
+      sivaCables.forEach((cable, index) => {
+        addBox(sivaGlow, cable.x * this.w, cable.top, cable.y * this.h, 20, 4.2, 3, 0, 0, 0.3 + index * 0.12);
+        addBox(sivaGlow, cable.x * this.w, cable.top + 14, cable.y * this.h + 8, 3, 24, 3, 0.2, 0, 0);
+      });
+      const shaftLight = new THREE.PointLight(new THREE.Color('#ff9a6e'), 1.15, 1500, 2);
+      shaftLight.position.set(centerX, 150, centerZ);
+      this.fpsWorld.add(shaftLight);
+      const sivaLight = new THREE.PointLight(new THREE.Color('#b8ffd9'), 0.8, 800, 2);
+      sivaLight.position.set(centerX, 310, this.h * 1.1);
+      this.fpsWorld.add(sivaLight);
+    }
+
     fpsBuildStructures(style) {
       if (!this.fpStructures?.length || !window.THREE) return;
       const THREE = window.THREE;
@@ -12021,18 +12709,37 @@
         const voidHall = structure.kind === 'void-sanctum';
         const cityRuin = structure.kind === 'city-ruin';
         const temple = structure.kind === 'sun-temple';
-        const wallColor = voidHall ? '#050308' : cityRuin ? '#2a2c2a' : temple ? '#9b7445' : new THREE.Color(style.dark).offsetHSL(0, 0, 0.06);
+        const hangar = structure.kind === 'cosmodrome-hangar';
+        const bunker = structure.kind === 'cosmodrome-bunker';
+        const farmhouse = structure.kind === 'edz-farmhouse';
+        const barn = structure.kind === 'edz-barn';
+        const wallColor = voidHall ? '#050308'
+          : cityRuin ? '#2a2c2a'
+            : temple ? '#9b7445'
+              : hangar ? '#48545a'
+                : bunker ? '#3c474d'
+                  : farmhouse ? '#6a5b48'
+                    : barn ? '#57483a'
+                      : new THREE.Color(style.dark).offsetHSL(0, 0, 0.06);
         const wallMaterial = new THREE.MeshStandardMaterial({
           color: wallColor, roughness: voidHall ? 0.48 : 0.94, metalness: voidHall ? 0.55 : 0.08,
           side: THREE.DoubleSide, emissive: new THREE.Color(style.accent), emissiveIntensity: voidHall ? 0.025 : 0.01
         });
+        const trimColor = voidHall ? '#8ff7ea'
+          : hangar || bunker ? '#8fd8ff'
+            : farmhouse || barn ? '#e0a35c' : style.accent;
         const trimMaterial = new THREE.MeshBasicMaterial({
-          color: new THREE.Color(voidHall ? '#8ff7ea' : style.accent), transparent: true,
+          color: new THREE.Color(trimColor), transparent: true,
           opacity: voidHall ? 0.58 : 0.3, blending: THREE.AdditiveBlending, depthWrite: false
         });
         const floorMaterial = new THREE.MeshStandardMaterial({
-          color: voidHall ? '#09050d' : cityRuin ? '#30312f' : temple ? '#ab7c48' : new THREE.Color(style.dark).offsetHSL(0, 0, 0.08),
-          roughness: 0.87, metalness: voidHall ? 0.3 : 0.08
+          color: voidHall ? '#09050d'
+            : cityRuin ? '#30312f'
+              : temple ? '#ab7c48'
+                : hangar || bunker ? '#333c41'
+                  : farmhouse ? '#574a3a'
+                    : barn ? '#44382d' : new THREE.Color(style.dark).offsetHSL(0, 0, 0.08),
+          roughness: 0.87, metalness: voidHall ? 0.3 : hangar || bunker ? 0.32 : 0.08
         });
         const addBox = (material, x, y, z, sx, sy, sz) => {
           const mesh = new THREE.Mesh(unitBox, material);
@@ -12099,7 +12806,8 @@
             this.fpsWorld.add(lamp);
           });
         } else if (!cityRuin) {
-          const lamp = new THREE.PointLight(new THREE.Color(style.accent), 0.7, 380, 2);
+          const lampColor = hangar || bunker ? '#9fe2ff' : farmhouse || barn ? '#ffc985' : style.accent;
+          const lamp = new THREE.PointLight(new THREE.Color(lampColor), 0.7, 380, 2);
           lamp.position.set(cx, floor + 62, cz);
           this.fpsWorld.add(lamp);
         }
@@ -12468,6 +13176,7 @@
       const arenaMode = ['range', 'crucible', 'gambit'].includes(this.currentMode);
       const openWorld = !arenaMode;
       const voidWorld = style.key === 'blackhole' || style.key === 'eternal';
+      const mercuryDay = style.key === 'mercury';
       const groundTexture = this.fpsGroundTexture(style);
       const groundMaterial = new THREE.MeshStandardMaterial({
         map: groundTexture || null,
@@ -12501,19 +13210,21 @@
       ring.visible = arenaMode;
       this.fpsWorld.add(ring);
       this.fpsBuildProps(style);
+      if (this.parkour) this.fpsBuildParkour(style);
       if (this.fpPyramids?.length) this.fpsBuildPyramids(style);
-      this.fpsBuildBiomeLandmarks(style);
-      this.fpsBuildPlatforms(style);
+      if (!this.parkour) this.fpsBuildBiomeLandmarks(style);
+      if (!this.parkour) this.fpsBuildPlatforms(style);
+      if (this.currentMode === 'tutorial') this.fpsBuildTutorialShip(style);
       this.fpsWorld.add(new THREE.HemisphereLight(
         new THREE.Color(voidWorld ? style.accent : citySurface ? '#b7cbd4' : style.accent),
         new THREE.Color(voidWorld ? '#000000' : citySurface ? '#5a4637' : (biome.ground || style.dark)),
-        voidWorld ? 0.055 : citySurface ? 0.9 : 0.72
+        voidWorld ? 0.055 : mercuryDay ? 1.08 : citySurface ? 0.9 : 0.72
       ));
       this.fpsWorld.add(new THREE.AmbientLight(
-        new THREE.Color(voidWorld ? style.accent : citySurface ? '#ffd4a8' : style.accent),
-        voidWorld ? 0.035 : citySurface ? 0.34 : 0.28
+        new THREE.Color(voidWorld ? style.accent : mercuryDay ? '#ffe0ad' : citySurface ? '#ffd4a8' : style.accent),
+        voidWorld ? 0.035 : mercuryDay ? 0.52 : citySurface ? 0.34 : 0.28
       ));
-      const accentLight = new THREE.PointLight(new THREE.Color(voidWorld ? style.accent : citySurface ? '#ffc98f' : style.accent), voidWorld ? 0.28 : 1.2, voidWorld ? 900 : 1800, 2);
+      const accentLight = new THREE.PointLight(new THREE.Color(voidWorld ? style.accent : mercuryDay ? '#ffd08a' : citySurface ? '#ffc98f' : style.accent), voidWorld ? 0.28 : mercuryDay ? 1.65 : 1.2, voidWorld ? 900 : 1800, 2);
       accentLight.position.set(this.w * 0.5, 180, this.h * 0.5);
       this.fpsWorld.add(accentLight);
       if (this.fpsSuitLight) {
@@ -12527,9 +13238,9 @@
       }
       const fogDistance = this.fpSettings?.viewDistance || 2600;
       this.fpsScene.fog = new THREE.Fog(
-        new THREE.Color(voidWorld ? '#000000' : citySurface ? '#4c4038' : style.dark),
-        voidWorld ? 280 : openWorld ? Math.max(1300, fogDistance * 0.55) : fogDistance * 0.35,
-        voidWorld ? 2100 : openWorld ? Math.max(7200, fogDistance * 2.3) : fogDistance
+        new THREE.Color(voidWorld ? '#000000' : mercuryDay ? '#d7a06a' : citySurface ? '#4c4038' : style.dark),
+        voidWorld ? 280 : mercuryDay ? 1800 : openWorld ? Math.max(1300, fogDistance * 0.55) : fogDistance * 0.35,
+        voidWorld ? 2100 : mercuryDay ? 9200 : openWorld ? Math.max(7200, fogDistance * 2.3) : fogDistance
       );
       const dustCount = 220;
       const dustPositions = new Float32Array(dustCount * 3);
@@ -12855,8 +13566,8 @@
           ? 1.3 + Math.sin(this.time * 1.8 + phase) * 0.45
           : (moved ? Math.abs(Math.sin(this.time * 7.6 + phase)) * 0.7 : 0);
         group.position.y = ground + bob;
-        u.bodyMaterial.emissiveIntensity = enemy.flash > 0 ? 0.5 : 0.045;
-        u.accentMaterial.emissiveIntensity = enemy.flash > 0 ? 1.4 : 0.76;
+        u.bodyMaterial.emissiveIntensity = enemy.flash > 0 ? 0.5 : enemy.sivaUntil > this.time ? 0.18 : 0.045;
+        u.accentMaterial.emissiveIntensity = enemy.flash > 0 || enemy.sivaUntil > this.time ? 1.4 : 0.76;
         if (u.muzzle) u.muzzle.visible = Number(enemy.attackTimer) < 0.13 || Number(enemy.windup) > 0;
         if (u.core) u.core.scale.setScalar(1 + Math.sin(this.time * 4 + phase) * 0.18);
         if (u.aura) {
@@ -13422,8 +14133,9 @@
         const viewDistance = settings.viewDistance || 2600;
         const openWorld = !['range', 'crucible', 'gambit'].includes(this.currentMode);
         const voidWorld = ['blackhole', 'eternal'].includes(this.fpsStyle?.key);
-        this.fpsScene.fog.near = voidWorld ? 280 : openWorld ? Math.max(1300, viewDistance * 0.55) : viewDistance * 0.35;
-        this.fpsScene.fog.far = voidWorld ? 2100 : openWorld ? Math.max(7200, viewDistance * 2.3) : viewDistance;
+        const mercuryDay = this.fpsStyle?.key === 'mercury';
+        this.fpsScene.fog.near = voidWorld ? 280 : mercuryDay ? 1800 : openWorld ? Math.max(1300, viewDistance * 0.55) : viewDistance * 0.35;
+        this.fpsScene.fog.far = voidWorld ? 2100 : mercuryDay ? 9200 : openWorld ? Math.max(7200, viewDistance * 2.3) : viewDistance;
       }
     }
 
@@ -13441,11 +14153,23 @@
         this.fpsSyncBeacons();
         this.fpsSyncPickups();
         this.fpsSyncProjectiles();
+        if (this.tutorial?.engineGlows) {
+          this.tutorial.engineGlows.forEach((glow, index) => {
+            if (glow.material) glow.material.opacity = 0.46 + Math.sin(this.time * 3.4 + index * 1.7) * 0.16;
+            glow.scale.setScalar(48 + Math.sin(this.time * 2.6 + index) * 5);
+          });
+          if (this.tutorial.shipBeacon?.material) {
+            this.tutorial.shipBeacon.material.opacity = 0.32 + Math.sin(this.time * 1.8) * 0.12;
+          }
+        }
         if (this.fpAltarRelic) {
           this.fpAltarRelic.rotation.y = this.time * 0.72;
           this.fpAltarRelic.rotation.z = 0.3 + Math.sin(this.time * 1.8) * 0.12;
           this.fpAltarRelic.position.y = (this.fpAltarRelic.userData.baseY || 0) + Math.sin(this.time * 2.2) * 4;
         }
+        (this.fpsCosmodromeDishes || []).forEach((dish, index) => {
+          dish.rotation.y = this.time * (0.055 + index * 0.012) + index * 1.7;
+        });
         (this.fpsVoidRings || []).forEach((ring, index) => {
           if (ring.userData.voidBase === undefined) ring.userData.voidBase = ring.rotation.z;
           ring.rotation.z = ring.userData.voidBase + this.time * (0.012 + index * 0.006);
@@ -13480,6 +14204,22 @@
 
     fpOpenWorld() {
       return this.fpView && !['range', 'crucible', 'gambit'].includes(this.currentMode);
+    }
+
+    fpMissionSpawn() {
+      if (!this.fpView || !this.fpOpenWorld()) return { x: 0.5, y: this.fpView ? 0.72 : 0.79 };
+      if (this.mission?.type === 'parkour') return { x: 0.5, y: 2.7 };
+      if (this.mission?.type === 'tutorial') return { x: -2.0, y: 1.55 };
+      const points = [
+        { x: -2.75, y: 2.6 },
+        { x: 2.9, y: 2.35 },
+        { x: -2.5, y: -1.95 },
+        { x: 3.05, y: -1.75 }
+      ];
+      const source = `${this.activityId || ''}:${this.mission?.id || ''}:${this.currentMode}`;
+      let hash = 0;
+      for (let index = 0; index < source.length; index += 1) hash = (hash * 31 + source.charCodeAt(index)) >>> 0;
+      return points[hash % points.length];
     }
 
     fpZoneWeight(nx, ny, zone, offsetX = 0, offsetY = 0) {
@@ -13853,11 +14593,13 @@
       }
       if (!arenaMode && mercury) {
         this.fpPyramids = [
-          { x: -2.6, y: 1.3, base: 380, height: 330, rotation: 0.16 },
-          { x: 2.35, y: -1.35, base: 310, height: 285, rotation: -0.22 },
-          { x: 3.45, y: 2.2, base: 255, height: 235, rotation: 0.34 },
-          { x: -1.4, y: -2.1, base: 225, height: 205, rotation: -0.4 },
-          { x: 0.5, y: 2.95, base: 185, height: 175, rotation: 0.08 }
+          { x: 0.5, y: -1.55, base: 1320, height: 980, rotation: 0.06 },
+          { x: -2.45, y: -0.25, base: 980, height: 760, rotation: -0.08 },
+          { x: 2.85, y: 0.2, base: 760, height: 600, rotation: 0.1 },
+          { x: -3.7, y: 1.7, base: 420, height: 340, rotation: 0.3 },
+          { x: 3.6, y: 2.0, base: 390, height: 320, rotation: -0.25 },
+          { x: -1.3, y: 2.8, base: 300, height: 250, rotation: -0.14 },
+          { x: 1.5, y: 2.9, base: 280, height: 230, rotation: 0.18 }
         ];
       }
       this.fpStructures = [];
@@ -13893,12 +14635,19 @@
           this.fpStructures.push(spec);
           walls.forEach((wall) => this.fpStructureWalls.push(wall));
         };
+        const biomeId = String(this.mission?.biome || this.mission?.biomeId || '').toLowerCase();
         if (structureStyle === 'blackhole' || structureStyle === 'eternal') {
           addFpStructure({ kind: 'void-sanctum', x: 0.5, y: 0.22, w: 0.74, d: 0.34, height: 255, door: 0.16, roof: true });
         } else if (this.isCitySurface()) {
           addFpStructure({ kind: 'city-ruin', x: -2.2, y: 0.55, w: 0.38, d: 0.24, height: 140, door: 0.13, roof: false });
         } else if (structureStyle === 'mercury') {
           addFpStructure({ kind: 'sun-temple', x: -2.25, y: 0.55, w: 0.34, d: 0.24, height: 155, door: 0.12, roof: true });
+        } else if (biomeId === 'cosmodrome') {
+          addFpStructure({ kind: 'cosmodrome-hangar', x: 1.15, y: 1.95, w: 0.38, d: 0.25, height: 132, door: 0.15, roof: true });
+          addFpStructure({ kind: 'cosmodrome-bunker', x: -2.9, y: -0.35, w: 0.3, d: 0.2, height: 92, door: 0.12, roof: true });
+        } else if (biomeId === 'edz') {
+          addFpStructure({ kind: 'edz-farmhouse', x: 1.25, y: 1.7, w: 0.35, d: 0.23, height: 118, door: 0.13, roof: true });
+          addFpStructure({ kind: 'edz-barn', x: -2.3, y: 0.45, w: 0.33, d: 0.22, height: 104, door: 0.13, roof: true });
         } else {
           addFpStructure({ kind: 'reliquary', x: -2.2, y: 0.55, w: 0.34, d: 0.23, height: 150, door: 0.12, roof: true });
         }
@@ -13915,7 +14664,8 @@
         && Math.abs(y - pyramid.y) < pyramid.base * 0.48 / this.h
       ));
       const nearDais = (x, y) => Math.abs(x - 0.5) < 0.56 && Math.abs(y - 0.12) < 0.38;
-      const nearSpawn = (x, y) => Math.hypot(x - 0.5, y - (this.currentMode === 'raid' ? 0.72 : 0.79)) < 0.2;
+      const spawn = this.fpSpawnPoint || { x: this.player?.x ?? 0.5, y: this.player?.y ?? 0.79 };
+      const nearSpawn = (x, y) => Math.hypot(x - spawn.x, y - spawn.y) < 0.24;
       if (this.isCitySurface() && !arenaMode) {
         const cols = [];
         const rows = [];
@@ -14010,6 +14760,83 @@
         drift: (next() - 0.5) * 0.018
       }));
       this.fpParticleKind = biome.particles || 'motes';
+      if (this.mission?.type === 'parkour') this.setupParkourCourse();
+      if (this.mission?.type === 'tutorial') this.setupTutorialScene();
+    }
+
+    setupTutorialScene() {
+      const tutorial = this.tutorial;
+      if (!tutorial) return;
+      const ship = tutorial.ship;
+      this.fpProps = (this.fpProps || []).filter((prop) => (
+        Math.hypot(prop.x - ship.x, prop.y - ship.y) > 0.2
+      ));
+      this.fpStructures = (this.fpStructures || []).filter((structure) => (
+        Math.hypot(structure.x - ship.x, structure.y - ship.y) > 0.3
+      ));
+      this.fpProps.push(
+        { x: ship.x - 0.22, y: ship.y + 0.15, width: 16, height: 15, kind: 'rubble', color: '#8d6a46', phase: 1.2, alpha: 0.7, variant: 1 },
+        { x: ship.x + 0.22, y: ship.y + 0.17, width: 13, height: 18, kind: 'rubble', color: '#5c6a72', phase: 2.1, alpha: 0.65, variant: 2 }
+      );
+    }
+
+    setupParkourCourse() {
+      const course = [];
+      const checkpoints = [];
+      const shards = [];
+      const traps = [];
+      const start = { x: 0.5, y: 2.7, w: 0.18, d: 0.125, top: 55, kind: 'parkour-start', index: 0 };
+      course.push(start);
+      checkpoints.push({ x: start.x, y: start.y, top: start.top, index: 0 });
+      let final = null;
+      for (let index = 1; index <= 24; index += 1) {
+        const x = 0.5 + Math.sin(index * 1.35) * 0.07;
+        const y = 2.7 - index * 0.09;
+        const top = 55 + index * 12;
+        const isFinal = index === 24;
+        const platform = {
+          x, y,
+          w: isFinal ? 0.3 : 0.095,
+          d: isFinal ? 0.2 : 0.065,
+          top,
+          kind: isFinal ? 'parkour-final' : 'parkour',
+          index
+        };
+        course.push(platform);
+        if (isFinal) final = platform;
+        if (index % 6 === 0 || isFinal) checkpoints.push({ x, y, top, index });
+        if ([5, 11, 17].includes(index)) {
+          const side = index % 2 ? 1 : -1;
+          const shardX = x + side * 0.14;
+          const shardY = y + 0.03;
+          const shardTop = top + 9;
+          course.push({ x: shardX, y: shardY, w: 0.075, d: 0.055, top: shardTop, kind: 'parkour-shard' });
+          shards.push({ x: shardX, y: shardY, top: shardTop, index: shards.length, collected: false });
+        }
+        if ([7, 13, 19].includes(index)) {
+          traps.push({ x, y: y - 0.045, w: 0.18, d: 0.026, top, period: 3.2 + (index % 3) * 0.55, phase: index * 0.7, active: true });
+        }
+      }
+      this.fpPlatforms = course;
+      this.fpStructures = [];
+      this.fpStructureWalls = [];
+      this.fpProps = [];
+      this.fpPyramids = [];
+      this.fpAltar = null;
+      this.fpSpawnPoint = { x: start.x, y: start.y };
+      this.parkour = {
+        phase: 'course',
+        platforms: course,
+        checkpoints,
+        checkpointIndex: 0,
+        shards,
+        traps,
+        final,
+        boss: null,
+        bossSpawned: false,
+        fallCount: 0,
+        lastFallAt: -10
+      };
     }
 
     firstPersonCamera(w, h) {
@@ -14249,6 +15076,22 @@
       this.enemyBullets = this.enemyBullets.filter((bullet) => bullet.life > 0 && bullet.x > cullMinX && bullet.x < cullMaxX && bullet.y > cullMinY && bullet.y < cullMaxY);
     }
 
+    updateSivaNanites(dt) {
+      this.enemies.forEach((enemy) => {
+        if (!enemy.alive || !(enemy.sivaUntil > this.time)) return;
+        enemy.sivaTick = (enemy.sivaTick || 0) - dt;
+        if (enemy.sivaTick > 0) return;
+        enemy.sivaTick = 0.42;
+        const x = enemy.x * this.w;
+        const y = enemy.y * this.h;
+        this.fx.burst(x, y, '#b8ffd9', 2, 38, 0.9);
+        this.damageEnemy(enemy, Math.max(1, (enemy.sivaDps || 0) * 0.42), {
+          exoticEffect: enemy.sivaEffect,
+          sivaDot: true
+        });
+      });
+    }
+
     updateEnemies(dt, w, h) {
       const point = this.playerPoint();
       this.enemies.forEach((enemy) => {
@@ -14269,7 +15112,7 @@
         let preferred = melee ? 34 : Math.min(190, enemy.range * 0.55);
         if (enemy.type === 'gladiator') preferred = 30;
         if (enemy.slowTimer > 0) enemy.slowTimer = Math.max(0, enemy.slowTimer - dt);
-        if (distance > preferred) {
+        if (distance > preferred && !enemy.fixedPosition) {
           const slowScale = enemy.slowTimer > 0 ? 0.42 : 1;
           const speed = ((melee || enemy.type === 'gladiator') && distance < 260 ? enemy.speed * 1.35 : enemy.speed) * slowScale;
           const enemyBounds = this.fpView ? this.fpBounds() : { minX: 0.035, maxX: 0.965, minY: 0.08, maxY: 0.94 };
@@ -14725,6 +15568,10 @@
         this.updateWaveActivity(dt, w, h, 'dlc');
       } else if (this.mission.type === 'raid') {
         this.updateRaid(dt, w, h);
+      } else if (this.mission.type === 'tutorial') {
+        this.updateTutorial(dt, w, h);
+      } else if (this.mission.type === 'parkour') {
+        this.updateParkour(dt, w, h);
       } else if (this.mission.type === 'exoticQuest') {
         this.updateWaveActivity(dt, w, h, 'exoticQuest');
       } else if (this.mission.type === 'strike') {
@@ -15644,6 +16491,217 @@
       }
     }
 
+    resetParkourCheckpoint(reason = '坠入虚空') {
+      const parkour = this.parkour;
+      if (!parkour || !this.player) return;
+      if (this.time - (parkour.lastResetAt || -10) < 0.8) return;
+      parkour.lastResetAt = this.time;
+      parkour.fallCount = (parkour.fallCount || 0) + 1;
+      const checkpoint = parkour.checkpoints[parkour.checkpointIndex] || parkour.checkpoints[0];
+      this.player.x = checkpoint.x;
+      this.player.y = checkpoint.y;
+      this.player.hp = Math.max(this.player.hp, 80);
+      this.fpJumpZ = checkpoint.top + 1;
+      this.fpJumpV = 0;
+      this.fpGrounded = true;
+      this.fpLandDip = 0;
+      this.player.flash = 0.5;
+      this.toast(`${reason} · 返回检查点 ${parkour.checkpointIndex + 1}`, 'danger');
+      this.fx.ring(checkpoint.x * this.w, checkpoint.y * this.h, '#8ff7d8', 58, 0.6, 2.4);
+    }
+
+    updateParkour(dt, w, h) {
+      const parkour = this.parkour;
+      if (!parkour || !this.player || this.transition || this.deathState) return;
+      const point = this.playerPoint();
+      parkour.traps.forEach((trap, index) => {
+        const cycle = (this.time + trap.phase) % trap.period;
+        trap.active = cycle < trap.period * 0.44;
+        const mesh = parkour.trapMeshes?.[index];
+        if (mesh) {
+          mesh.visible = trap.active;
+          if (mesh.material) mesh.material.opacity = trap.active ? 0.66 : 0.06;
+        }
+        if (!trap.active) return;
+        const withinX = Math.abs(point.x - trap.x * w) < trap.w * w * 0.5;
+        const withinY = Math.abs(point.y - trap.y * h) < trap.d * h * 0.5;
+        const withinZ = Math.abs((this.fpJumpZ || 0) - trap.top) < 78;
+        if (withinX && withinY && withinZ) this.resetParkourCheckpoint('被时间闸门击落');
+      });
+      parkour.checkpoints.forEach((checkpoint, index) => {
+        if (index <= parkour.checkpointIndex) return;
+        if (Math.hypot(point.x - checkpoint.x * w, point.y - checkpoint.y * h) < 40 && Math.abs((this.fpJumpZ || 0) - checkpoint.top) < 6) {
+          parkour.checkpointIndex = index;
+          this.fpSpawnPoint = { x: checkpoint.x, y: checkpoint.y };
+          this.toast(`检查点 ${index + 1} 已记录`, 'success');
+          this.audio?.play('objective');
+          this.fx.ring(checkpoint.x * w, checkpoint.y * h, '#8ff7d8', 55, 0.6, 2.6);
+        }
+      });
+      parkour.shards.forEach((shard) => {
+        if (shard.collected) return;
+        const near = Math.hypot(point.x - shard.x * w, point.y - shard.y * h) < 34;
+        const height = Math.abs((this.fpJumpZ || 0) - shard.top) < 48;
+        if (!near || !height) return;
+        shard.collected = true;
+        const mesh = parkour.shardMeshes?.[shard.index];
+        if (mesh?.group) mesh.group.visible = false;
+        this.audio?.play('pickup');
+        this.fx.ring(shard.x * w, shard.y * h, '#b8ffd9', 44, 0.55, 2.2);
+        this.fx.burst(shard.x * w, shard.y * h, '#b8ffd9', 18, 150, 2.2);
+        const collected = parkour.shards.filter((entry) => entry.collected).length;
+        this.toast(`时之碎片 ${collected} / ${parkour.shards.length}`, 'success');
+      });
+      const onPlatform = parkour.platforms.some((platform) => (
+        Math.abs(point.x - platform.x * w) <= platform.w * w * 0.5 + 2
+        && Math.abs(point.y - platform.y * h) <= platform.d * h * 0.5 + 2
+        && Math.abs((this.fpJumpZ || 0) - platform.top) < 8
+      ));
+      if (this.fpGrounded && !onPlatform) {
+        this.resetParkourCheckpoint('坠入发射井');
+        return;
+      }
+      const final = parkour.final;
+      if (!final || parkour.bossSpawned) return;
+      const onFinal = Math.abs(point.x - final.x * w) < final.w * w * 0.5
+        && Math.abs(point.y - final.y * h) < final.d * h * 0.5
+        && Math.abs((this.fpJumpZ || 0) - final.top) < 8;
+      if (!onFinal) return;
+      const collected = parkour.shards.filter((entry) => entry.collected).length;
+      if (collected < parkour.shards.length) {
+        if (this.time - (parkour.lastShardWarn || -10) > 2.2) {
+          parkour.lastShardWarn = this.time;
+          this.toast(`终点封锁中 · 还需要 ${parkour.shards.length - collected} 枚时之碎片`, 'danger');
+        }
+        return;
+      }
+      const boss = this.spawnEnemy('captain', { x: final.x, y: final.y - 0.02 });
+      Object.assign(boss, {
+        name: '零时执政官', skin: 'raid-boss', bossKind: 'fallen',
+        faction: 'fallen', hp: 4600, maxHp: 4600, radius: 38, speed: 0,
+        fixedPosition: true, elite: false, color: '#e0a35c', barColor: '#f0cf8a',
+        attackTimer: 1.4, step: 0, flash: 0, windup: 0, pendingAttack: null
+      });
+      this.dlcBoss = boss;
+      parkour.boss = boss;
+      parkour.bossSpawned = true;
+      parkour.phase = 'boss';
+      this.audio?.play('raidStage');
+      this.toast('零时执政官出现 · 击败它才能离开发射井');
+      this.shake = Math.max(this.shake, 8);
+    }
+
+    spawnTutorialWave() {
+      const tutorial = this.tutorial;
+      if (!tutorial) return;
+      const stage = tutorial.stage;
+      const waypoints = {
+        breach: { x: -1.45, y: 1.75, count: 5, label: '旧城墙' },
+        array: { x: 0.85, y: 0.25, count: 6, label: '深空阵列' },
+        ship: { x: 3.45, y: 0.62, count: 4, label: '发射台' }
+      };
+      const entry = waypoints[stage];
+      if (!entry) return;
+      const types = ['dreg', 'dreg', 'vandal', 'dreg', 'vandal', 'captain'];
+      for (let index = 0; index < entry.count; index += 1) {
+        const angle = (index / entry.count) * Math.PI * 2 + rand(-0.28, 0.28);
+        const radius = rand(0.04, 0.1);
+        const enemy = this.spawnEnemy(types[index % types.length], {
+          x: entry.x + Math.cos(angle) * radius,
+          y: entry.y + Math.sin(angle) * radius * 0.72
+        });
+        if (enemy) {
+          enemy.faction = 'fallen';
+          enemy.color = enemy.color || '#3d5068';
+        }
+      }
+      if (stage === 'ship') {
+        const captain = this.spawnEnemy('captain', { x: tutorial.ship.x - 0.3, y: tutorial.ship.y + 0.14 });
+        if (captain) {
+          captain.name = 'Vekis, Dockmaster';
+          captain.hp = 460;
+          captain.maxHp = 460;
+          captain.radius = 21;
+          captain.elite = true;
+          captain.color = '#4a6078';
+          captain.barColor = '#e0a35c';
+          captain.faction = 'fallen';
+          captain.bossKind = 'fallen';
+          this.toast('Vekis, Dockmaster 正在看守发射台', 'danger');
+        }
+      }
+      tutorial.spawned = true;
+      tutorial.stageTimer = 1.1;
+      this.wave = (tutorial.wavesCleared || 0) + 1;
+      this.toast(`序章 · ${entry.label} · 击退堕落者`);
+    }
+
+    updateTutorial(dt, w, h) {
+      const tutorial = this.tutorial;
+      if (!tutorial || !this.player) return;
+      if (tutorial.boarded) {
+        tutorial.boardTime += dt;
+        if (tutorial.boardTime >= 2.8) this.finishCosmodromeTutorial();
+        return;
+      }
+      if (!tutorial.spawned) {
+        this.spawnTutorialWave();
+        return;
+      }
+      if (tutorial.stage === 'board') return;
+      if (this.aliveEnemies().length) return;
+      if (tutorial.stageTimer > 0) {
+        tutorial.stageTimer -= dt;
+        return;
+      }
+      tutorial.wavesCleared = (tutorial.wavesCleared || 0) + 1;
+      tutorial.spawned = false;
+      if (tutorial.stage === 'breach') {
+        tutorial.stage = 'array';
+        this.toast('旧城墙已肃清 · 前往深空阵列', 'success');
+      } else if (tutorial.stage === 'array') {
+        tutorial.stage = 'ship';
+        this.toast('阵列重新上线 · 发射台就在前方', 'success');
+      } else if (tutorial.stage === 'ship') {
+        tutorial.stage = 'board';
+        this.toast('发射台已清空 · 靠近飞船按 E 登舰', 'success');
+        this.fx.ring(tutorial.ship.x * w, tutorial.ship.y * h, '#8fd8ff', 150, 0.9, 3);
+      }
+    }
+
+    boardTutorialShip() {
+      const tutorial = this.tutorial;
+      if (!tutorial || !this.player) return false;
+      const point = this.playerPoint();
+      const distance = Math.hypot(point.x - tutorial.ship.x * this.w, point.y - tutorial.ship.y * this.h);
+      if (distance > 165) return false;
+      if (tutorial.stage !== 'board') {
+        this.toast('飞船还不安全 · 先清理发射台周围的堕落者', 'danger');
+        return true;
+      }
+      if (tutorial.boarded) return true;
+      tutorial.boarded = true;
+      tutorial.boardTime = 0;
+      this.player.invuln = 999;
+      this.enemies = [];
+      this.enemyBullets = [];
+      this.audio?.play('victory');
+      this.toast('已登上飞船 · 正在离开发射基地', 'success');
+      return true;
+    }
+
+    finishCosmodromeTutorial() {
+      if (this.cosmodromeComplete) return;
+      this.cosmodromeComplete = true;
+      this.saveProgress();
+      this.tutorial = null;
+      this.manager.hud.hidden = true;
+      this.directorSelected = 'cosmodrome';
+      this.showOrbit();
+      this.toast('星图已解锁 · 所有目的地与活动现在可以前往', 'success');
+      this.audio?.play('victory');
+    }
+
     updateWaveActivity(dt, w, h, mode) {
       if (this.transition) return;
       if (!this.aliveEnemies().length) {
@@ -15957,6 +17015,7 @@
       else if (code === 'Digit2') this.switchWeapon('energy');
       else if (code === 'Digit3') this.switchWeapon('power');
       else if (code === 'KeyE') {
+        if (this.currentMode === 'tutorial' && this.tutorial && this.boardTutorialShip()) return;
         if (this.pickupLoot()) return;
         if (this.currentMode === 'gambit') this.bankGambitMotes();
       } else if (code === 'KeyR') this.startReload();
@@ -16035,6 +17094,7 @@
       this.updateEnemies(dt, worldW, worldH);
       this.updateBoss(dt, worldW, worldH);
       this.updateBullets(dt, worldW, worldH);
+      this.updateSivaNanites(dt);
       this.updateGrenades(dt, worldW, worldH);
       this.updateSuperEffects(dt, worldW, worldH);
       this.updateAmmoDrops(dt, worldW, worldH);
@@ -16044,7 +17104,7 @@
     }
 
     destinations() {
-      return [DESTINY_RED_WAR_DESTINATION, ...this.dlcModes, this.destinationById('dreaming-city'), this.destinationById('nessus'), this.destinationById('venus'), this.destinationById('blackhole'), this.destinationById('eternal-realm')];
+      return [DESTINY_RED_WAR_DESTINATION, ...this.dlcModes, this.destinationById('dreaming-city'), this.destinationById('nessus'), this.destinationById('venus'), this.destinationById('blackhole'), this.destinationById('eternal-realm'), this.destinationById('edz'), this.destinationById('cosmodrome')];
     }
 
     classSelectLayout(w, h) {
@@ -16197,6 +17257,10 @@
         return;
       }
       this.toast(`${this.classProfile().name}已就位 · ${this.activeSubclass().super}已解锁`);
+      if (!this.cosmodromeComplete) {
+        this.startCosmodromeTutorial();
+        return;
+      }
       this.showOrbit();
     }
 
@@ -16252,10 +17316,10 @@
       const selected = panelOpen ? this.destinationById(this.directorSelected) : null;
       const missions = selected ? this.destinationMissions(selected) : [];
       const progress = selected ? this.destinationProgress(selected) : 0;
-      const chipW = clamp(w * 0.085, 86, 116);
-      const chipGap = w * 0.012;
-      const chipTotal = chipW * 5 + chipGap * 4;
-      const activityList = ['crucible', 'vanguard', 'range', 'gambit', 'reckoning'].map((key, index) => ({
+      const chipW = clamp(w * 0.076, 78, 104);
+      const chipGap = w * 0.009;
+      const chipTotal = chipW * 6 + chipGap * 5;
+      const activityList = ['crucible', 'vanguard', 'range', 'zerohour', 'gambit', 'reckoning'].map((key, index) => ({
         id: key,
         activity: DESTINY_ACTIVITIES[key],
         x: (w - chipTotal) / 2 + index * (chipW + chipGap),
@@ -16951,10 +18015,10 @@
       ctx.textAlign = 'left';
       ctx.fillStyle = accent;
       ctx.font = '600 5.4px "SFMono-Regular", Consolas, monospace';
-      ctx.fillText(chip.id === 'crucible' ? 'PVP' : chip.id === 'vanguard' ? 'VANGUARD' : chip.id === 'range' ? 'TRAINING' : chip.id === 'gambit' ? 'GAMBIT' : 'TIER III', chip.x + 6, chip.y + 10);
+      ctx.fillText(chip.id === 'crucible' ? 'PVP' : chip.id === 'vanguard' ? 'VANGUARD' : chip.id === 'range' ? 'TRAINING' : chip.id === 'zerohour' ? 'EXOTIC' : chip.id === 'gambit' ? 'GAMBIT' : 'TIER III', chip.x + 6, chip.y + 10);
       ctx.fillStyle = 'rgba(235, 242, 238, .88)';
-      ctx.font = '600 7.6px "Segoe UI", "PingFang SC", sans-serif';
-      ctx.fillText(chip.activity.title, chip.x + 8, chip.y + 21);
+      ctx.font = '600 7.2px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText(chip.activity.title, chip.x + 7, chip.y + 21, chip.w - 14);
       ctx.textAlign = 'right';
       ctx.fillStyle = hovered ? accent : 'rgba(145, 169, 173, .5)';
       ctx.font = '500 5.3px "SFMono-Regular", Consolas, monospace';
@@ -17128,6 +18192,18 @@
         }
         return clamp((index + stage) / total, 0, 1);
       }
+      if (this.mission.type === 'tutorial' && this.tutorial) {
+        const tutorial = this.tutorial;
+        if (tutorial.boarded) return 1;
+        const order = ['breach', 'array', 'ship', 'board'];
+        return clamp((Math.max(0, order.indexOf(tutorial.stage)) + (tutorial.wavesCleared || 0) * 0.05) / 4, 0, 1);
+      }
+      if (this.mission.type === 'parkour' && this.parkour) {
+        const climb = clamp((this.parkour.checkpointIndex || 0) / Math.max(1, this.parkour.checkpoints.length - 1), 0, 1) * 0.55;
+        const shards = this.parkour.shards.filter((shard) => shard.collected).length / Math.max(1, this.parkour.shards.length) * 0.2;
+        if (this.dlcBoss) return clamp(0.75 + (1 - this.dlcBoss.hp / this.dlcBoss.maxHp) * 0.25, 0, 1);
+        return clamp(climb + shards, 0, 0.75);
+      }
       if (this.mission.type === 'exoticQuest') {
         if (this.dlcBoss) return clamp(0.75 + (1 - this.dlcBoss.hp / this.dlcBoss.maxHp) * 0.25, 0, 1);
         return clamp(this.wave / (this.waveTarget || 3), 0, 0.75);
@@ -17169,6 +18245,20 @@
         } else if (this.currentMode === 'reckoning') {
           objective = '在九层深渊中生存三波';
           sub = `第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波 · 剩余敌人 ${this.aliveEnemies().length}`;
+        } else if (this.currentMode === 'tutorial') {
+          const tutorial = this.tutorial;
+          if (tutorial?.boarded) {
+            objective = '离开发射基地';
+            sub = '飞船正在爬升 · 星图即将解锁';
+          } else if (tutorial?.stage === 'board') {
+            objective = '登上飞船';
+            sub = '发射台已清空 · 靠近飞船按 E 登舰 · 星图将在离港后解锁';
+          } else if (tutorial) {
+            const stageText = tutorial.stage === 'breach' ? '穿过旧城墙'
+              : tutorial.stage === 'array' ? '夺回深空阵列' : '清理发射台';
+            objective = `${stageText} · 剩余堕落者 ${this.aliveEnemies().length}`;
+            sub = `序章 · 太空发射基地 · 阶段 ${Math.min(3, (tutorial.wavesCleared || 0) + 1)} / 3 · 沿指示器前进`;
+          }
         } else if (this.currentMode === 'dlc') {
           objective = this.mission.objective;
           sub = `${this.dlcConfig?.title || 'DLC'} · ${this.mission.chapter} · ${this.mission.factionCn || this.factionName(this.mission.faction)} · 第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波${this.dlcBoss ? ` · ${this.dlcBoss.name || '首领'} ${Math.ceil(this.dlcBoss.hp)} HP` : ''}`;
@@ -17190,8 +18280,24 @@
             sub = `${this.raidConfig?.name || '突袭'} · 第 ${stageNo} / ${total} 关 · ${stageName} · ${bossName || '首领'} ${Math.ceil(this.raidBoss?.hp || 0)} / ${Math.ceil(this.raidBoss?.maxHp || 0)}`;
           }
         } else if (this.currentMode === 'exoticQuest') {
-          objective = this.mission.objective;
-          sub = `异域追猎 · ${this.exoticQuestConfig?.name || '异域任务'} · 第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波${this.dlcBoss ? ` · ${this.dlcBoss.name || '异域守卫'} ${Math.ceil(this.dlcBoss.hp)} HP` : ''}`;
+          if (this.parkour) {
+            const collected = this.parkour.shards.filter((shard) => shard.collected).length;
+            const total = this.parkour.shards.length;
+            const checkpoint = Math.min(this.parkour.checkpoints.length, (this.parkour.checkpointIndex || 0) + 1);
+            if (this.parkour.bossSpawned && this.dlcBoss?.alive) {
+              objective = '击败零时执政官';
+              sub = `0时行动 · 发射井终端 · ${Math.ceil(this.dlcBoss.hp)} / ${Math.ceil(this.dlcBoss.maxHp)} · 时之碎片 ${collected}/${total}`;
+            } else if (collected < total) {
+              objective = `收集时之碎片 ${collected} / ${total}`;
+              sub = `0时行动 · 检查点 ${checkpoint} / ${this.parkour.checkpoints.length} · 碎片会解锁发射井终点 · 失足会返回检查点`;
+            } else {
+              objective = '抵达发射井终点';
+              sub = `0时行动 · 时之碎片 ${collected} / ${total} · 终点平台已解锁 · 终端将召唤零时执政官`;
+            }
+          } else {
+            objective = this.mission.objective;
+            sub = `异域追猎 · ${this.exoticQuestConfig?.name || '异域任务'} · 第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波${this.dlcBoss ? ` · ${this.dlcBoss.name || '异域守卫'} ${Math.ceil(this.dlcBoss.hp)} HP` : ''}`;
+          }
         } else if (this.currentMode === 'strike') {
           objective = this.mission.objective;
           sub = `先锋打击 · ${this.strikeConfig?.title || '打击'} · ${this.strikeConfig?.location || ''} · 第 ${Math.min(this.waveTarget || 3, Math.max(1, this.wave))} / ${this.waveTarget || 3} 波${this.dlcBoss ? ` · ${this.dlcBoss.name || '首领'} ${Math.ceil(this.dlcBoss.hp)} HP` : ''}`;
@@ -18971,6 +20077,88 @@
       ctx.restore();
     }
 
+    fpObjectiveTarget() {
+      if (this.currentMode === 'tutorial' && this.tutorial) {
+        const tutorial = this.tutorial;
+        if (tutorial.stage === 'board' || tutorial.boarded) {
+          return { x: tutorial.ship.x * this.w, y: tutorial.ship.y * this.h, label: '飞船' };
+        }
+        const living = this.enemies.filter((enemy) => enemy.alive);
+        if (living.length) {
+          const target = living.slice().sort((a, b) => (
+            Math.hypot(a.x - this.player.x, a.y - this.player.y) - Math.hypot(b.x - this.player.x, b.y - this.player.y)
+          ))[0];
+          return { x: target.x * this.w, y: target.y * this.h, label: '堕落者' };
+        }
+        const stagePoint = tutorial.stage === 'breach' ? { x: -1.45, y: 1.75 }
+          : tutorial.stage === 'array' ? { x: 0.85, y: 0.25 } : tutorial.ship;
+        return { x: stagePoint.x * this.w, y: stagePoint.y * this.h, label: tutorial.stage === 'breach' ? '旧城墙' : tutorial.stage === 'array' ? '深空阵列' : '发射台' };
+      }
+      if (this.parkour) {
+        const parkour = this.parkour;
+        if (parkour.boss?.alive) return { x: parkour.boss.x * this.w, y: parkour.boss.y * this.h, label: parkour.boss.name || '零时执政官' };
+        const activeShard = parkour.shards.find((shard) => !shard.collected);
+        if (activeShard) return { x: activeShard.x * this.w, y: activeShard.y * this.h, label: `时之碎片 ${parkour.shards.filter((shard) => shard.collected).length + 1}/${parkour.shards.length}` };
+        const checkpoint = parkour.checkpoints?.[Math.min((parkour.checkpointIndex || 0) + 1, parkour.checkpoints.length - 1)];
+        const target = parkour.bossSpawned ? parkour.final : checkpoint || parkour.final;
+        return target ? { x: target.x * this.w, y: target.y * this.h, label: parkour.checkpoints.indexOf(target) >= 0 ? '下一检查点' : '发射井终点' } : null;
+      }
+      const field = this.fieldObjective;
+      if (field && !field.done) {
+        if (field.type === 'hunt' && field.huntTarget?.alive) {
+          return { x: field.huntTarget.x * this.w, y: field.huntTarget.y * this.h, label: '猎杀目标' };
+        }
+        if (field.type === 'relay' && field.carried > 0) {
+          return { x: field.bank.x * this.w, y: field.bank.y * this.h, label: '光能装置' };
+        }
+        const object = field.type === 'sequence'
+          ? field.objects?.[field.sequenceOrder?.[field.sequenceStep || 0]]
+          : field.objects?.find((entry) => !entry.active && !entry.collected);
+        if (object) return { x: object.x * this.w, y: object.y * this.h, label: field.label };
+      }
+      if (this.raidState?.phase === 'mechanic' && this.raidState.objects?.length) {
+        const object = this.raidState.objects.find((entry) => entry.alive);
+        if (object) return { x: object.x * this.w, y: object.y * this.h, label: this.raidState.mechanicLabel || '机制目标' };
+      }
+      const boss = this.dlcBoss?.alive ? this.dlcBoss : this.raidBoss?.alive ? this.raidBoss : this.boss && !this.boss.dead ? this.boss : null;
+      if (boss) return { x: boss.x * this.w, y: boss.y * this.h, label: boss.name || '首领' };
+      return { x: 0.5 * this.w, y: 0.3 * this.h, label: this.mission?.objective || '任务目标' };
+    }
+
+    drawFpObjectiveCompass(ctx, w, h) {
+      const target = this.fpObjectiveTarget();
+      if (!target || !this.player) return;
+      const point = this.playerPoint();
+      const dx = target.x - point.x;
+      const dy = target.y - point.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < 110) return;
+      const relative = Math.atan2(Math.sin(Math.atan2(dy, dx) - this.fpYaw), Math.cos(Math.atan2(dy, dx) - this.fpYaw));
+      const accent = this.fpsStyle?.accent || this.mission?.accent || '#e9bd72';
+      ctx.save();
+      ctx.translate(w * 0.5, h * 0.135);
+      ctx.rotate(relative);
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = this.fpRgba(accent, 0.92);
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(0, -9);
+      ctx.lineTo(6, 5);
+      ctx.lineTo(0, 2);
+      ctx.lineTo(-6, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.72;
+      ctx.textAlign = 'center';
+      ctx.font = '600 8px "SFMono-Regular", Consolas, monospace';
+      ctx.fillStyle = this.fpRgba(accent, 0.9);
+      ctx.fillText(`${Math.round(distance / 10)} m · ${target.label}`, w * 0.5, h * 0.155);
+      ctx.restore();
+    }
+
     drawFpVoidDistortion(ctx, w, h) {
       const cx = w * 0.5;
       const cy = h * 0.5;
@@ -19046,6 +20234,7 @@
       if (voidWorld) this.drawFpVoidDistortion(ctx, w, h);
 
       this.drawFpCastOverlay(ctx, w, h);
+      this.drawFpObjectiveCompass(ctx, w, h);
 
       if (this.fpAltarActive && this.player) {
         ctx.save();
@@ -23849,6 +25038,7 @@
       this.drawDestinyHealth(ctx, w, h);
       this.drawDestinyAbilities(ctx, w, h);
       this.drawDestinyWeapon(ctx, w, h);
+      if (this.currentMode === 'tutorial' && this.tutorial) this.drawTutorialHud(ctx, w, h);
       const near = this.nearestLoot();
       if (near) {
         const item = near.drop.item;
@@ -23877,6 +25067,53 @@
       ctx.fillStyle = 'rgba(176, 193, 191, .48)';
       ctx.font = '500 6.2px "SFMono-Regular", Consolas, monospace';
       ctx.fillText('F1 角色 / 技能 / 背包 · M 音效', w - 18, h - 16);
+      ctx.restore();
+    }
+
+    drawTutorialHud(ctx, w, h) {
+      const tutorial = this.tutorial;
+      if (!tutorial) return;
+      if (tutorial.boarded) {
+        const progress = clamp(tutorial.boardTime / 2.8, 0, 1);
+        const fade = clamp(progress * 1.25, 0, 1);
+        ctx.save();
+        ctx.fillStyle = `rgba(2, 7, 12, ${0.38 + fade * 0.48})`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalAlpha = fade;
+        const glow = ctx.createRadialGradient(w * 0.5, h * 0.47, 6, w * 0.5, h * 0.47, w * 0.32);
+        glow.addColorStop(0, 'rgba(143, 216, 255, .28)');
+        glow.addColorStop(1, 'rgba(143, 216, 255, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, w, h);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(232, 246, 255, .96)';
+        ctx.font = '600 24px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.fillText('正在离开发射基地', w * 0.5, h * 0.45);
+        ctx.fillStyle = 'rgba(177, 204, 214, .7)';
+        ctx.font = '500 10px "SFMono-Regular", Consolas, monospace';
+        ctx.fillText('COSMODROME // DEPARTURE', w * 0.5, h * 0.49);
+        fillRoundRect(ctx, w * 0.5 - 130, h * 0.53, 260, 3, 1.5, 'rgba(255,255,255,.12)');
+        fillRoundRect(ctx, w * 0.5 - 130, h * 0.53, 260 * progress, 3, 1.5, '#8fd8ff');
+        ctx.restore();
+        return;
+      }
+      const point = this.playerPoint();
+      const distance = Math.hypot(point.x - tutorial.ship.x * this.w, point.y - tutorial.ship.y * this.h);
+      if (tutorial.stage !== 'board' || distance > 190) return;
+      const width = 250;
+      const x = w * 0.5 - width / 2;
+      const y = h - 310;
+      ctx.save();
+      fillRoundRect(ctx, x, y, width, 34, 5, 'rgba(5, 13, 19, .88)');
+      ctx.strokeStyle = 'rgba(143, 216, 255, .4)';
+      ctx.lineWidth = 0.9;
+      ctx.strokeRect(x, y, width, 34);
+      ctx.fillStyle = '#8fd8ff';
+      ctx.font = '600 10px "SFMono-Regular", Consolas, monospace';
+      ctx.fillText('E', x + 16, y + 21);
+      ctx.fillStyle = 'rgba(232, 244, 248, .92)';
+      ctx.font = '600 9px "Segoe UI", "PingFang SC", sans-serif';
+      ctx.fillText('登上飞船 · 解锁星图', x + 36, y + 21);
       ctx.restore();
     }
 
