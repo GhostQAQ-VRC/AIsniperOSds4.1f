@@ -606,7 +606,7 @@
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x070c14);
         this.scene.fog = new THREE.FogExp2(0x070c14, 0.017);
-        this.camera = new THREE.PerspectiveCamera(73, 1, 0.1, 120);
+        this.camera = new THREE.PerspectiveCamera(73, 1, 0.1, 900);
         this.camera.rotation.order = 'YXZ';
         this.scene.add(this.camera);
         this.player = new THREE.Vector3(0, 1.7, 9);
@@ -762,9 +762,22 @@
       const group = new THREE.Group();
       this.mapGroup = group;
       this.scene.add(group);
+      const palette = layout.palette;
+      if (window.AISniperModels?.createSkyDome) {
+        const hex = (value) => `#${new THREE.Color(value).getHexString()}`;
+        const sky = window.AISniperModels.createSkyDome({
+          radius: 620,
+          top: hex(palette.bg),
+          horizon: hex(palette.fog),
+          bottom: hex(new THREE.Color(palette.floor).offsetHSL(0, 0, -0.16)),
+          cloud: key === 'vertigo' ? 'rgba(220,235,245,.13)' : 'rgba(255,248,226,.15)',
+          sun: hex(palette.sun)
+        });
+        group.add(sky.group);
+        this.cs2Sky = sky;
+      }
       this.obstacles = [];
       this.colliders = [];
-      const palette = layout.palette;
       const bounds = layout.bounds;
       const width = bounds.maxX - bounds.minX;
       const depth = bounds.maxZ - bounds.minZ;
@@ -957,24 +970,18 @@
     }
 
     buildGun() {
-      this.gun = new THREE.Group();
-      const metal = new THREE.MeshStandardMaterial({ color: 0x1d252c, roughness: 0.34, metalness: 0.7 });
-      const grip = new THREE.MeshStandardMaterial({ color: 0x11161b, roughness: 0.68 });
-      const accent = new THREE.MeshStandardMaterial({ color: 0xd58b3d, emissive: 0x281303, roughness: 0.4 });
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.72), metal);
-      body.position.set(0, 0, -0.23);
-      const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.55), grip);
-      barrel.position.set(0, 0.02, -0.78);
-      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.27, 0.18), grip);
-      handle.position.set(0, -0.19, -0.02);
-      handle.rotation.x = -0.2;
-      const sight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.16), accent);
-      sight.position.set(0, 0.12, -0.23);
-      this.gun.add(body, barrel, handle, sight);
-      this.gun.position.set(0.3, -0.26, -0.62);
+      this.gun = window.AISniperModels?.createFirstPersonRifle?.({ variant: 'cs2' }) || new THREE.Group();
+      const glove = new THREE.MeshStandardMaterial({ color: 0x1a1c1c, roughness: 0.82, metalness: 0.04 });
+      const handRight = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.13), glove);
+      handRight.position.set(0.02, -0.17, -0.06);
+      const handLeft = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.1, 0.15), glove);
+      handLeft.position.set(-0.02, -0.06, -0.52);
+      handLeft.rotation.x = 0.16;
+      this.gun.add(handRight, handLeft);
+      this.gun.position.set(0.3, -0.27, -0.56);
       this.camera.add(this.gun);
       this.muzzle = new THREE.PointLight(0xffc46e, 0, 6);
-      this.muzzle.position.set(0.3, -0.21, -1.1);
+      this.muzzle.position.set(0.3, -0.22, -1.55);
       this.camera.add(this.muzzle);
       this.gunRecoil = 0;
     }
@@ -1507,39 +1514,28 @@
         lastZ: group.position.z
       };
       group.userData.bot = bot;
-      const bodyMat = new THREE.MeshStandardMaterial({ color: index % 2 ? 0xb64b3a : 0x9b5d34, roughness: 0.72, metalness: 0.08 });
-      const headMat = new THREE.MeshStandardMaterial({ color: 0xd0a982, roughness: 0.82 });
-      const armorMat = new THREE.MeshStandardMaterial({ color: 0x2e353d, roughness: 0.55, metalness: 0.28 });
-      const glowMat = new THREE.MeshStandardMaterial({ color: 0xffa43c, emissive: 0x8c3506, emissiveIntensity: 0.9 });
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.78, 1.16, 0.44), bodyMat);
-      body.position.y = 1.16;
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.43, 0.43), headMat);
-      head.position.y = 1.95;
-      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.1, 0.05), glowMat);
-      visor.position.set(0, 1.98, 0.23);
-      const chest = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.24, 0.1), armorMat);
-      chest.position.set(0, 1.42, 0.24);
-      const legLeft = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.65, 0.28), armorMat);
-      legLeft.position.set(-0.2, 0.34, 0);
-      const legRight = legLeft.clone();
-      legRight.position.x = 0.2;
-      const armLeft = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.72, 0.2), bodyMat);
-      armLeft.position.set(-0.48, 1.22, 0);
-      armLeft.rotation.z = -0.16;
-      const armRight = armLeft.clone();
-      armRight.position.x = 0.48;
-      armRight.rotation.z = 0.16;
-      [body, head, visor, chest, legLeft, legRight, armLeft, armRight].forEach((part) => {
-        part.userData.bot = bot;
-        group.add(part);
-        if (part === head) part.userData.part = 'head';
-        this.botHitMeshes.push(part);
-      });
+      if (window.AISniperModels?.createSoldier) {
+        const visual = window.AISniperModels.createSoldier({ variant: 'cs2-t', seed: index });
+        bot.visual = visual;
+        group.add(visual.group);
+        visual.hitMeshes.forEach((part) => {
+          part.userData.bot = bot;
+          this.botHitMeshes.push(part);
+        });
+      } else {
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x9b5d34, roughness: 0.72, metalness: 0.08 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.78, 1.16, 0.44), bodyMat);
+        body.position.y = 1.16;
+        body.userData.bot = bot;
+        body.userData.part = 'body';
+        group.add(body);
+        this.botHitMeshes.push(body);
+      }
       const label = makeLabel(bot.name, '#ffbd7f');
-      label.position.y = 2.52;
+      label.position.y = 2.28;
       group.add(label);
-      const light = new THREE.PointLight(0xff7d3e, 0.35, 3);
-      light.position.set(0, 1.3, 0.35);
+      const light = new THREE.PointLight(0xff7d3e, 0.32, 3);
+      light.position.set(0, 1.2, 0.35);
       group.add(light);
       this.scene.add(group);
       this.bots.push(bot);
@@ -1576,6 +1572,7 @@
 
     update(dt) {
       this.elapsed += dt;
+      if (this.cs2Sky) this.cs2Sky.group.rotation.y = this.elapsed * 0.0025;
       this.movePlayer(dt);
       this.updateBots(dt);
       this.updateTracers(dt);
@@ -1634,10 +1631,12 @@
         const toPlayer = new THREE.Vector3(this.player.x - pos.x, 0, this.player.z - pos.z);
         const distance = toPlayer.length();
         const canSeePlayer = distance < 22 && this.hasLineOfSight(bot, playerPos);
+        let moving = false;
         if (canSeePlayer) {
           bot.group.rotation.y = Math.atan2(this.player.x - pos.x, this.player.z - pos.z);
           if (distance > 8 && distance < 18) {
             const strafe = Math.sin(this.elapsed * 1.1 + bot.bob) * 0.6;
+            moving = Math.abs(strafe) > 0.1;
             this.moveBotBy(bot, -toPlayer.z / Math.max(1, distance) * strafe * dt, toPlayer.x / Math.max(1, distance) * strafe * dt);
           }
           if (distance < 18 && !this.over) {
@@ -1662,6 +1661,7 @@
             if (bot.pathIndex < bot.path.length) bot.pathIndex += 1;
           } else {
             const step = bot.speed * dt;
+            moving = true;
             this.moveBotBy(bot, dx / targetDistance * step, dz / targetDistance * step);
             bot.group.rotation.y = Math.atan2(dx, dz);
           }
@@ -1676,6 +1676,7 @@
         }
         bot.bob += dt * 3.2;
         bot.group.position.y = Math.sin(bot.bob) * 0.025;
+        if (bot.visual) bot.visual.setPose(this.elapsed + bot.bob * 0.12, moving, 0.2);
         pos.x = clamp(pos.x, bounds.minX + 0.7, bounds.maxX - 0.7);
         pos.z = clamp(pos.z, bounds.minZ + 0.7, bounds.maxZ - 0.7);
       });
@@ -1738,7 +1739,7 @@
     updateGun(dt) {
       if (!this.gun) return;
       this.gunRecoil = Math.max(0, this.gunRecoil - dt * 8.5);
-      this.gun.position.z = -0.62 + this.gunRecoil * 0.08;
+      this.gun.position.z = -0.56 + this.gunRecoil * 0.08;
       this.gun.rotation.x = -this.gunRecoil * 0.04;
       if (this.muzzle) this.muzzle.intensity = Math.max(0, this.muzzle.intensity - dt * 26);
     }
